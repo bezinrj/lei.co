@@ -106,7 +106,7 @@ function CronogramasPage() {
         </div>
       )}
 
-      <NovoCronogramaDialog open={open} onOpenChange={setOpen} onCreated={load} />
+      <NovoCronogramaDialog open={open} onOpenChange={setOpen} onCreated={() => load(true)} />
     </AppShell>
   );
 }
