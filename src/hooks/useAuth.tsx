@@ -15,6 +15,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const fallbackAuthContext: AuthContextValue = {
+  user: null,
+  session: null,
+  roles: [],
+  loading: true,
+  isAdminOrMod: false,
+  signOut: async () => {},
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -71,6 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) {
+    if (typeof window === "undefined") return fallbackAuthContext;
+    throw new Error("useAuth must be used within AuthProvider");
+  }
   return ctx;
 }

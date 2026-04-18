@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -76,12 +77,24 @@ function PresenceTracker() {
   return null;
 }
 
+function ClientOnlyToaster() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return <Toaster />;
+}
+
 function RootComponent() {
   return (
     <AuthProvider>
       <PresenceTracker />
       <Outlet />
-      <Toaster />
+      <ClientOnlyToaster />
     </AuthProvider>
   );
 }
