@@ -14,7 +14,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
-  const { roles, loading } = useAuth();
+  const { roles, loading, user, session } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -24,17 +24,27 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await listAdminUsers();
-      setUsers(res.users);
-    } catch {
+      const token = session?.access_token;
+      if (!token) throw new Error("no-session");
+      const res = await listAdminUsers({
+        headers: { Authorization: `Bearer ${token}` },
+      } as Parameters<typeof listAdminUsers>[0]);
+      setUsers(res?.users ?? []);
+    } catch (e) {
+      console.error("listAdminUsers failed", e);
       toast.error("Erro ao carregar usuários");
+      setUsers([]);
     } finally {
       setFetching(false);
     }
-  }, []);
+  }, [session?.access_token]);
 
   useEffect(() => {
     if (loading) return;
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
     if (!isAdmin) {
       navigate({ to: "/dashboard" });
       return;
@@ -42,7 +52,7 @@ function AdminPage() {
     load();
     const id = setInterval(load, 30_000);
     return () => clearInterval(id);
-  }, [loading, isAdmin, load, navigate]);
+  }, [loading, isAdmin, user, load, navigate]);
 
   async function toggleRole(u: AdminUser, role: "admin" | "moderador", enabled: boolean) {
     const prev = users;
@@ -54,7 +64,12 @@ function AdminPage() {
       ),
     );
     try {
-      await setUserRole({ data: { userId: u.id, role, enabled } });
+      const token = session?.access_token;
+      if (!token) throw new Error("no-session");
+      await setUserRole({
+        data: { userId: u.id, role, enabled },
+        headers: { Authorization: `Bearer ${token}` },
+      } as Parameters<typeof setUserRole>[0]);
       toast.success("Permissão atualizada");
     } catch {
       setUsers(prev);
