@@ -13,8 +13,10 @@ import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as MedalhasRouteImport } from './routes/medalhas'
 import { Route as GruposRouteImport } from './routes/grupos'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CronogramaRouteImport } from './routes/cronograma'
+import { Route as CronogramasRouteImport } from './routes/cronogramas'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CronogramaIdRouteImport } from './routes/cronograma.$id'
 
 const RankingRoute = RankingRouteImport.update({
   id: '/ranking',
@@ -36,9 +38,14 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CronogramaRoute = CronogramaRouteImport.update({
-  id: '/cronograma',
-  path: '/cronograma',
+const CronogramasRoute = CronogramasRouteImport.update({
+  id: '/cronogramas',
+  path: '/cronogramas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -46,60 +53,85 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CronogramaIdRoute = CronogramaIdRouteImport.update({
+  id: '/cronograma/$id',
+  path: '/cronograma/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/cronograma': typeof CronogramaRoute
+  '/auth': typeof AuthRoute
+  '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
   '/ranking': typeof RankingRoute
+  '/cronograma/$id': typeof CronogramaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/cronograma': typeof CronogramaRoute
+  '/auth': typeof AuthRoute
+  '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
   '/ranking': typeof RankingRoute
+  '/cronograma/$id': typeof CronogramaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/cronograma': typeof CronogramaRoute
+  '/auth': typeof AuthRoute
+  '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
   '/ranking': typeof RankingRoute
+  '/cronograma/$id': typeof CronogramaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/cronograma'
+    | '/auth'
+    | '/cronogramas'
     | '/dashboard'
     | '/grupos'
     | '/medalhas'
     | '/ranking'
+    | '/cronograma/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cronograma' | '/dashboard' | '/grupos' | '/medalhas' | '/ranking'
+  to:
+    | '/'
+    | '/auth'
+    | '/cronogramas'
+    | '/dashboard'
+    | '/grupos'
+    | '/medalhas'
+    | '/ranking'
+    | '/cronograma/$id'
   id:
     | '__root__'
     | '/'
-    | '/cronograma'
+    | '/auth'
+    | '/cronogramas'
     | '/dashboard'
     | '/grupos'
     | '/medalhas'
     | '/ranking'
+    | '/cronograma/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CronogramaRoute: typeof CronogramaRoute
+  AuthRoute: typeof AuthRoute
+  CronogramasRoute: typeof CronogramasRoute
   DashboardRoute: typeof DashboardRoute
   GruposRoute: typeof GruposRoute
   MedalhasRoute: typeof MedalhasRoute
   RankingRoute: typeof RankingRoute
+  CronogramaIdRoute: typeof CronogramaIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -132,11 +164,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cronograma': {
-      id: '/cronograma'
-      path: '/cronograma'
-      fullPath: '/cronograma'
-      preLoaderRoute: typeof CronogramaRouteImport
+    '/cronogramas': {
+      id: '/cronogramas'
+      path: '/cronogramas'
+      fullPath: '/cronogramas'
+      preLoaderRoute: typeof CronogramasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -146,17 +185,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cronograma/$id': {
+      id: '/cronograma/$id'
+      path: '/cronograma/$id'
+      fullPath: '/cronograma/$id'
+      preLoaderRoute: typeof CronogramaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CronogramaRoute: CronogramaRoute,
+  AuthRoute: AuthRoute,
+  CronogramasRoute: CronogramasRoute,
   DashboardRoute: DashboardRoute,
   GruposRoute: GruposRoute,
   MedalhasRoute: MedalhasRoute,
   RankingRoute: RankingRoute,
+  CronogramaIdRoute: CronogramaIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

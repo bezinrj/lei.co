@@ -1,6 +1,7 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, CalendarDays, Award, Users, Trophy } from "lucide-react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { LayoutDashboard, CalendarDays, Award, Users, Trophy, LogOut, LogIn } from "lucide-react";
 import { Logo } from "./Logo";
+import { useAuth } from "@/hooks/useAuth";
 
 type NavItem = {
   to: string;
@@ -10,7 +11,7 @@ type NavItem = {
 
 const principal: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/cronograma", label: "Cronograma", icon: CalendarDays },
+  { to: "/cronogramas", label: "Cronogramas", icon: CalendarDays },
   { to: "/medalhas", label: "Medalhas", icon: Award },
 ];
 
@@ -50,7 +51,11 @@ function NavSection({ title, items }: { title: string; items: NavItem[] }) {
   );
 }
 
-export function AppSidebar({ friendId = "#LEI-4821" }: { friendId?: string }) {
+export function AppSidebar() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const friendId = "#LEI-4821";
+
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-[220px] flex-col bg-card border-r border-border px-4 py-6 z-30">
       <div className="px-2 mb-8">
@@ -62,12 +67,31 @@ export function AppSidebar({ friendId = "#LEI-4821" }: { friendId?: string }) {
         <NavSection title="Comunidade" items={comunidade} />
       </div>
 
-      <div className="rounded-[12px] bg-lilac-light border border-border px-3 py-3">
+      <div className="rounded-[12px] bg-lilac-light border border-border px-3 py-3 mb-3">
         <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
           Seu Friend ID
         </div>
         <div className="font-mono text-[13px] text-text-main font-medium">{friendId}</div>
       </div>
+
+      {user ? (
+        <button
+          onClick={async () => {
+            await signOut();
+            navigate({ to: "/auth" });
+          }}
+          className="flex items-center gap-2 px-3 py-2 rounded-[10px] text-[12px] text-text-muted hover:bg-muted hover:text-text-main transition-colors"
+        >
+          <LogOut size={14} /> Sair
+        </button>
+      ) : (
+        <Link
+          to="/auth"
+          className="flex items-center gap-2 px-3 py-2 rounded-[10px] text-[12px] text-text-muted hover:bg-muted hover:text-text-main transition-colors"
+        >
+          <LogIn size={14} /> Entrar
+        </Link>
+      )}
     </aside>
   );
 }
