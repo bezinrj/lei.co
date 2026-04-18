@@ -21,20 +21,31 @@ type Cronograma = {
   premium: boolean;
 };
 
+// Module-level cache so voltar para /cronogramas é instantâneo
+let cachedItems: Cronograma[] | null = null;
+let cachedAt = 0;
+const STALE_MS = 30_000;
+
 function CronogramasPage() {
   const { isAdminOrMod } = useAuth();
   const navigate = useNavigate();
-  const [items, setItems] = useState<Cronograma[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Cronograma[]>(cachedItems ?? []);
+  const [loading, setLoading] = useState(cachedItems === null);
   const [open, setOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (force = false) => {
+    const fresh = Date.now() - cachedAt < STALE_MS;
+    if (!force && cachedItems && fresh) return;
+    if (!cachedItems) setLoading(true);
     const { data, error } = await supabase
       .from("cronogramas")
       .select("id, nome, categoria, imagem_url, premium")
       .order("created_at", { ascending: false });
-    if (!error && data) setItems(data);
+    if (!error && data) {
+      cachedItems = data;
+      cachedAt = Date.now();
+      setItems(data);
+    }
     setLoading(false);
   }, []);
 
@@ -95,7 +106,7 @@ function CronogramasPage() {
         </div>
       )}
 
-      <NovoCronogramaDialog open={open} onOpenChange={setOpen} onCreated={load} />
+      <NovoCronogramaDialog open={open} onOpenChange={setOpen} onCreated={() => load(true)} />
     </AppShell>
   );
 }
