@@ -27,8 +27,8 @@ function AdminPage() {
       const token = session?.access_token;
       if (!token) throw new Error("no-session");
       const res = await listAdminUsers({
-        headers: { Authorization: `Bearer ${token}` },
-      } as Parameters<typeof listAdminUsers>[0]);
+        data: { accessToken: token },
+      });
       setUsers(res?.users ?? []);
     } catch (e) {
       console.error("listAdminUsers failed", e);
@@ -67,9 +67,8 @@ function AdminPage() {
       const token = session?.access_token;
       if (!token) throw new Error("no-session");
       await setUserRole({
-        data: { userId: u.id, role, enabled },
-        headers: { Authorization: `Bearer ${token}` },
-      } as Parameters<typeof setUserRole>[0]);
+        data: { accessToken: token, userId: u.id, role, enabled },
+      });
       toast.success("Permissão atualizada");
     } catch {
       setUsers(prev);
