@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Database } from "@/integrations/supabase/types";
 
 export type AdminUser = {
   id: string;
@@ -16,23 +17,60 @@ export type AdminUser = {
 
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 
+async function requireAdminAccess(accessToken: string) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabasePublishableKey) {
+    throw new Error("Configuração de autenticação ausente no servidor");
+  }
+
+  if (!accessToken) {
+    throw new Error("Sessão inválida");
+  }
+
+  const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+    auth: {
+      storage: undefined,
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(accessToken);
+  const userId = claimsData?.claims?.sub;
+
+  if (claimsError || !userId) {
+    throw new Error("Sessão expirada ou inválida");
+  }
+
+  const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+
+  if (roleError || !isAdmin) {
+    throw new Error("Acesso negado");
+  }
+
+  return { userId };
+}
+
 export const listAdminUsers = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    // Verifica role admin via RLS-safe RPC
-    const { data: isAdmin, error: roleErr } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleErr || !isAdmin) {
-      throw new Response("Forbidden", { status: 403 });
-    }
+  .inputValidator((input: { accessToken: string }) => input)
+  .handler(async ({ data }) => {
+    await requireAdminAccess(data.accessToken);
 
     const { data: usersData, error: usersErr } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
       perPage: 200,
     });
-    if (usersErr) throw new Response(usersErr.message, { status: 500 });
+    if (usersErr) throw new Error(usersErr.message);
 
     const ids = usersData.users.map((u) => u.id);
     const [{ data: profiles }, { data: roles }, { data: presence }] = await Promise.all([
@@ -73,27 +111,24 @@ export const listAdminUsers = createServerFn({ method: "POST" })
   });
 
 export const setUserRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: { userId: string; role: "admin" | "moderador" | "user"; enabled: boolean }) => input)
-  .handler(async ({ context, data }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Response("Forbidden", { status: 403 });
+  .inputValidator(
+    (input: { accessToken: string; userId: string; role: "admin" | "moderador" | "user"; enabled: boolean }) => input,
+  )
+  .handler(async ({ data }) => {
+    await requireAdminAccess(data.accessToken);
 
     if (data.enabled) {
       const { error } = await supabaseAdmin
         .from("user_roles")
         .upsert({ user_id: data.userId, role: data.role }, { onConflict: "user_id,role" });
-      if (error) throw new Response(error.message, { status: 500 });
+      if (error) throw new Error(error.message);
     } else {
       const { error } = await supabaseAdmin
         .from("user_roles")
         .delete()
         .eq("user_id", data.userId)
         .eq("role", data.role);
-      if (error) throw new Response(error.message, { status: 500 });
+      if (error) throw new Error(error.message);
     }
     return { ok: true };
   });
