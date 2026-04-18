@@ -1,7 +1,4 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/hooks/useAuth";
-import { usePresence } from "@/hooks/usePresence";
 
 import appCss from "../styles.css?url";
 
@@ -32,14 +29,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lei.co — Estude com propósito" },
-      { name: "description", content: "Plataforma de estudos Lei.co. Acompanhe horas, questões, medalhas e ranking." },
+      { title: "Lei.co — Mantenha a constância" },
+      { name: "description", content: "Cronograma para concurseiros das carreiras de alto nível. Acompanhe horas, questões, medalhas, grupos e ranking." },
       { name: "author", content: "Lei.co" },
-      { property: "og:title", content: "Lei.co — Estude com propósito" },
-      { property: "og:description", content: "Plataforma de estudos para concursos." },
+      { property: "og:title", content: "Lei.co — Mantenha a constância" },
+      { property: "og:description", content: "Cronograma para concurseiros das carreiras de alto nível. Acompanhe horas, questões, medalhas, grupos e ranking." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Lei.co — Mantenha a constância" },
+      { name: "twitter:description", content: "Cronograma para concurseiros das carreiras de alto nível. Acompanhe horas, questões, medalhas, grupos e ranking." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fe4c632c-5923-4167-8ebb-0c9789549835/id-preview-538827a8--e14d93ea-107e-4f17-925f-9e4674dc8195.lovable.app-1776527768331.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fe4c632c-5923-4167-8ebb-0c9789549835/id-preview-538827a8--e14d93ea-107e-4f17-925f-9e4674dc8195.lovable.app-1776527768331.png" },
     ],
     links: [
       {
@@ -68,16 +69,5 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return (
-    <AuthProvider>
-      <PresenceTracker />
-      <Outlet />
-      <Toaster />
-    </AuthProvider>
-  );
-}
-
-function PresenceTracker() {
-  usePresence();
-  return null;
+  return <Outlet />;
 }
