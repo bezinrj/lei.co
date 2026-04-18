@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, CalendarDays, Award, Users, Trophy, LogOut, LogIn } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Award, Users, Trophy, LogOut, LogIn, Shield } from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -11,7 +11,7 @@ type NavItem = {
 
 const principal: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/cronogramas", label: "Cronogramas", icon: CalendarDays },
+  { to: "/cronogramas", label: "Cronograma", icon: CalendarDays },
   { to: "/medalhas", label: "Medalhas", icon: Award },
 ];
 
@@ -19,6 +19,8 @@ const comunidade: NavItem[] = [
   { to: "/grupos", label: "Grupos", icon: Users },
   { to: "/ranking", label: "Ranking Global", icon: Trophy },
 ];
+
+const admin: NavItem[] = [{ to: "/admin", label: "Painel Admin", icon: Shield }];
 
 function NavSection({ title, items }: { title: string; items: NavItem[] }) {
   const location = useLocation();
@@ -52,9 +54,10 @@ function NavSection({ title, items }: { title: string; items: NavItem[] }) {
 }
 
 export function AppSidebar() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, roles } = useAuth();
   const navigate = useNavigate();
   const friendId = "#LEI-4821";
+  const isAdmin = roles.includes("admin");
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-[220px] flex-col bg-card border-r border-border px-4 py-6 z-30">
@@ -65,6 +68,7 @@ export function AppSidebar() {
       <div className="flex-1 overflow-y-auto">
         <NavSection title="Principal" items={principal} />
         <NavSection title="Comunidade" items={comunidade} />
+        {isAdmin && <NavSection title="Admin" items={admin} />}
       </div>
 
       <div className="rounded-[12px] bg-lilac-light border border-border px-3 py-3 mb-3">
