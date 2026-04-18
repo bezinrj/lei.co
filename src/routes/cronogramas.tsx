@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePlan } from "@/hooks/usePlan";
 import { CategoryRow } from "@/components/cronogramas/CategoryRow";
 import { NovoCronogramaDialog } from "@/components/cronogramas/NovoCronogramaDialog";
 
@@ -28,6 +29,7 @@ const STALE_MS = 30_000;
 
 function CronogramasPage() {
   const { isAdminOrMod } = useAuth();
+  const { isPremium } = usePlan();
   const navigate = useNavigate();
   const [items, setItems] = useState<Cronograma[]>(cachedItems ?? []);
   const [loading, setLoading] = useState(cachedItems === null);
@@ -100,6 +102,7 @@ function CronogramasPage() {
               key={cat}
               title={cat}
               items={list}
+              isLocked={(c) => c.premium && !isPremium}
               onSelect={(id) => navigate({ to: "/cronograma/$id", params: { id } })}
             />
           ))}
