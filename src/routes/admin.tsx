@@ -64,7 +64,12 @@ function AdminPage() {
       ),
     );
     try {
-      await setUserRole({ data: { userId: u.id, role, enabled } });
+      const token = session?.access_token;
+      if (!token) throw new Error("no-session");
+      await setUserRole({
+        data: { userId: u.id, role, enabled },
+        headers: { Authorization: `Bearer ${token}` },
+      } as Parameters<typeof setUserRole>[0]);
       toast.success("Permissão atualizada");
     } catch {
       setUsers(prev);
