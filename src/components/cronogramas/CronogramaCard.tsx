@@ -1,13 +1,14 @@
-import { Calendar } from "lucide-react";
+import { Calendar, Lock } from "lucide-react";
 
 type Props = {
   nome: string;
   imagem_url: string | null;
   premium: boolean;
+  locked?: boolean;
   onClick?: () => void;
 };
 
-export function CronogramaCard({ nome, imagem_url, premium, onClick }: Props) {
+export function CronogramaCard({ nome, imagem_url, premium, locked, onClick }: Props) {
   return (
     <button
       onClick={onClick}
@@ -32,6 +33,14 @@ export function CronogramaCard({ nome, imagem_url, premium, onClick }: Props) {
       >
         {premium ? "Premium" : "Gratuito"}
       </span>
+
+      {locked && (
+        <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-full bg-white/95 flex items-center justify-center shadow">
+            <Lock size={16} className="text-text-main" />
+          </div>
+        </div>
+      )}
 
       {/* Bottom gradient + name */}
       <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 via-black/30 to-transparent">

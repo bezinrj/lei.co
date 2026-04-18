@@ -1,79 +1,250 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock, Play, Sparkles } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { usePlan } from "@/hooks/usePlan";
+import { MatrizTab } from "@/components/cronogramas/MatrizTab";
+import { CalendarioTab } from "@/components/cronogramas/CalendarioTab";
+import { DesempenhoTab } from "@/components/cronogramas/DesempenhoTab";
+import { AtivarDialog } from "@/components/cronogramas/AtivarDialog";
 
 export const Route = createFileRoute("/cronograma/$id")({
   head: () => ({ meta: [{ title: "Cronograma — Lei.co" }] }),
   component: CronogramaDetail,
 });
 
+type Cronograma = {
+  nome: string;
+  categoria: string | null;
+  imagem_url: string | null;
+  premium: boolean;
+};
+
+type Materia = {
+  id: string;
+  nome: string;
+  cor: string;
+  ordem: number;
+  topicos: { id: string; titulo: string; duracao_minutos: number; materia_id: string; ordem: number }[];
+};
+
+type Evento = {
+  id: string;
+  titulo: string;
+  data: string;
+  cor: string | null;
+  concluido: boolean;
+  topico_id: string | null;
+};
+
 function CronogramaDetail() {
   const { id } = Route.useParams();
-  const [data, setData] = useState<{
-    nome: string;
-    categoria: string | null;
-    imagem_url: string | null;
-    premium: boolean;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isAdminOrMod } = useAuth();
+  const { isPremium } = usePlan();
 
-  useEffect(() => {
-    supabase
+  const [cron, setCron] = useState<Cronograma | null>(null);
+  const [materias, setMaterias] = useState<Materia[]>([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [ativacao, setAtivacao] = useState<{ data_inicio: string; data_prova: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [ativarOpen, setAtivarOpen] = useState(false);
+
+  const loadAll = useCallback(async () => {
+    const { data: cronData } = await supabase
       .from("cronogramas")
       .select("nome, categoria, imagem_url, premium")
       .eq("id", id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setData(data);
-        setLoading(false);
-      });
-  }, [id]);
+      .maybeSingle();
+    setCron(cronData);
+
+    const { data: matData } = await supabase
+      .from("cronograma_materias")
+      .select("id, nome, cor, ordem, cronograma_topicos(id, titulo, duracao_minutos, materia_id, ordem)")
+      .eq("cronograma_id", id)
+      .order("ordem", { ascending: true });
+    const mats: Materia[] = (matData ?? []).map((m: {
+      id: string;
+      nome: string;
+      cor: string;
+      ordem: number;
+      cronograma_topicos: Materia["topicos"];
+    }) => ({
+      id: m.id,
+      nome: m.nome,
+      cor: m.cor,
+      ordem: m.ordem,
+      topicos: (m.cronograma_topicos ?? []).sort((a, b) => a.ordem - b.ordem),
+    }));
+    setMaterias(mats);
+
+    if (user) {
+      const { data: evs } = await supabase
+        .from("user_calendar_events")
+        .select("id, titulo, data, cor, concluido, topico_id")
+        .eq("user_id", user.id)
+        .eq("cronograma_id", id)
+        .order("data", { ascending: true });
+      setEventos(evs ?? []);
+
+      const { data: at } = await supabase
+        .from("user_cronograma_ativacao")
+        .select("data_inicio, data_prova")
+        .eq("user_id", user.id)
+        .eq("cronograma_id", id)
+        .eq("ativo", true)
+        .maybeSingle();
+      setAtivacao(at);
+    }
+    setLoading(false);
+  }, [id, user]);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
+
+  const isLocked = cron?.premium && !isPremium;
 
   return (
-    <AppShell title={data?.nome ?? "Cronograma"}>
+    <AppShell title={cron?.nome ?? "Cronograma"}>
       <Link
         to="/cronogramas"
         className="inline-flex items-center gap-1 text-[13px] text-text-muted hover:text-text-main mb-4"
       >
         <ArrowLeft size={14} /> Voltar
       </Link>
+
       {loading ? (
         <div className="lei-card text-center py-16 text-text-muted text-[13px]">Carregando...</div>
-      ) : !data ? (
+      ) : !cron ? (
         <div className="lei-card text-center py-16">
           <div className="font-serif text-[18px]">Cronograma não encontrado</div>
         </div>
       ) : (
-        <div className="lei-card flex gap-6 items-start">
-          {data.imagem_url && (
-            <img
-              src={data.imagem_url}
-              alt={data.nome}
-              className="w-[180px] h-[240px] object-cover rounded-[12px] border border-border"
+        <>
+          {/* Hero */}
+          <div className="lei-card flex gap-6 items-start mb-6">
+            {cron.imagem_url ? (
+              <img
+                src={cron.imagem_url}
+                alt={cron.nome}
+                className="w-[140px] h-[187px] object-cover rounded-[12px] border border-border"
+              />
+            ) : (
+              <div className="w-[140px] h-[187px] rounded-[12px] bg-muted border border-border" />
+            )}
+            <div className="flex-1">
+              <div className="text-[11px] uppercase tracking-wider text-text-muted mb-1">
+                {cron.categoria ?? "Sem categoria"}
+              </div>
+              <h1 className="font-serif text-[24px] text-text-main mb-2">{cron.nome}</h1>
+              <span
+                className="inline-block text-[10px] font-medium rounded-[20px] px-2 py-[2px] mr-2"
+                style={
+                  cron.premium
+                    ? { background: "#FAC775", color: "#633806" }
+                    : { background: "var(--color-sage-light)", color: "var(--color-sage-dark)" }
+                }
+              >
+                {cron.premium ? "Premium" : "Gratuito"}
+              </span>
+              {ativacao && (
+                <span className="inline-block text-[10px] font-medium rounded-[20px] px-2 py-[2px] bg-sage-light text-sage-dark">
+                  Ativo até {new Date(ativacao.data_prova + "T00:00").toLocaleDateString("pt-BR")}
+                </span>
+              )}
+              <div className="mt-4 flex gap-2">
+                {!isLocked && user && materias.length > 0 && (
+                  <Button
+                    onClick={() => setAtivarOpen(true)}
+                    className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] gap-2"
+                  >
+                    <Play size={14} /> {ativacao ? "Reativar / Redistribuir" : "Ativar cronograma"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {isLocked ? (
+            <div className="lei-card text-center py-12">
+              <div className="w-12 h-12 rounded-full bg-sage-light mx-auto flex items-center justify-center mb-3">
+                <Lock className="text-sage-dark" size={20} />
+              </div>
+              <h2 className="font-serif text-[20px] text-text-main mb-2">Conteúdo Premium</h2>
+              <p className="text-[13px] text-text-muted max-w-md mx-auto mb-4">
+                Este cronograma é exclusivo para assinantes. Faça upgrade para ativar, distribuir
+                tópicos no seu calendário e acompanhar seu desempenho.
+              </p>
+              <Button className="bg-sage-dark hover:bg-sage-dark/90 text-white gap-2">
+                <Sparkles size={14} /> Fazer upgrade
+              </Button>
+              <div className="mt-8 text-left">
+                <h3 className="font-serif text-[14px] text-text-muted mb-3 text-center">
+                  Prévia do conteúdo
+                </h3>
+                <MatrizTab
+                  cronogramaId={id}
+                  materias={materias.slice(0, 2).map((m) => ({
+                    ...m,
+                    topicos: m.topicos.slice(0, 3),
+                  }))}
+                  canEdit={false}
+                  onChange={loadAll}
+                />
+              </div>
+            </div>
+          ) : (
+            <Tabs defaultValue="matriz">
+              <TabsList className="bg-muted">
+                <TabsTrigger value="matriz">Matriz</TabsTrigger>
+                <TabsTrigger value="calendario">Calendário</TabsTrigger>
+                <TabsTrigger value="desempenho">Desempenho</TabsTrigger>
+              </TabsList>
+              <TabsContent value="matriz" className="mt-4">
+                <MatrizTab
+                  cronogramaId={id}
+                  materias={materias}
+                  canEdit={isAdminOrMod}
+                  onChange={loadAll}
+                />
+              </TabsContent>
+              <TabsContent value="calendario" className="mt-4">
+                {user ? (
+                  <CalendarioTab eventos={eventos} userId={user.id} onChange={loadAll} />
+                ) : (
+                  <div className="lei-card text-center py-12 text-text-muted text-[13px]">
+                    Faça login para ver seu calendário.
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="desempenho" className="mt-4">
+                <DesempenhoTab materias={materias} eventos={eventos} />
+              </TabsContent>
+            </Tabs>
+          )}
+
+          {user && (
+            <AtivarDialog
+              open={ativarOpen}
+              onOpenChange={setAtivarOpen}
+              cronogramaId={id}
+              userId={user.id}
+              topicos={materias.flatMap((m) =>
+                m.topicos.map((t) => ({
+                  id: t.id,
+                  titulo: t.titulo,
+                  materia_id: m.id,
+                  cor: m.cor,
+                })),
+              )}
+              onActivated={loadAll}
             />
           )}
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-text-muted mb-1">
-              {data.categoria ?? "Sem categoria"}
-            </div>
-            <h1 className="font-serif text-[24px] text-text-main mb-2">{data.nome}</h1>
-            <span
-              className="inline-block text-[10px] font-medium rounded-[20px] px-2 py-[2px]"
-              style={
-                data.premium
-                  ? { background: "#FAC775", color: "#633806" }
-                  : { background: "var(--color-sage-light)", color: "var(--color-sage-dark)" }
-              }
-            >
-              {data.premium ? "Premium" : "Gratuito"}
-            </span>
-            <p className="text-[13px] text-text-muted mt-4">
-              O conteúdo detalhado do cronograma aparecerá aqui na próxima iteração.
-            </p>
-          </div>
-        </div>
+        </>
       )}
     </AppShell>
   );

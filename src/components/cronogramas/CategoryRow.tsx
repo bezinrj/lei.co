@@ -14,9 +14,10 @@ type Props = {
   title: string;
   items: Cronograma[];
   onSelect: (id: string) => void;
+  isLocked?: (c: Cronograma) => boolean;
 };
 
-export function CategoryRow({ title, items, onSelect }: Props) {
+export function CategoryRow({ title, items, onSelect, isLocked }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scroll(dir: "left" | "right") {
@@ -57,6 +58,7 @@ export function CategoryRow({ title, items, onSelect }: Props) {
             nome={c.nome}
             imagem_url={c.imagem_url}
             premium={c.premium}
+            locked={isLocked?.(c) ?? false}
             onClick={() => onSelect(c.id)}
           />
         ))}
