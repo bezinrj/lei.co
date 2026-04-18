@@ -71,6 +71,17 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function PresenceTracker() {
+  usePresence();
+  return null;
+}
+
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <AuthProvider>
+      <PresenceTracker />
+      <Outlet />
+      <Toaster />
+    </AuthProvider>
+  );
 }
