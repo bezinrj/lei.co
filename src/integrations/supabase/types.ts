@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      cronograma_materias: {
+        Row: {
+          cor: string
+          created_at: string
+          cronograma_id: string
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          cronograma_id: string
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          cronograma_id?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_materias_cronograma_id_fkey"
+            columns: ["cronograma_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cronograma_topicos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          duracao_minutos: number
+          id: string
+          materia_id: string
+          ordem: number
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          duracao_minutos?: number
+          id?: string
+          materia_id: string
+          ordem?: number
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          duracao_minutos?: number
+          id?: string
+          materia_id?: string
+          ordem?: number
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_topicos_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_materias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cronogramas: {
         Row: {
           categoria: string | null
@@ -89,6 +168,147 @@ export type Database = {
         }
         Relationships: []
       }
+      user_calendar_events: {
+        Row: {
+          concluido: boolean
+          cor: string | null
+          created_at: string
+          cronograma_id: string | null
+          data: string
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          materia_id: string | null
+          titulo: string
+          topico_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          cor?: string | null
+          created_at?: string
+          cronograma_id?: string | null
+          data: string
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          materia_id?: string | null
+          titulo: string
+          topico_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concluido?: boolean
+          cor?: string | null
+          created_at?: string
+          cronograma_id?: string | null
+          data?: string
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          materia_id?: string | null
+          titulo?: string
+          topico_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_calendar_events_cronograma_id_fkey"
+            columns: ["cronograma_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_calendar_events_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_materias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_calendar_events_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_topicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_cronograma_ativacao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          cronograma_id: string
+          data_inicio: string
+          data_prova: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          cronograma_id: string
+          data_inicio?: string
+          data_prova: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          cronograma_id?: string
+          data_inicio?: string
+          data_prova?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_cronograma_ativacao_cronograma_id_fkey"
+            columns: ["cronograma_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_plans: {
+        Row: {
+          created_at: string
+          expira_em: string | null
+          id: string
+          inicio_em: string
+          tipo: Database["public"]["Enums"]["plan_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expira_em?: string | null
+          id?: string
+          inicio_em?: string
+          tipo?: Database["public"]["Enums"]["plan_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expira_em?: string | null
+          id?: string
+          inicio_em?: string
+          tipo?: Database["public"]["Enums"]["plan_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -110,6 +330,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_topico_progresso: {
+        Row: {
+          concluido: boolean
+          concluido_em: string | null
+          created_at: string
+          id: string
+          minutos_estudados: number
+          topico_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          id?: string
+          minutos_estudados?: number
+          topico_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          id?: string
+          minutos_estudados?: number
+          topico_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_topico_progresso_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_topicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -125,6 +386,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderador" | "user"
+      plan_type: "free" | "premium"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -253,6 +515,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderador", "user"],
+      plan_type: ["free", "premium"],
     },
   },
 } as const
