@@ -1,6 +1,9 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { AuthProvider } from "@/hooks/useAuth";
+import { Toaster } from "@/components/ui/sonner";
+import { usePresence } from "@/hooks/usePresence";
 
 function NotFoundComponent() {
   return (
@@ -68,6 +71,17 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function PresenceTracker() {
+  usePresence();
+  return null;
+}
+
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <AuthProvider>
+      <PresenceTracker />
+      <Outlet />
+      <Toaster />
+    </AuthProvider>
+  );
 }
