@@ -85,8 +85,40 @@ export function CalendarioTab({ eventos, userId, onChange }: Props) {
 
   return (
     <div>
-      <div className="text-[12px] text-text-muted mb-2">
-        Semana de {format(weekStart, "dd 'de' MMMM", { locale: ptBR })} · arraste para reorganizar
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[12px] text-text-muted">
+          Semana de {format(weekStart, "dd 'de' MMMM", { locale: ptBR })} · arraste para reorganizar
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekOffset((w) => w - 1)}
+            className="h-8 w-8 p-0 rounded-[8px]"
+            aria-label="Semana anterior"
+          >
+            <ChevronLeft size={14} />
+          </Button>
+          {weekOffset !== 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setWeekOffset(0)}
+              className="h-8 px-3 rounded-[8px] text-[12px]"
+            >
+              Hoje
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekOffset((w) => w + 1)}
+            className="h-8 w-8 p-0 rounded-[8px]"
+            aria-label="Próxima semana"
+          >
+            <ChevronRight size={14} />
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-7 gap-2">
         {dias.map((d) => {
