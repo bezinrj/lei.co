@@ -59,7 +59,7 @@ export function CronometroBloco({ hoje, eventosHoje, onStop }: Props) {
                 <span
                   key={e.id}
                   className="text-[11px] px-2 py-[3px] rounded-[99px] text-white"
-                  style={{ background: materiaColor(e.materia_nome) }}
+                  style={{ background: colorForMateria(e.materia_nome) }}
                 >
                   {e.materia_nome}
                 </span>
