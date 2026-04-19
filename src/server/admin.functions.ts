@@ -37,6 +37,7 @@ async function requireAdminAccess(supabase: any, userId: string) {
 
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
+  .handler(async ({ context }) => {
     const { supabase, userId } = context;
     await requireAdminAccess(supabase, userId);
 
