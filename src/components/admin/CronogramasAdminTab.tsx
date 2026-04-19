@@ -179,6 +179,14 @@ export function CronogramasAdminTab() {
                           <Pencil size={14} />
                         </button>
                         <button
+                          onClick={() => handleDuplicate(c)}
+                          disabled={duplicatingId === c.id}
+                          className="p-1.5 rounded-[6px] hover:bg-muted text-text-muted hover:text-text-main disabled:opacity-50"
+                          title="Duplicar"
+                        >
+                          <Copy size={14} />
+                        </button>
+                        <button
                           onClick={() => handleDelete(c)}
                           className="p-1.5 rounded-[6px] hover:bg-destructive/10 text-text-muted hover:text-destructive"
                           title="Excluir"
