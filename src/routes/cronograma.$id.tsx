@@ -290,7 +290,20 @@ function CronogramaDetail() {
               </TabsContent>
               <TabsContent value="calendario" className="mt-4">
                 {user ? (
-                  <CalendarioTab eventos={eventos} userId={user.id} onChange={loadAll} />
+                  <CalendarioTab
+                    eventos={eventos}
+                    topicos={allTopicos.map((t) => ({
+                      id: t.id,
+                      titulo: t.titulo,
+                      materia_id: t.materia_id,
+                      materia_nome: t.materia_nome,
+                      horas_estimadas: t.horas_estimadas,
+                    }))}
+                    userId={user.id}
+                    cronogramaId={id}
+                    materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
+                    onChange={loadAll}
+                  />
                 ) : (
                   <div className="lei-card text-center py-12 text-text-muted text-[13px]">
                     Faça login para ver seu calendário.
