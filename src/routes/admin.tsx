@@ -14,7 +14,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
-  const { roles, loading, user, session } = useAuth();
+  const { roles, loading, user } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -24,11 +24,7 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     try {
-      const token = session?.access_token;
-      if (!token) throw new Error("no-session");
-      const res = await listAdminUsers({
-        data: { accessToken: token },
-      });
+      const res = await listAdminUsers();
       setUsers(res?.users ?? []);
     } catch (e) {
       console.error("listAdminUsers failed", e);
@@ -37,7 +33,7 @@ function AdminPage() {
     } finally {
       setFetching(false);
     }
-  }, [session?.access_token]);
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -46,7 +42,7 @@ function AdminPage() {
       return;
     }
     if (!isAdmin) {
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/perfil" });
       return;
     }
     load();
@@ -64,10 +60,8 @@ function AdminPage() {
       ),
     );
     try {
-      const token = session?.access_token;
-      if (!token) throw new Error("no-session");
       await setUserRole({
-        data: { accessToken: token, userId: u.id, role, enabled },
+        data: { userId: u.id, role, enabled },
       });
       toast.success("Permissão atualizada");
     } catch {
