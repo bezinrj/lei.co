@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { format, startOfWeek, addDays, isSameDay } from "date-fns";
+import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Check, GripVertical } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 type Evento = {
   id: string;
