@@ -430,10 +430,12 @@ function SessoesAdminView({
   sessoes,
   topicoMap,
   onChange,
+  alunoNome,
 }: {
   sessoes: AlunoDetalhes["sessoes"];
   topicoMap: Map<string, { titulo: string; materia: string }>;
   onChange: () => void;
+  alunoNome: string;
 }) {
   async function deletar(sId: string) {
     if (!confirm("Excluir sessão?")) return;
@@ -444,8 +446,56 @@ function SessoesAdminView({
       toast.error(e instanceof Error ? e.message : "Erro");
     }
   }
+
+  function exportarCSV() {
+    if (sessoes.length === 0) {
+      toast.error("Nenhuma sessão para exportar");
+      return;
+    }
+    const headers = ["Data", "Matéria", "Tópico", "Questões", "Acertos", "% Acerto", "Tempo Estudado"];
+    const escape = (v: string | number) => {
+      const s = String(v ?? "");
+      return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = sessoes.map((s) => {
+      const info = topicoMap.get(s.topico_id);
+      return [
+        s.data,
+        info?.materia ?? "",
+        info?.titulo ?? "",
+        s.questoes,
+        s.acertos,
+        s.percentual_acerto,
+        s.tempo_estudado ?? "",
+      ].map(escape).join(",");
+    });
+    const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const slug = alunoNome.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const today = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `sessoes-${slug || "aluno"}-${today}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`${sessoes.length} sessões exportadas`);
+  }
+
   return (
-    <div className="lei-card p-0 overflow-hidden">
+    <div>
+      <div className="flex justify-end mb-3">
+        <button
+          onClick={exportarCSV}
+          disabled={sessoes.length === 0}
+          className="inline-flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-[6px] border border-border bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed text-text-main"
+        >
+          <Download size={13} /> Exportar CSV
+        </button>
+      </div>
+      <div className="lei-card p-0 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
           <thead className="bg-muted/50 text-text-muted text-[11px] uppercase tracking-wider">
