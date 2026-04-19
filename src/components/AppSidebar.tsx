@@ -1,9 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { CalendarDays, Award, Users, Trophy, LogOut, LogIn, Shield, User } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 
 type NavItem = {
   to: string;
@@ -58,16 +56,7 @@ function NavSection({ title, items }: { title: string; items: NavItem[] }) {
 export function AppSidebar() {
   const { user, signOut, roles } = useAuth();
   const navigate = useNavigate();
-  const [friendId, setFriendId] = useState<string>("");
   const isAdmin = roles.includes("admin");
-
-  useEffect(() => {
-    if (!user) { setFriendId(""); return; }
-    let mounted = true;
-    supabase.from("profiles").select("friend_id").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (mounted && data) setFriendId(data.friend_id); });
-    return () => { mounted = false; };
-  }, [user?.id]);
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-[220px] flex-col bg-card border-r border-border px-4 py-6 z-30">
