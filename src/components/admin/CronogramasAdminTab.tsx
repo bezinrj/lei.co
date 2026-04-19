@@ -3,11 +3,12 @@ import { Link } from "@tanstack/react-router";
 import {
   listAdminCronogramas,
   deleteCronograma,
+  duplicateCronograma,
   type AdminCronograma,
 } from "@/server/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Pencil, Trash2, ExternalLink, Search, Crown, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Search, Crown, Users, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { NovoCronogramaDialog } from "@/components/cronogramas/NovoCronogramaDialog";
 import { EditarCronogramaDialog } from "./EditarCronogramaDialog";
