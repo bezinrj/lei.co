@@ -22,7 +22,11 @@ type Props = {
 };
 
 export function CalendarioTab({ eventos, userId, onChange }: Props) {
-  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), []);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekStart = useMemo(
+    () => addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), weekOffset),
+    [weekOffset],
+  );
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
