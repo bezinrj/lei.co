@@ -269,57 +269,148 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
         </div>
       ) : null}
 
-      {/* Comparação por matéria: meu vs média */}
+      {/* Comparação por matéria: meu vs média (grid de mini-cards) */}
       <div className="lei-card">
         <h3 className="font-serif text-[16px] text-text-main mb-1">Meu desempenho vs média</h3>
         <p className="text-[12px] text-text-muted mb-4">
           Percentual médio de acerto por matéria, comparado à média dos demais alunos.
         </p>
-        <div className="flex flex-col gap-4">
+        <div
+          className="grid gap-[10px]"
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
+        >
           {stats.porMateria.map((m) => {
             const mine = m.myAvg ?? 0;
             const others = m.allAvg ?? 0;
-            const cor = colorForMateria(m.nome, m.cor);
+            const myColor =
+              m.myAvg === null
+                ? "#d1d5db"
+                : mine < 50
+                  ? "#E24B4A"
+                  : mine < 60
+                    ? "#EF9F27"
+                    : mine < 80
+                      ? "#1D9E75"
+                      : "#16A085";
+            const diff = m.myAvg !== null && m.allAvg !== null ? mine - others : null;
             return (
-              <div key={m.id}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ background: cor }}
-                    />
-                    <span className="text-[13px] text-text-main truncate">{m.nome}</span>
-                  </div>
-                  <span className="text-[11px] text-text-muted">
-                    {m.sessions} {m.sessions === 1 ? "sessão" : "sessões"}
-                  </span>
+              <div
+                key={m.id}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 12,
+                  padding: 12,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    background: "#f3f4f6",
+                    color: "#374151",
+                    borderRadius: 20,
+                    padding: "2px 8px",
+                    fontSize: 10,
+                    fontWeight: 500,
+                  }}
+                >
+                  {m.sessions} {m.sessions === 1 ? "sessão" : "sessões"}
+                </span>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: "#111827",
+                    marginTop: 6,
+                    marginBottom: 8,
+                  }}
+                  className="truncate"
+                  title={m.nome}
+                >
+                  {m.nome}
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] w-16 text-text-muted">Eu</span>
-                    <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full transition-all"
-                        style={{ width: `${mine}%`, background: cor }}
-                      />
-                    </div>
-                    <span className="text-[11px] w-10 text-right tabular-nums text-text-main">
-                      {m.myAvg !== null ? `${mine}%` : "—"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] w-16 text-text-muted">Média</span>
-                    <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full transition-all opacity-60"
-                        style={{ width: `${others}%`, background: "var(--text-muted)" }}
-                      />
-                    </div>
-                    <span className="text-[11px] w-10 text-right tabular-nums text-text-muted">
-                      {m.allAvg !== null ? `${others}%` : "—"}
-                    </span>
-                  </div>
+
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>
+                  Meu desempenho
                 </div>
+                <div
+                  style={{
+                    height: 6,
+                    borderRadius: 999,
+                    background: "#f3f4f6",
+                    overflow: "hidden",
+                    marginBottom: 2,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${mine}%`,
+                      height: "100%",
+                      background: myColor,
+                      transition: "width .2s",
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 10, color: "#374151", textAlign: "right", marginBottom: 8 }}>
+                  {m.myAvg !== null ? `${mine}%` : "—"}
+                </div>
+
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>
+                  Média dos alunos
+                </div>
+                <div
+                  style={{
+                    height: 6,
+                    borderRadius: 999,
+                    background: "#f3f4f6",
+                    overflow: "hidden",
+                    marginBottom: 2,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${others}%`,
+                      height: "100%",
+                      background: "#d1d5db",
+                      transition: "width .2s",
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 10, color: "#6b7280", textAlign: "right" }}>
+                  {m.allAvg !== null ? `${others}%` : "—"}
+                </div>
+
+                {diff !== null && (
+                  <div
+                    style={{
+                      fontSize: 10,
+                      marginTop: 6,
+                      color: diff >= 0 ? "#1D9E75" : "#E24B4A",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {diff >= 0 ? "+" : ""}
+                    {diff} pts vs média
+                  </div>
+                )}
+
+                {m.myAvg !== null && m.myAvg < 60 && (
+                  <button
+                    onClick={() => criarRevisao(m.id, m.nome, m.cor)}
+                    disabled={creatingRevisao === m.id}
+                    style={{
+                      background: "#1D9E75",
+                      color: "white",
+                      borderRadius: 20,
+                      padding: "4px 10px",
+                      fontSize: 10,
+                      marginTop: 8,
+                      opacity: creatingRevisao === m.id ? 0.6 : 1,
+                    }}
+                  >
+                    {creatingRevisao === m.id ? "Agendando..." : "+ Revisão"}
+                  </button>
+                )}
               </div>
             );
           })}
