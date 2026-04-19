@@ -50,6 +50,7 @@ export function CronogramasAdminTab() {
       load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir");
+    }
   }
 
   async function handleDuplicate(c: AdminCronograma) {
@@ -65,7 +66,6 @@ export function CronogramasAdminTab() {
     } finally {
       setDuplicatingId(null);
     }
-  }
   }
 
   const filtered = items.filter((c) => {
