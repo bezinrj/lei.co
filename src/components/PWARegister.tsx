@@ -32,10 +32,12 @@ export function PWARegister() {
       return;
     }
 
-    // Dynamic import keeps the virtual module out of the SSR/dev graph.
-    import("virtual:pwa-register")
-      .then(({ registerSW }) => {
-        registerSW({ immediate: true });
+    // Dynamic import via variable + @vite-ignore so Vite does NOT try to
+    // resolve the virtual module in dev (it only exists in production builds).
+    const moduleName = "virtual:pwa-register";
+    import(/* @vite-ignore */ moduleName)
+      .then((mod: { registerSW: (opts: { immediate: boolean }) => void }) => {
+        mod.registerSW({ immediate: true });
       })
       .catch(() => {
         /* PWA plugin not built yet (dev) — ignore */
