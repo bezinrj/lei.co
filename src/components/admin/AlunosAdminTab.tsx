@@ -11,7 +11,7 @@ import {
 } from "@/server/admin.functions";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, ArrowLeft, Trash2, Calendar, BookOpen, Activity, RefreshCw } from "lucide-react";
+import { Search, ArrowLeft, Trash2, Calendar, BookOpen, Activity, RefreshCw, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export function AlunosAdminTab() {
