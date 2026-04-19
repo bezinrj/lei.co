@@ -81,15 +81,6 @@ export function AppSidebar() {
         {isAdmin && <NavSection title="Admin" items={admin} />}
       </div>
 
-      {friendId && (
-        <div className="rounded-[12px] bg-lilac-light border border-border px-3 py-3 mb-3">
-          <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
-            Seu Friend ID
-          </div>
-          <div className="font-mono text-[13px] text-text-main font-medium">{friendId}</div>
-        </div>
-      )}
-
       {user ? (
         <button
           onClick={async () => {
