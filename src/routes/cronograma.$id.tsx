@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Lock, Play, Sparkles } from "lucide-react";
@@ -7,10 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
-import { MatrizTab } from "@/components/cronogramas/MatrizTab";
+import { MatrizTab, type MatrizTopico } from "@/components/cronogramas/MatrizTab";
 import { CalendarioTab } from "@/components/cronogramas/CalendarioTab";
 import { DesempenhoTab } from "@/components/cronogramas/DesempenhoTab";
 import { AtivarDialog } from "@/components/cronogramas/AtivarDialog";
+import type { Fonte } from "@/components/cronogramas/NovoTopicoForm";
 
 export const Route = createFileRoute("/cronograma/$id")({
   head: () => ({ meta: [{ title: "Cronograma — Lei.co" }] }),
@@ -29,7 +30,15 @@ type Materia = {
   nome: string;
   cor: string;
   ordem: number;
-  topicos: { id: string; titulo: string; duracao_minutos: number; materia_id: string; ordem: number }[];
+  topicos: {
+    id: string;
+    titulo: string;
+    duracao_minutos: number;
+    materia_id: string;
+    ordem: number;
+    horas_estimadas: number;
+    fontes: Fonte[];
+  }[];
 };
 
 type Evento = {
@@ -49,6 +58,8 @@ function CronogramaDetail() {
   const [cron, setCron] = useState<Cronograma | null>(null);
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [progresso, setProgresso] = useState<Record<string, boolean>>({});
+  const [fonteProgresso, setFonteProgresso] = useState<Record<string, boolean>>({});
   const [ativacao, setAtivacao] = useState<{ data_inicio: string; data_prova: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [ativarOpen, setAtivarOpen] = useState(false);
@@ -63,25 +74,33 @@ function CronogramaDetail() {
 
     const { data: matData } = await supabase
       .from("cronograma_materias")
-      .select("id, nome, cor, ordem, cronograma_topicos(id, titulo, duracao_minutos, materia_id, ordem)")
+      .select(
+        "id, nome, cor, ordem, cronograma_topicos(id, titulo, duracao_minutos, materia_id, ordem, horas_estimadas, fontes)",
+      )
       .eq("cronograma_id", id)
       .order("ordem", { ascending: true });
-    const mats: Materia[] = (matData ?? []).map((m: {
-      id: string;
-      nome: string;
-      cor: string;
-      ordem: number;
-      cronograma_topicos: Materia["topicos"];
-    }) => ({
+    const mats: Materia[] = (matData ?? []).map((m) => ({
       id: m.id,
       nome: m.nome,
       cor: m.cor,
       ordem: m.ordem,
-      topicos: (m.cronograma_topicos ?? []).sort((a, b) => a.ordem - b.ordem),
+      topicos: (m.cronograma_topicos ?? [])
+        .map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          duracao_minutos: t.duracao_minutos,
+          materia_id: t.materia_id,
+          ordem: t.ordem,
+          horas_estimadas: t.horas_estimadas ?? 3,
+          fontes: (Array.isArray(t.fontes) ? t.fontes : []) as unknown as Fonte[],
+        }))
+        .sort((a, b) => a.ordem - b.ordem),
     }));
     setMaterias(mats);
 
     if (user) {
+      const allTopicoIds = mats.flatMap((m) => m.topicos.map((t) => t.id));
+
       const { data: evs } = await supabase
         .from("user_calendar_events")
         .select("id, titulo, data, cor, concluido, topico_id")
@@ -89,6 +108,33 @@ function CronogramaDetail() {
         .eq("cronograma_id", id)
         .order("data", { ascending: true });
       setEventos(evs ?? []);
+
+      if (allTopicoIds.length > 0) {
+        const { data: progs } = await supabase
+          .from("user_topico_progresso")
+          .select("topico_id, concluido")
+          .eq("user_id", user.id)
+          .in("topico_id", allTopicoIds);
+        const pm: Record<string, boolean> = {};
+        (progs ?? []).forEach((p) => {
+          pm[p.topico_id] = p.concluido;
+        });
+        setProgresso(pm);
+
+        const { data: fps } = await supabase
+          .from("user_fonte_progress")
+          .select("topico_id, sigla, concluido")
+          .eq("user_id", user.id)
+          .in("topico_id", allTopicoIds);
+        const fm: Record<string, boolean> = {};
+        (fps ?? []).forEach((f) => {
+          fm[`${f.topico_id}:${f.sigla}`] = f.concluido;
+        });
+        setFonteProgresso(fm);
+      } else {
+        setProgresso({});
+        setFonteProgresso({});
+      }
 
       const { data: at } = await supabase
         .from("user_cronograma_ativacao")
@@ -105,6 +151,29 @@ function CronogramaDetail() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // Flatten topicos with materia info for the matriz table
+  const allTopicos: MatrizTopico[] = useMemo(() => {
+    const flat = materias.flatMap((m) =>
+      m.topicos.map((t) => ({
+        id: t.id,
+        titulo: t.titulo,
+        ordem: t.ordem,
+        horas_estimadas: t.horas_estimadas ?? 3,
+        fontes: t.fontes ?? [],
+        materia_id: m.id,
+        materia_nome: m.nome,
+        materia_cor: m.cor,
+      })),
+    );
+    // Stable order: by materia.ordem then topico.ordem (already sorted)
+    return flat;
+  }, [materias]);
+
+  const previewTopicos: MatrizTopico[] = useMemo(
+    () => allTopicos.slice(0, 6),
+    [allTopicos],
+  );
 
   const isLocked = cron?.premium && !isPremium;
 
@@ -157,7 +226,7 @@ function CronogramaDetail() {
                 </span>
               )}
               <div className="mt-4 flex gap-2">
-                {!isLocked && user && materias.length > 0 && (
+                {!isLocked && user && allTopicos.length > 0 && (
                   <Button
                     onClick={() => setAtivarOpen(true)}
                     className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] gap-2"
@@ -188,11 +257,12 @@ function CronogramaDetail() {
                 </h3>
                 <MatrizTab
                   cronogramaId={id}
-                  materias={materias.slice(0, 2).map((m) => ({
-                    ...m,
-                    topicos: m.topicos.slice(0, 3),
-                  }))}
+                  topicos={previewTopicos}
+                  materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
+                  progresso={{}}
+                  fonteProgresso={{}}
                   canEdit={false}
+                  userId={null}
                   onChange={loadAll}
                 />
               </div>
@@ -207,8 +277,12 @@ function CronogramaDetail() {
               <TabsContent value="matriz" className="mt-4">
                 <MatrizTab
                   cronogramaId={id}
-                  materias={materias}
+                  topicos={allTopicos}
+                  materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
+                  progresso={progresso}
+                  fonteProgresso={fonteProgresso}
                   canEdit={isAdminOrMod}
+                  userId={user?.id ?? null}
                   onChange={loadAll}
                 />
               </TabsContent>

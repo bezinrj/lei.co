@@ -1,193 +1,464 @@
-import { useState } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useState } from "react";
+import { ExternalLink, GripVertical, Pencil, Trash2, Check, X } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { colorForMateria } from "@/lib/materia-color";
+import { NovoTopicoForm, type Fonte } from "./NovoTopicoForm";
 
-type Topico = {
+export type MatrizTopico = {
   id: string;
   titulo: string;
-  duracao_minutos: number;
+  ordem: number;
+  horas_estimadas: number;
+  fontes: Fonte[];
   materia_id: string;
-  ordem: number;
-};
-
-type Materia = {
-  id: string;
-  nome: string;
-  cor: string;
-  ordem: number;
-  topicos: Topico[];
+  materia_nome: string;
+  materia_cor: string | null;
 };
 
 type Props = {
   cronogramaId: string;
-  materias: Materia[];
+  topicos: MatrizTopico[];
+  materias: { id: string; nome: string }[];
+  progresso: Record<string, boolean>;
+  fonteProgresso: Record<string, boolean>; // key = `${topicoId}:${sigla}`
   canEdit: boolean;
+  userId: string | null;
   onChange: () => void;
 };
 
-export function MatrizTab({ cronogramaId, materias, canEdit, onChange }: Props) {
-  const [novaMateria, setNovaMateria] = useState("");
-  const [novoTopico, setNovoTopico] = useState<Record<string, string>>({});
-  const [editing, setEditing] = useState<Record<string, string>>({});
+export function MatrizTab({
+  cronogramaId,
+  topicos,
+  materias,
+  progresso,
+  fonteProgresso,
+  canEdit,
+  userId,
+  onChange,
+}: Props) {
+  const [items, setItems] = useState(topicos);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editTitulo, setEditTitulo] = useState("");
 
-  async function addMateria() {
-    const nome = novaMateria.trim();
-    if (!nome) return;
-    const { error } = await supabase.from("cronograma_materias").insert({
-      cronograma_id: cronogramaId,
-      nome,
-      ordem: materias.length,
-    });
+  useEffect(() => setItems(topicos), [topicos]);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const concluidos = useMemo(
+    () => items.filter((t) => progresso[t.id]).length,
+    [items, progresso],
+  );
+  const total = items.length;
+  const pct = total > 0 ? Math.round((concluidos / total) * 100) : 0;
+
+  async function toggleTopico(topicoId: string, novoValor: boolean) {
+    if (!userId) return toast.error("Faça login para marcar progresso");
+    // Optimistic UI handled by parent reload; do upsert + sync calendar
+    const { error } = await supabase.from("user_topico_progresso").upsert(
+      {
+        user_id: userId,
+        topico_id: topicoId,
+        concluido: novoValor,
+        concluido_em: novoValor ? new Date().toISOString() : null,
+      },
+      { onConflict: "user_id,topico_id" },
+    );
     if (error) return toast.error(error.message);
-    setNovaMateria("");
+
+    // Sync calendar events (skip is_revisao=true if column existed; we don't track yet)
+    await supabase
+      .from("user_calendar_events")
+      .update({ concluido: novoValor })
+      .eq("user_id", userId)
+      .eq("topico_id", topicoId);
+
     onChange();
   }
 
-  async function delMateria(id: string) {
-    if (!confirm("Excluir esta matéria e todos seus tópicos?")) return;
-    const { error } = await supabase.from("cronograma_materias").delete().eq("id", id);
+  async function toggleFonte(topicoId: string, sigla: string, novoValor: boolean) {
+    if (!userId) return toast.error("Faça login para marcar progresso");
+    const { error } = await supabase.from("user_fonte_progress").upsert(
+      { user_id: userId, topico_id: topicoId, sigla, concluido: novoValor },
+      { onConflict: "user_id,topico_id,sigla" },
+    );
     if (error) return toast.error(error.message);
-    onChange();
-  }
-
-  async function renameMateria(id: string, nome: string) {
-    if (!nome.trim()) return;
-    const { error } = await supabase
-      .from("cronograma_materias")
-      .update({ nome: nome.trim() })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    setEditing((s) => ({ ...s, [id]: "" }));
-    onChange();
-  }
-
-  async function addTopico(materiaId: string) {
-    const titulo = (novoTopico[materiaId] ?? "").trim();
-    if (!titulo) return;
-    const m = materias.find((x) => x.id === materiaId);
-    const ordem = m ? m.topicos.length : 0;
-    const { error } = await supabase.from("cronograma_topicos").insert({
-      materia_id: materiaId,
-      titulo,
-      ordem,
-    });
-    if (error) return toast.error(error.message);
-    setNovoTopico((s) => ({ ...s, [materiaId]: "" }));
     onChange();
   }
 
   async function delTopico(id: string) {
+    if (!confirm("Excluir este tópico?")) return;
     const { error } = await supabase.from("cronograma_topicos").delete().eq("id", id);
     if (error) return toast.error(error.message);
     onChange();
   }
 
-  if (materias.length === 0 && !canEdit) {
+  async function saveEdit(id: string) {
+    if (!editTitulo.trim()) return;
+    const { error } = await supabase
+      .from("cronograma_topicos")
+      .update({ titulo: editTitulo.trim() })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    setEditing(null);
+    onChange();
+  }
+
+  async function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const newIndex = items.findIndex((i) => i.id === over.id);
+    const newItems = arrayMove(items, oldIndex, newIndex);
+    setItems(newItems);
+    // Update ordem in batch
+    await Promise.all(
+      newItems.map((t, idx) =>
+        supabase.from("cronograma_topicos").update({ ordem: idx }).eq("id", t.id),
+      ),
+    );
+    onChange();
+  }
+
+  if (items.length === 0) {
     return (
-      <div className="lei-card text-center py-12 text-text-muted text-[13px]">
-        Este cronograma ainda não tem matérias.
-      </div>
+      <>
+        <div className="lei-card text-center py-12 text-text-muted text-[13px]">
+          Este cronograma ainda não tem tópicos.
+        </div>
+        {canEdit && (
+          <NovoTopicoForm cronogramaId={cronogramaId} materias={materias} onAdded={onChange} />
+        )}
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {materias.map((m) => (
-        <div key={m.id} className="lei-card">
-          <div className="flex items-center justify-between mb-3">
-            {editing[m.id] !== undefined && editing[m.id] !== "" ? (
-              <div className="flex gap-2 flex-1">
-                <Input
-                  value={editing[m.id]}
-                  onChange={(e) => setEditing((s) => ({ ...s, [m.id]: e.target.value }))}
-                  className="bg-background h-8"
-                />
-                <Button size="sm" onClick={() => renameMateria(m.id, editing[m.id])}>
-                  Salvar
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-2 h-6 rounded-full"
-                  style={{ background: "var(--color-sage-dark)" }}
-                />
-                <h3 className="font-serif text-[16px] text-text-main">{m.nome}</h3>
-                <span className="text-[11px] text-text-muted">({m.topicos.length})</span>
-              </div>
-            )}
-            {canEdit && editing[m.id] === undefined && (
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setEditing((s) => ({ ...s, [m.id]: m.nome }))}
-                  className="text-text-muted hover:text-text-main p-1"
-                  aria-label="Editar"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onClick={() => delMateria(m.id)}
-                  className="text-text-muted hover:text-destructive p-1"
-                  aria-label="Excluir"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-          <ul className="flex flex-col gap-1">
-            {m.topicos.map((t) => (
-              <li
-                key={t.id}
-                className="flex items-center justify-between text-[13px] text-text-main py-1 px-2 rounded hover:bg-muted/50"
-              >
-                <span>{t.titulo}</span>
-                {canEdit && (
-                  <button
-                    onClick={() => delTopico(t.id)}
-                    className="text-text-muted hover:text-destructive opacity-0 hover:opacity-100 group-hover:opacity-100"
-                    aria-label="Remover tópico"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-          {canEdit && (
-            <div className="flex gap-2 mt-3">
-              <Input
-                value={novoTopico[m.id] ?? ""}
-                onChange={(e) => setNovoTopico((s) => ({ ...s, [m.id]: e.target.value }))}
-                placeholder="Novo tópico"
-                className="bg-background h-8 text-[13px]"
-                onKeyDown={(e) => e.key === "Enter" && addTopico(m.id)}
-              />
-              <Button size="sm" variant="outline" onClick={() => addTopico(m.id)}>
-                <Plus size={14} />
-              </Button>
-            </div>
-          )}
+    <div>
+      {/* Progress bar */}
+      <div className="lei-card mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[13px] text-text-main font-medium">
+            {concluidos} de {total} tópicos concluídos
+          </span>
+          <span className="text-[13px] text-text-muted">{pct}%</span>
         </div>
-      ))}
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full bg-sage-dark"
+            style={{ width: `${pct}%`, transition: "width 0.4s ease" }}
+          />
+        </div>
+      </div>
+
+      <div className="lei-card overflow-x-auto p-0">
+        <table className="w-full text-[13px]" style={{ minWidth: 920 }}>
+          <thead>
+            <tr className="border-b border-border bg-muted/40 text-left text-[11px] uppercase tracking-wider text-text-muted">
+              {canEdit && <th className="w-8 py-2 px-2"></th>}
+              <th className="w-10 py-2 px-2"></th>
+              <th className="w-12 py-2 px-2">#</th>
+              <th className="py-2 px-2" style={{ minWidth: 140 }}>Matéria</th>
+              <th className="py-2 px-2" style={{ minWidth: 220 }}>Assunto</th>
+              <th className="py-2 px-2" style={{ minWidth: 240 }}>Fonte Legal</th>
+              <th className="py-2 px-2 w-20">Questões</th>
+              <th className="py-2 px-2 w-20">DOD</th>
+              {canEdit && <th className="py-2 px-2 w-20">Ações</th>}
+            </tr>
+          </thead>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={items.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <tbody>
+                {items.map((t, idx) => (
+                  <SortableRow
+                    key={t.id}
+                    topico={t}
+                    index={idx + 1}
+                    concluido={!!progresso[t.id]}
+                    fonteProgresso={fonteProgresso}
+                    canEdit={canEdit}
+                    editing={editing === t.id}
+                    editTitulo={editTitulo}
+                    setEditTitulo={setEditTitulo}
+                    onStartEdit={() => {
+                      setEditing(t.id);
+                      setEditTitulo(t.titulo);
+                    }}
+                    onCancelEdit={() => setEditing(null)}
+                    onSaveEdit={() => saveEdit(t.id)}
+                    onToggle={(v) => toggleTopico(t.id, v)}
+                    onToggleFonte={(sigla, v) => toggleFonte(t.id, sigla, v)}
+                    onDelete={() => delTopico(t.id)}
+                  />
+                ))}
+              </tbody>
+            </SortableContext>
+          </DndContext>
+        </table>
+      </div>
 
       {canEdit && (
-        <div className="lei-card flex gap-2">
-          <Input
-            value={novaMateria}
-            onChange={(e) => setNovaMateria(e.target.value)}
-            placeholder="Nova matéria (ex: Direito Constitucional)"
-            className="bg-background"
-            onKeyDown={(e) => e.key === "Enter" && addMateria()}
-          />
-          <Button onClick={addMateria} className="bg-sage-dark hover:bg-sage-dark/90 text-white">
-            <Plus size={16} /> Adicionar
-          </Button>
-        </div>
+        <NovoTopicoForm cronogramaId={cronogramaId} materias={materias} onAdded={onChange} />
       )}
     </div>
+  );
+}
+
+type RowProps = {
+  topico: MatrizTopico;
+  index: number;
+  concluido: boolean;
+  fonteProgresso: Record<string, boolean>;
+  canEdit: boolean;
+  editing: boolean;
+  editTitulo: string;
+  setEditTitulo: (s: string) => void;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onSaveEdit: () => void;
+  onToggle: (v: boolean) => void;
+  onToggleFonte: (sigla: string, v: boolean) => void;
+  onDelete: () => void;
+};
+
+function SortableRow({
+  topico,
+  index,
+  concluido,
+  fonteProgresso,
+  canEdit,
+  editing,
+  editTitulo,
+  setEditTitulo,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  onToggle,
+  onToggleFonte,
+  onDelete,
+}: RowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: topico.id,
+  });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    background: concluido ? "rgba(0,0,0,0.04)" : undefined,
+  };
+  const cor = colorForMateria(topico.materia_nome, topico.materia_cor);
+  const inactiveColor = "#9ca3af";
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="border-b border-border align-top"
+    >
+      {canEdit && (
+        <td className="py-3 px-2 align-top">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab text-text-muted hover:text-text-main p-1"
+            aria-label="Arrastar"
+          >
+            <GripVertical size={14} />
+          </button>
+        </td>
+      )}
+      <td className="py-3 px-2 align-top">
+        <Checkbox
+          checked={concluido}
+          onCheckedChange={(v) => onToggle(!!v)}
+          className={
+            concluido ? "data-[state=checked]:bg-[#1D9E75] border-[#1D9E75]" : ""
+          }
+        />
+      </td>
+      <td
+        className="py-3 px-2 align-top text-[12px]"
+        style={{ color: concluido ? inactiveColor : undefined }}
+      >
+        {index}
+      </td>
+      <td className="py-3 px-2 align-top">
+        <span
+          className="inline-block text-[11px] font-medium rounded px-2 py-1 text-white"
+          style={{
+            background: concluido ? "#e5e7eb" : cor,
+            color: concluido ? inactiveColor : "white",
+            maxWidth: 140,
+            width: "fit-content",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          title={topico.materia_nome}
+        >
+          {topico.materia_nome}
+        </span>
+      </td>
+      <td
+        className="py-3 px-2 align-top"
+        style={{
+          color: concluido ? inactiveColor : undefined,
+          textDecoration: concluido ? "line-through" : undefined,
+          transition: "all 0.25s ease",
+        }}
+      >
+        {editing ? (
+          <div className="flex gap-1">
+            <Input
+              value={editTitulo}
+              onChange={(e) => setEditTitulo(e.target.value)}
+              className="h-7 bg-background text-[13px]"
+            />
+            <button onClick={onSaveEdit} className="text-sage-dark p-1" aria-label="Salvar">
+              <Check size={14} />
+            </button>
+            <button onClick={onCancelEdit} className="text-text-muted p-1" aria-label="Cancelar">
+              <X size={14} />
+            </button>
+          </div>
+        ) : (
+          <>
+            <div>{topico.titulo}</div>
+            {topico.horas_estimadas > 0 && (
+              <div className="text-[11px] text-text-muted mt-0.5">
+                {topico.horas_estimadas}h estimadas
+              </div>
+            )}
+          </>
+        )}
+      </td>
+      <td className="py-3 px-2 align-top">
+        {topico.fontes.length === 0 ? (
+          <span className="text-[12px] text-text-muted">—</span>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {topico.fontes.map((f, i) => {
+              const key = `${topico.id}:${f.sigla}`;
+              const done = !!fonteProgresso[key];
+              return (
+                <div key={i} className="flex items-start gap-2">
+                  <Checkbox
+                    checked={done}
+                    onCheckedChange={(v) => onToggleFonte(f.sigla, !!v)}
+                    className="mt-0.5"
+                  />
+                  <span
+                    className="font-semibold text-[12px]"
+                    style={{ minWidth: 40, color: done || concluido ? inactiveColor : undefined }}
+                  >
+                    {f.sigla}
+                  </span>
+                  <span
+                    className="text-[12px]"
+                    style={{
+                      color: "#6b7280",
+                      textDecoration: done ? "line-through" : undefined,
+                    }}
+                  >
+                    {f.descricao}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </td>
+      <td className="py-3 px-2 align-top">
+        {topico.fontes.some((f) => f.link_questoes) ? (
+          <div className="flex flex-col gap-2">
+            {topico.fontes.map((f, i) =>
+              f.link_questoes ? (
+                <a
+                  key={i}
+                  href={f.link_questoes}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[12px] text-[#378ADD] hover:underline inline-flex items-center gap-1"
+                >
+                  <ExternalLink size={11} /> {f.sigla}
+                </a>
+              ) : (
+                <span key={i} className="text-[12px] text-text-muted">—</span>
+              ),
+            )}
+          </div>
+        ) : (
+          <span className="text-[12px] text-text-muted">—</span>
+        )}
+      </td>
+      <td className="py-3 px-2 align-top">
+        {topico.fontes.some((f) => f.link_dod) ? (
+          <div className="flex flex-col gap-2">
+            {topico.fontes.map((f, i) =>
+              f.link_dod ? (
+                <a
+                  key={i}
+                  href={f.link_dod}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[12px] text-[#378ADD] hover:underline inline-flex items-center gap-1"
+                >
+                  <ExternalLink size={11} /> {f.sigla}
+                </a>
+              ) : (
+                <span key={i} className="text-[12px] text-text-muted">—</span>
+              ),
+            )}
+          </div>
+        ) : (
+          <span className="text-[12px] text-text-muted">—</span>
+        )}
+      </td>
+      {canEdit && (
+        <td className="py-3 px-2 align-top">
+          <div className="flex gap-1">
+            <button
+              onClick={onStartEdit}
+              className="text-text-muted hover:text-text-main p-1"
+              aria-label="Editar"
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              onClick={onDelete}
+              className="text-text-muted hover:text-destructive p-1"
+              aria-label="Excluir"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        </td>
+      )}
+    </tr>
   );
 }
