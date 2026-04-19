@@ -79,19 +79,21 @@ function CronogramaDetail() {
       )
       .eq("cronograma_id", id)
       .order("ordem", { ascending: true });
-    const mats: Materia[] = (matData ?? []).map((m: {
-      id: string;
-      nome: string;
-      cor: string;
-      ordem: number;
-      cronograma_topicos: Materia["topicos"];
-    }) => ({
+    const mats: Materia[] = (matData ?? []).map((m) => ({
       id: m.id,
       nome: m.nome,
       cor: m.cor,
       ordem: m.ordem,
       topicos: (m.cronograma_topicos ?? [])
-        .map((t) => ({ ...t, fontes: Array.isArray(t.fontes) ? t.fontes : [] }))
+        .map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          duracao_minutos: t.duracao_minutos,
+          materia_id: t.materia_id,
+          ordem: t.ordem,
+          horas_estimadas: t.horas_estimadas ?? 3,
+          fontes: (Array.isArray(t.fontes) ? t.fontes : []) as unknown as Fonte[],
+        }))
         .sort((a, b) => a.ordem - b.ordem),
     }));
     setMaterias(mats);
