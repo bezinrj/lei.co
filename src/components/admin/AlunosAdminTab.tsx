@@ -557,5 +557,6 @@ function SessoesAdminView({
         </table>
       </div>
     </div>
+    </div>
   );
 }
