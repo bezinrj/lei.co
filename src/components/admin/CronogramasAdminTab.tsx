@@ -19,6 +19,7 @@ export function CronogramasAdminTab() {
   const [query, setQuery] = useState("");
   const [novoOpen, setNovoOpen] = useState(false);
   const [editing, setEditing] = useState<AdminCronograma | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
