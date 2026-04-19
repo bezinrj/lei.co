@@ -1,5 +1,14 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createMiddleware } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabase as browserSupabase } from "@/integrations/supabase/client";
+
+const attachAuthHeader = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const { data } = await browserSupabase.auth.getSession();
+  const token = data.session?.access_token;
+  return next({
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+});
 
 export type AdminUser = {
   id: string;
