@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { format, startOfWeek, addDays, isSameDay } from "date-fns";
+import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Check, GripVertical } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 type Evento = {
   id: string;
@@ -21,7 +22,11 @@ type Props = {
 };
 
 export function CalendarioTab({ eventos, userId, onChange }: Props) {
-  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), []);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekStart = useMemo(
+    () => addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), weekOffset),
+    [weekOffset],
+  );
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
@@ -80,8 +85,40 @@ export function CalendarioTab({ eventos, userId, onChange }: Props) {
 
   return (
     <div>
-      <div className="text-[12px] text-text-muted mb-2">
-        Semana de {format(weekStart, "dd 'de' MMMM", { locale: ptBR })} · arraste para reorganizar
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[12px] text-text-muted">
+          Semana de {format(weekStart, "dd 'de' MMMM", { locale: ptBR })} · arraste para reorganizar
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekOffset((w) => w - 1)}
+            className="h-8 w-8 p-0 rounded-[8px]"
+            aria-label="Semana anterior"
+          >
+            <ChevronLeft size={14} />
+          </Button>
+          {weekOffset !== 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setWeekOffset(0)}
+              className="h-8 px-3 rounded-[8px] text-[12px]"
+            >
+              Hoje
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekOffset((w) => w + 1)}
+            className="h-8 w-8 p-0 rounded-[8px]"
+            aria-label="Próxima semana"
+          >
+            <ChevronRight size={14} />
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-7 gap-2">
         {dias.map((d) => {
