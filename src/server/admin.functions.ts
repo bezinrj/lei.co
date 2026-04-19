@@ -223,6 +223,104 @@ export const deleteCronograma = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const duplicateCronograma = createServerFn({ method: "POST" })
+  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requireAdminOrModAccess(supabase, userId);
+
+    // 1. Load source cronograma
+    const { data: src, error: srcErr } = await supabase
+      .from("cronogramas")
+      .select("nome, categoria, imagem_url, premium")
+      .eq("id", data.id)
+      .single();
+    if (srcErr || !src) throw new Error(srcErr?.message ?? "Cronograma não encontrado");
+
+    // 2. Create new cronograma
+    const { data: novo, error: novoErr } = await supabase
+      .from("cronogramas")
+      .insert({
+        nome: `${src.nome} (cópia)`,
+        categoria: src.categoria,
+        imagem_url: src.imagem_url,
+        premium: src.premium,
+        created_by: userId,
+      })
+      .select("id")
+      .single();
+    if (novoErr || !novo) throw new Error(novoErr?.message ?? "Erro ao criar cópia");
+
+    // 3. Copy materias
+    const { data: mats, error: matsErr } = await supabase
+      .from("cronograma_materias")
+      .select("id, nome, cor, ordem")
+      .eq("cronograma_id", data.id)
+      .order("ordem");
+    if (matsErr) throw new Error(matsErr.message);
+
+    const materiaIdMap = new Map<string, string>();
+    if (mats && mats.length > 0) {
+      const { data: novasMats, error: insMatsErr } = await supabase
+        .from("cronograma_materias")
+        .insert(
+          mats.map((m) => ({
+            cronograma_id: novo.id,
+            nome: m.nome,
+            cor: m.cor,
+            ordem: m.ordem,
+          })),
+        )
+        .select("id, nome, ordem");
+      if (insMatsErr) throw new Error(insMatsErr.message);
+
+      // Map old → new by (nome, ordem)
+      mats.forEach((oldM) => {
+        const match = (novasMats ?? []).find(
+          (n) => n.nome === oldM.nome && n.ordem === oldM.ordem,
+        );
+        if (match) materiaIdMap.set(oldM.id, match.id);
+      });
+
+      // 4. Copy topicos for each materia
+      const oldMatIds = mats.map((m) => m.id);
+      const { data: tops, error: topsErr } = await supabase
+        .from("cronograma_topicos")
+        .select("materia_id, titulo, descricao, horas_estimadas, duracao_minutos, fontes, ordem")
+        .in("materia_id", oldMatIds)
+        .order("ordem");
+      if (topsErr) throw new Error(topsErr.message);
+
+      if (tops && tops.length > 0) {
+        const novosTops = tops
+          .map((t) => {
+            const newMatId = materiaIdMap.get(t.materia_id);
+            if (!newMatId) return null;
+            return {
+              materia_id: newMatId,
+              titulo: t.titulo,
+              descricao: t.descricao,
+              horas_estimadas: t.horas_estimadas,
+              duracao_minutos: t.duracao_minutos,
+              fontes: t.fontes,
+              ordem: t.ordem,
+            };
+          })
+          .filter((x): x is NonNullable<typeof x> => x !== null);
+
+        if (novosTops.length > 0) {
+          const { error: insTopsErr } = await supabase
+            .from("cronograma_topicos")
+            .insert(novosTops);
+          if (insTopsErr) throw new Error(insTopsErr.message);
+        }
+      }
+    }
+
+    return { ok: true, id: novo.id };
+  });
+
 // ============ STAGE 4: Alunos admin ============
 
 export type AlunoListItem = {
