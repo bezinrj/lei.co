@@ -1,5 +1,14 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createMiddleware } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabase as browserSupabase } from "@/integrations/supabase/client";
+
+const attachAuthHeader = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const { data } = await browserSupabase.auth.getSession();
+  const token = data.session?.access_token;
+  return next({
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+});
 
 export type AdminUser = {
   id: string;
@@ -27,7 +36,7 @@ async function requireAdminAccess(supabase: any, userId: string) {
 }
 
 export const listAdminUsers = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     await requireAdminAccess(supabase, userId);
@@ -72,7 +81,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
   });
 
 export const setUserRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator(
     (input: { userId: string; role: "admin" | "moderador" | "user"; enabled: boolean }) => input,
   )
