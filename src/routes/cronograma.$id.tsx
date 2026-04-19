@@ -311,7 +311,13 @@ function CronogramaDetail() {
                 )}
               </TabsContent>
               <TabsContent value="desempenho" className="mt-4">
-                <DesempenhoTab materias={materias} eventos={eventos} />
+                <DesempenhoTab
+                  cronogramaId={id}
+                  userId={user?.id ?? null}
+                  materias={materias}
+                  eventos={eventos}
+                  onChange={loadAll}
+                />
               </TabsContent>
             </Tabs>
           )}
