@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, CalendarDays, Award, Users, Trophy, LogOut, LogIn, Shield, User } from "lucide-react";
+import { CalendarDays, Award, Users, Trophy, LogOut, LogIn, Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,10 +12,9 @@ type NavItem = {
 };
 
 const principal: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/perfil", label: "Meu Perfil", icon: User },
   { to: "/cronogramas", label: "Cronograma", icon: CalendarDays },
   { to: "/medalhas", label: "Medalhas", icon: Award },
-  { to: "/perfil", label: "Meu Perfil", icon: User },
 ];
 
 const comunidade: NavItem[] = [
