@@ -105,7 +105,7 @@ function CronogramaDetail() {
 
       const { data: evs } = await supabase
         .from("user_calendar_events")
-        .select("id, titulo, data, cor, concluido, topico_id")
+        .select("id, titulo, data, cor, concluido, topico_id, materia_id, is_revisao")
         .eq("user_id", user.id)
         .eq("cronograma_id", id)
         .order("data", { ascending: true });
