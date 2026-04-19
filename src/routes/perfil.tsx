@@ -1,6 +1,10 @@
 import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import { WeeklyPerformance } from "@/components/dashboard/WeeklyPerformance";
+import { TodaySchedule } from "@/components/dashboard/TodaySchedule";
+import { GroupRanking } from "@/components/dashboard/GroupRanking";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -316,6 +320,20 @@ function PerfilPage() {
 
   return (
     <AppShell title="Meu Perfil">
+      {/* Resumo / Dashboard */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <MetricCard label="Horas estudadas" value="26h 15m" hint="esta semana" tone="sage" />
+        <MetricCard label="Questões feitas" value="412" hint="78% de acerto" tone="blush" />
+        <MetricCard label="🔥 Sequência" value="14 dias" hint="seu recorde: 22" tone="lilac" />
+        <MetricCard label="Medalhas" value="9 / 24" hint="próxima: Madrugadora" tone="sky" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        <WeeklyPerformance />
+        <TodaySchedule />
+        <GroupRanking />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 mb-6">
         {/* Coluna esquerda */}
         <div className="lei-card">

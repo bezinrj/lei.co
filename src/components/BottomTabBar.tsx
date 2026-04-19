@@ -1,8 +1,8 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, CalendarDays, Award, Users } from "lucide-react";
+import { User, CalendarDays, Award, Users } from "lucide-react";
 
 const items = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/perfil", label: "Meu Perfil", icon: User },
   { to: "/cronogramas", label: "Cronograma", icon: CalendarDays },
   { to: "/medalhas", label: "Medalhas", icon: Award },
   { to: "/grupos", label: "Grupos", icon: Users },

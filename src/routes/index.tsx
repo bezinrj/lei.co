@@ -29,7 +29,7 @@ function LandingPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: "/perfil" });
   }, [user, loading, navigate]);
 
   return (

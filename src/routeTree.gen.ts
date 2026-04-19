@@ -13,7 +13,6 @@ import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MedalhasRouteImport } from './routes/medalhas'
 import { Route as GruposRouteImport } from './routes/grupos'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CronogramasRouteImport } from './routes/cronogramas'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -38,11 +37,6 @@ const MedalhasRoute = MedalhasRouteImport.update({
 const GruposRoute = GruposRouteImport.update({
   id: '/grupos',
   path: '/grupos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CronogramasRoute = CronogramasRouteImport.update({
@@ -76,7 +70,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
-  '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
   '/perfil': typeof PerfilRoute
@@ -88,7 +81,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
-  '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
   '/perfil': typeof PerfilRoute
@@ -101,7 +93,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
-  '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
   '/perfil': typeof PerfilRoute
@@ -115,7 +106,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cronogramas'
-    | '/dashboard'
     | '/grupos'
     | '/medalhas'
     | '/perfil'
@@ -127,7 +117,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cronogramas'
-    | '/dashboard'
     | '/grupos'
     | '/medalhas'
     | '/perfil'
@@ -139,7 +128,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cronogramas'
-    | '/dashboard'
     | '/grupos'
     | '/medalhas'
     | '/perfil'
@@ -152,7 +140,6 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CronogramasRoute: typeof CronogramasRoute
-  DashboardRoute: typeof DashboardRoute
   GruposRoute: typeof GruposRoute
   MedalhasRoute: typeof MedalhasRoute
   PerfilRoute: typeof PerfilRoute
@@ -188,13 +175,6 @@ declare module '@tanstack/react-router' {
       path: '/grupos'
       fullPath: '/grupos'
       preLoaderRoute: typeof GruposRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cronogramas': {
@@ -240,7 +220,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CronogramasRoute: CronogramasRoute,
-  DashboardRoute: DashboardRoute,
   GruposRoute: GruposRoute,
   MedalhasRoute: MedalhasRoute,
   PerfilRoute: PerfilRoute,
