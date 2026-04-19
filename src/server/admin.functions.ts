@@ -81,7 +81,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
   });
 
 export const setUserRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator(
     (input: { userId: string; role: "admin" | "moderador" | "user"; enabled: boolean }) => input,
   )
