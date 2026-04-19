@@ -48,6 +48,8 @@ type Evento = {
   cor: string | null;
   concluido: boolean;
   topico_id: string | null;
+  materia_id: string | null;
+  is_revisao: boolean;
 };
 
 function CronogramaDetail() {
