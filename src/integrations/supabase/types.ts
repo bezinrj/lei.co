@@ -87,6 +87,8 @@ export type Database = {
           created_at: string
           descricao: string | null
           duracao_minutos: number
+          fontes: Json
+          horas_estimadas: number
           id: string
           materia_id: string
           ordem: number
@@ -97,6 +99,8 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           duracao_minutos?: number
+          fontes?: Json
+          horas_estimadas?: number
           id?: string
           materia_id: string
           ordem?: number
@@ -107,6 +111,8 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           duracao_minutos?: number
+          fontes?: Json
+          horas_estimadas?: number
           id?: string
           materia_id?: string
           ordem?: number
@@ -359,6 +365,41 @@ export type Database = {
           },
         ]
       }
+      user_fonte_progress: {
+        Row: {
+          concluido: boolean
+          id: string
+          sigla: string
+          topico_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          id?: string
+          sigla: string
+          topico_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concluido?: boolean
+          id?: string
+          sigla?: string
+          topico_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_fonte_progress_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_topicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_plans: {
         Row: {
           created_at: string
@@ -409,6 +450,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          acertos: number
+          created_at: string
+          data: string
+          id: string
+          percentual_acerto: number
+          questoes: number
+          tempo_estudado: string | null
+          topico_id: string
+          user_id: string
+        }
+        Insert: {
+          acertos?: number
+          created_at?: string
+          data?: string
+          id?: string
+          percentual_acerto?: number
+          questoes?: number
+          tempo_estudado?: string | null
+          topico_id: string
+          user_id: string
+        }
+        Update: {
+          acertos?: number
+          created_at?: string
+          data?: string
+          id?: string
+          percentual_acerto?: number
+          questoes?: number
+          tempo_estudado?: string | null
+          topico_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_topicos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_topico_progresso: {
         Row: {
