@@ -5,8 +5,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { listAdminUsers, setUserRole, type AdminUser } from "@/server/admin.functions";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Shield, Search, Users as UsersIcon, Circle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield, Search, Users as UsersIcon, Circle, BookMarked, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import { CronogramasAdminTab } from "@/components/admin/CronogramasAdminTab";
+import { AlunosAdminTab } from "@/components/admin/AlunosAdminTab";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Painel Admin — Lei.co" }] }),
@@ -98,115 +101,139 @@ function AdminPage() {
             <Shield size={22} /> Painel Admin
           </h1>
           <p className="text-[13px] text-text-muted mt-1">
-            Controle de usuários, presença e permissões
+            Usuários, cronogramas e dados dos alunos
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <StatCard label="Total de usuários" value={users.length} icon={<UsersIcon size={16} />} />
-        <StatCard
-          label="Online agora"
-          value={onlineCount}
-          icon={<Circle size={10} className="fill-emerald-500 text-emerald-500" />}
-        />
-        <StatCard
-          label="Admins/Mods"
-          value={users.filter((u) => u.roles.some((r) => r === "admin" || r === "moderador")).length}
-          icon={<Shield size={16} />}
-        />
-      </div>
+      <Tabs defaultValue="usuarios">
+        <TabsList className="bg-muted">
+          <TabsTrigger value="usuarios" className="gap-2">
+            <UsersIcon size={14} /> Usuários
+          </TabsTrigger>
+          <TabsTrigger value="cronogramas" className="gap-2">
+            <BookMarked size={14} /> Cronogramas
+          </TabsTrigger>
+          <TabsTrigger value="alunos" className="gap-2">
+            <GraduationCap size={14} /> Alunos
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="lei-card p-0 overflow-hidden">
-        <div className="flex items-center justify-between gap-3 p-4 border-b border-border">
-          <div className="relative w-full max-w-sm">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por nome, email ou Friend ID"
-              className="pl-9 bg-background"
+        <TabsContent value="usuarios" className="mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <StatCard label="Total de usuários" value={users.length} icon={<UsersIcon size={16} />} />
+            <StatCard
+              label="Online agora"
+              value={onlineCount}
+              icon={<Circle size={10} className="fill-emerald-500 text-emerald-500" />}
+            />
+            <StatCard
+              label="Admins/Mods"
+              value={users.filter((u) => u.roles.some((r) => r === "admin" || r === "moderador")).length}
+              icon={<Shield size={16} />}
             />
           </div>
-          <button
-            onClick={load}
-            className="text-[12px] text-text-muted hover:text-text-main"
-          >
-            Atualizar
-          </button>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead className="bg-muted/50 text-text-muted text-[11px] uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-3">Usuário</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Cadastro</th>
-                <th className="text-left px-4 py-3">Último login</th>
-                <th className="text-center px-4 py-3">Admin</th>
-                <th className="text-center px-4 py-3">Moderador</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fetching ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-10 text-text-muted">
-                    Carregando...
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-10 text-text-muted">
-                    Nenhum usuário encontrado
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((u) => (
-                  <tr key={u.id} className="border-t border-border">
-                    <td className="px-4 py-3">
-                      <div className="text-text-main font-medium">{u.display_name ?? "—"}</div>
-                      <div className="text-text-muted text-[11px]">{u.email}</div>
-                      {u.friend_id && (
-                        <div className="font-mono text-[10px] text-text-muted mt-0.5">{u.friend_id}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {u.online ? (
-                        <span className="inline-flex items-center gap-1.5 text-emerald-700">
-                          <Circle size={8} className="fill-emerald-500 text-emerald-500" />
-                          Online
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-text-muted">
-                          <Circle size={8} className="fill-muted-foreground/40 text-muted-foreground/40" />
-                          {u.last_seen_at ? formatRelative(u.last_seen_at) : "Nunca"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-text-muted">{formatDate(u.created_at)}</td>
-                    <td className="px-4 py-3 text-text-muted">
-                      {u.last_sign_in_at ? formatDate(u.last_sign_in_at) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Switch
-                        checked={u.roles.includes("admin")}
-                        onCheckedChange={(v) => toggleRole(u, "admin", v)}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Switch
-                        checked={u.roles.includes("moderador")}
-                        onCheckedChange={(v) => toggleRole(u, "moderador", v)}
-                      />
-                    </td>
+          <div className="lei-card p-0 overflow-hidden">
+            <div className="flex items-center justify-between gap-3 p-4 border-b border-border">
+              <div className="relative w-full max-w-sm">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar por nome, email ou Friend ID"
+                  className="pl-9 bg-background"
+                />
+              </div>
+              <button
+                onClick={load}
+                className="text-[12px] text-text-muted hover:text-text-main"
+              >
+                Atualizar
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead className="bg-muted/50 text-text-muted text-[11px] uppercase tracking-wider">
+                  <tr>
+                    <th className="text-left px-4 py-3">Usuário</th>
+                    <th className="text-left px-4 py-3">Status</th>
+                    <th className="text-left px-4 py-3">Cadastro</th>
+                    <th className="text-left px-4 py-3">Último login</th>
+                    <th className="text-center px-4 py-3">Admin</th>
+                    <th className="text-center px-4 py-3">Moderador</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {fetching ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-10 text-text-muted">
+                        Carregando...
+                      </td>
+                    </tr>
+                  ) : filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-10 text-text-muted">
+                        Nenhum usuário encontrado
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((u) => (
+                      <tr key={u.id} className="border-t border-border">
+                        <td className="px-4 py-3">
+                          <div className="text-text-main font-medium">{u.display_name ?? "—"}</div>
+                          <div className="text-text-muted text-[11px]">{u.email}</div>
+                          {u.friend_id && (
+                            <div className="font-mono text-[10px] text-text-muted mt-0.5">{u.friend_id}</div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.online ? (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-700">
+                              <Circle size={8} className="fill-emerald-500 text-emerald-500" />
+                              Online
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-text-muted">
+                              <Circle size={8} className="fill-muted-foreground/40 text-muted-foreground/40" />
+                              {u.last_seen_at ? formatRelative(u.last_seen_at) : "Nunca"}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-text-muted">{formatDate(u.created_at)}</td>
+                        <td className="px-4 py-3 text-text-muted">
+                          {u.last_sign_in_at ? formatDate(u.last_sign_in_at) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Switch
+                            checked={u.roles.includes("admin")}
+                            onCheckedChange={(v) => toggleRole(u, "admin", v)}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Switch
+                            checked={u.roles.includes("moderador")}
+                            onCheckedChange={(v) => toggleRole(u, "moderador", v)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="cronogramas" className="mt-4">
+          <CronogramasAdminTab />
+        </TabsContent>
+
+        <TabsContent value="alunos" className="mt-4">
+          <AlunosAdminTab />
+        </TabsContent>
+      </Tabs>
     </AppShell>
   );
 }
