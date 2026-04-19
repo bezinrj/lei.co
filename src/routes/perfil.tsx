@@ -570,39 +570,6 @@ function PerfilPage() {
         </div>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Horas totais estudadas" value={`${stats.horasTotais}h`} tone="sage" />
-        <StatCard
-          label="Maior sequência"
-          value={`${stats.maiorSequencia} ${stats.maiorSequencia === 1 ? "dia" : "dias"}`}
-          tone="blush"
-        />
-        <StatCard label="Questões feitas" value={String(stats.totalQuestoes)} tone="lilac" />
-        <StatCard
-          label="Cronogramas ativos"
-          value={String(stats.cronogramasAtivos)}
-          tone="sky"
-        />
-      </div>
     </AppShell>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "sage" | "blush" | "lilac" | "sky";
-}) {
-  const colorVar = `var(--${tone})`;
-  return (
-    <div className="lei-card" style={{ borderTop: `3px solid ${colorVar}` }}>
-      <div className="text-[11px] uppercase tracking-wider text-text-muted mb-2">{label}</div>
-      <div className="font-serif text-[26px] text-text-main leading-none">{value}</div>
-    </div>
   );
 }
