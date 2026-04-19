@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { materiaColor } from "@/lib/materia-color";
+import { colorForMateria } from "@/lib/materia-color";
 
 type EventoHoje = {
   id: string;
