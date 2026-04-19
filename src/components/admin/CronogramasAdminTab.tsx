@@ -3,11 +3,12 @@ import { Link } from "@tanstack/react-router";
 import {
   listAdminCronogramas,
   deleteCronograma,
+  duplicateCronograma,
   type AdminCronograma,
 } from "@/server/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Pencil, Trash2, ExternalLink, Search, Crown, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Search, Crown, Users, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { NovoCronogramaDialog } from "@/components/cronogramas/NovoCronogramaDialog";
 import { EditarCronogramaDialog } from "./EditarCronogramaDialog";
@@ -18,6 +19,7 @@ export function CronogramasAdminTab() {
   const [query, setQuery] = useState("");
   const [novoOpen, setNovoOpen] = useState(false);
   const [editing, setEditing] = useState<AdminCronograma | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -48,6 +50,21 @@ export function CronogramasAdminTab() {
       load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir");
+    }
+  }
+
+  async function handleDuplicate(c: AdminCronograma) {
+    if (duplicatingId) return;
+    if (!confirm(`Duplicar "${c.nome}"?\n\nUma cópia será criada com todas as matérias, tópicos e fontes.`)) return;
+    setDuplicatingId(c.id);
+    try {
+      await duplicateCronograma({ data: { id: c.id } });
+      toast.success("Cronograma duplicado");
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao duplicar");
+    } finally {
+      setDuplicatingId(null);
     }
   }
 
@@ -160,6 +177,14 @@ export function CronogramasAdminTab() {
                           title="Editar"
                         >
                           <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicate(c)}
+                          disabled={duplicatingId === c.id}
+                          className="p-1.5 rounded-[6px] hover:bg-muted text-text-muted hover:text-text-main disabled:opacity-50"
+                          title="Duplicar"
+                        >
+                          <Copy size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(c)}
