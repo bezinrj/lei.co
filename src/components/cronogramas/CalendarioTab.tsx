@@ -1,5 +1,16 @@
 import { useMemo, useState } from "react";
-import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from "date-fns";
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addDays,
+  isSameDay,
+  isSameMonth,
+  addWeeks,
+  addMonths,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Check, ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,22 +32,42 @@ type Props = {
   onChange: () => void;
 };
 
+type ViewMode = "semana" | "mes";
+
 export function CalendarioTab({ eventos, userId, onChange }: Props) {
-  const [weekOffset, setWeekOffset] = useState(0);
-  const weekStart = useMemo(
-    () => addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), weekOffset),
-    [weekOffset],
-  );
-  const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+  const [view, setView] = useState<ViewMode>("semana");
+  const [offset, setOffset] = useState(0);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+
+  const refDate = useMemo(
+    () => (view === "semana" ? addWeeks(new Date(), offset) : addMonths(new Date(), offset)),
+    [view, offset],
+  );
+
+  const dias = useMemo(() => {
+    if (view === "semana") {
+      const start = startOfWeek(refDate, { weekStartsOn: 1 });
+      return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    }
+    const monthStart = startOfMonth(refDate);
+    const monthEnd = endOfMonth(refDate);
+    const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    const days: Date[] = [];
+    let cur = gridStart;
+    while (cur <= gridEnd) {
+      days.push(cur);
+      cur = addDays(cur, 1);
+    }
+    return days;
+  }, [view, refDate]);
 
   const eventosPorDia = useMemo(() => {
     const map = new Map<string, Evento[]>();
     for (const e of eventos) {
-      const key = e.data;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(e);
+      if (!map.has(e.data)) map.set(e.data, []);
+      map.get(e.data)!.push(e);
     }
     return map;
   }, [eventos]);
@@ -83,27 +114,52 @@ export function CalendarioTab({ eventos, userId, onChange }: Props) {
     );
   }
 
+  const headerLabel =
+    view === "semana"
+      ? `Semana de ${format(startOfWeek(refDate, { weekStartsOn: 1 }), "dd 'de' MMMM", { locale: ptBR })}`
+      : format(refDate, "MMMM 'de' yyyy", { locale: ptBR });
+
+  const weekdays = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[12px] text-text-muted">
-          Semana de {format(weekStart, "dd 'de' MMMM", { locale: ptBR })} · arraste para reorganizar
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="inline-flex rounded-[8px] border border-border p-[2px] bg-muted">
+            {(["semana", "mes"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => {
+                  setView(v);
+                  setOffset(0);
+                }}
+                className={`text-[12px] px-3 h-7 rounded-[6px] transition-colors ${
+                  view === v
+                    ? "bg-background text-text-main shadow-sm"
+                    : "text-text-muted hover:text-text-main"
+                }`}
+              >
+                {v === "semana" ? "Semana" : "Mês"}
+              </button>
+            ))}
+          </div>
+          <div className="text-[12px] text-text-muted capitalize">{headerLabel}</div>
         </div>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setWeekOffset((w) => w - 1)}
+            onClick={() => setOffset((o) => o - 1)}
             className="h-8 w-8 p-0 rounded-[8px]"
-            aria-label="Semana anterior"
+            aria-label={view === "semana" ? "Semana anterior" : "Mês anterior"}
           >
             <ChevronLeft size={14} />
           </Button>
-          {weekOffset !== 0 && (
+          {offset !== 0 && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setWeekOffset(0)}
+              onClick={() => setOffset(0)}
               className="h-8 px-3 rounded-[8px] text-[12px]"
             >
               Hoje
@@ -112,20 +168,40 @@ export function CalendarioTab({ eventos, userId, onChange }: Props) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setWeekOffset((w) => w + 1)}
+            onClick={() => setOffset((o) => o + 1)}
             className="h-8 w-8 p-0 rounded-[8px]"
-            aria-label="Próxima semana"
+            aria-label={view === "semana" ? "Próxima semana" : "Próximo mês"}
           >
             <ChevronRight size={14} />
           </Button>
         </div>
       </div>
+
+      {view === "mes" && (
+        <div className="grid grid-cols-7 gap-2 mb-1">
+          {weekdays.map((w) => (
+            <div
+              key={w}
+              className="text-[10px] uppercase tracking-wider text-text-muted text-center"
+            >
+              {w}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-7 gap-2">
         {dias.map((d) => {
           const key = format(d, "yyyy-MM-dd");
           const evs = eventosPorDia.get(key) ?? [];
           const isToday = isSameDay(d, new Date());
           const isOver = dragOverDay === key;
+          const outOfMonth = view === "mes" && !isSameMonth(d, refDate);
+          const minH = view === "semana" ? "min-h-[180px]" : "min-h-[110px]";
+          const maxVisible = view === "semana" ? evs.length : 3;
+          const visibleEvs = evs.slice(0, maxVisible);
+          const overflow = evs.length - visibleEvs.length;
+
           return (
             <div
               key={key}
@@ -144,16 +220,20 @@ export function CalendarioTab({ eventos, userId, onChange }: Props) {
                 setDraggingId(null);
                 if (id) moveEvento(id, key);
               }}
-              className={`lei-card min-h-[180px] !p-3 transition-colors ${
+              className={`lei-card ${minH} !p-3 transition-colors ${
                 isToday ? "ring-2 ring-sage" : ""
-              } ${isOver ? "bg-sage-light/40 ring-2 ring-sage-dark" : ""}`}
+              } ${isOver ? "bg-sage-light/40 ring-2 ring-sage-dark" : ""} ${
+                outOfMonth ? "opacity-50" : ""
+              }`}
             >
-              <div className="text-[10px] uppercase tracking-wider text-text-muted">
-                {format(d, "EEE", { locale: ptBR })}
-              </div>
-              <div className="text-[18px] font-serif text-text-main mb-2">{format(d, "dd")}</div>
+              {view === "semana" && (
+                <div className="text-[10px] uppercase tracking-wider text-text-muted">
+                  {format(d, "EEE", { locale: ptBR })}
+                </div>
+              )}
+              <div className="text-[16px] font-serif text-text-main mb-2">{format(d, "dd")}</div>
               <div className="flex flex-col gap-1">
-                {evs.map((ev) => (
+                {visibleEvs.map((ev) => (
                   <div
                     key={ev.id}
                     draggable
@@ -185,7 +265,10 @@ export function CalendarioTab({ eventos, userId, onChange }: Props) {
                     </button>
                   </div>
                 ))}
-                {evs.length === 0 && (
+                {overflow > 0 && (
+                  <div className="text-[10px] text-text-muted">+{overflow} mais</div>
+                )}
+                {evs.length === 0 && view === "semana" && (
                   <div className="text-[10px] text-text-muted/60">livre</div>
                 )}
               </div>
