@@ -5,6 +5,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
 import { usePresence } from "@/hooks/usePresence";
+import { PWARegister } from "@/components/PWARegister";
 
 function NotFoundComponent() {
   return (
@@ -32,8 +33,13 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Lei.co — Mantenha a constância" },
+      { name: "theme-color", content: "#B8C9B0" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "Lei.co" },
       { name: "description", content: "Cronograma para concurseiros das carreiras de alto nível. Acompanhe horas, questões, medalhas, grupos e ranking." },
       { name: "author", content: "Lei.co" },
       { property: "og:title", content: "Lei.co — Mantenha a constância" },
@@ -47,10 +53,10 @@ export const Route = createRootRoute({
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fe4c632c-5923-4167-8ebb-0c9789549835/id-preview-538827a8--e14d93ea-107e-4f17-925f-9e4674dc8195.lovable.app-1776527768331.png" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", href: "/icon-192.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
     ],
   }),
   shellComponent: RootShell,
@@ -93,6 +99,7 @@ function RootComponent() {
   return (
     <AuthProvider>
       <PresenceTracker />
+      <PWARegister />
       <Outlet />
       <ClientOnlyToaster />
     </AuthProvider>
