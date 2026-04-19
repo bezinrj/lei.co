@@ -82,7 +82,7 @@ export function AppSidebar() {
         <button
           onClick={async () => {
             await signOut();
-            navigate({ to: "/auth" });
+            navigate({ to: "/" });
           }}
           className="flex items-center gap-2 px-3 py-2 rounded-[10px] text-[12px] text-text-muted hover:bg-muted hover:text-text-main transition-colors"
         >
