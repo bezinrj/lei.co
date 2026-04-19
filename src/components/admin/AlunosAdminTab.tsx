@@ -236,7 +236,12 @@ function AlunoDetail({ alunoId, onBack }: { alunoId: string; onBack: () => void 
         />
       )}
       {tab === "sessoes" && (
-        <SessoesAdminView sessoes={data.sessoes} topicoMap={topicoMap} onChange={load} />
+        <SessoesAdminView
+          sessoes={data.sessoes}
+          topicoMap={topicoMap}
+          onChange={load}
+          alunoNome={data.profile.display_name ?? data.profile.friend_id ?? "aluno"}
+        />
       )}
     </div>
   );
