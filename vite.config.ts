@@ -5,5 +5,55 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { VitePWA } from "vite-plugin-pwa";
 
-export default defineConfig();
+export default defineConfig({
+  vite: {
+    plugins: [
+      VitePWA({
+        registerType: "autoUpdate",
+        includeAssets: ["icon-192.png", "icon-512.png", "apple-touch-icon.png", "offline.html"],
+        devOptions: {
+          enabled: false,
+        },
+        manifest: {
+          name: "Lei Company",
+          short_name: "Lei.co",
+          description: "Estude com propósito. Cronograma para concurseiros das carreiras de alto nível.",
+          start_url: "/",
+          display: "standalone",
+          background_color: "#F7F4EE",
+          theme_color: "#B8C9B0",
+          lang: "pt-BR",
+          icons: [
+            { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+            { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+          ],
+        },
+        workbox: {
+          navigateFallback: "/offline.html",
+          navigateFallbackDenylist: [/^\/_serverFn/, /^\/api/, /^\/~oauth/],
+          globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.destination === "image",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "images",
+                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              },
+            },
+            {
+              urlPattern: ({ url }) => url.origin === self.location.origin,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "pages",
+                networkTimeoutSeconds: 4,
+              },
+            },
+          ],
+        },
+      }),
+    ],
+  },
+});
