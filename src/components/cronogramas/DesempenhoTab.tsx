@@ -1,16 +1,78 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { colorForMateria } from "@/lib/materia-color";
+import { RefreshCw, TrendingDown, TrendingUp, History } from "lucide-react";
+import { toast } from "sonner";
 
 type Topico = { id: string; titulo: string };
-type Materia = { id: string; nome: string; topicos: Topico[] };
+type Materia = { id: string; nome: string; cor: string; topicos: Topico[] };
 type Evento = { topico_id: string | null; concluido: boolean };
 
 type Props = {
+  cronogramaId: string;
+  userId: string | null;
   materias: Materia[];
   eventos: Evento[];
+  onChange?: () => void;
 };
 
-export function DesempenhoTab({ materias, eventos }: Props) {
+type SessionRow = {
+  id: string;
+  topico_id: string;
+  percentual_acerto: number;
+  questoes: number;
+  acertos: number;
+  data: string;
+  user_id: string;
+};
+
+function nextWeekday(from: Date): string {
+  const d = new Date(from);
+  d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0) d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChange }: Props) {
+  const [mySessions, setMySessions] = useState<SessionRow[]>([]);
+  const [allSessions, setAllSessions] = useState<SessionRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creatingRevisao, setCreatingRevisao] = useState<string | null>(null);
+
+  const allTopicoIds = useMemo(
+    () => materias.flatMap((m) => m.topicos.map((t) => t.id)),
+    [materias],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (allTopicoIds.length === 0) {
+        setMySessions([]);
+        setAllSessions([]);
+        setLoading(false);
+        return;
+      }
+      const { data: all } = await supabase
+        .from("user_sessions")
+        .select("id, topico_id, percentual_acerto, questoes, acertos, data, user_id")
+        .in("topico_id", allTopicoIds);
+      if (cancelled) return;
+      const rows = (all ?? []) as SessionRow[];
+      setAllSessions(rows);
+      setMySessions(userId ? rows.filter((r) => r.user_id === userId) : []);
+      setLoading(false);
+    }
+    setLoading(true);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [allTopicoIds, userId, cronogramaId]);
+
+  // Stats: per materia my % vs avg %
   const stats = useMemo(() => {
     const concluidosSet = new Set(
       eventos.filter((e) => e.concluido && e.topico_id).map((e) => e.topico_id!),
@@ -20,24 +82,107 @@ export function DesempenhoTab({ materias, eventos }: Props) {
       (s, m) => s + m.topicos.filter((t) => concluidosSet.has(t.id)).length,
       0,
     );
+
     const porMateria = materias.map((m) => {
-      const total = m.topicos.length;
-      const ok = m.topicos.filter((t) => concluidosSet.has(t.id)).length;
+      const tIds = new Set(m.topicos.map((t) => t.id));
+      const mine = mySessions.filter((s) => tIds.has(s.topico_id));
+      const others = allSessions.filter((s) => tIds.has(s.topico_id));
+      const myAvg =
+        mine.length === 0
+          ? null
+          : Math.round(mine.reduce((acc, s) => acc + s.percentual_acerto, 0) / mine.length);
+      const allAvg =
+        others.length === 0
+          ? null
+          : Math.round(others.reduce((acc, s) => acc + s.percentual_acerto, 0) / others.length);
+      const okTopicos = m.topicos.filter((t) => concluidosSet.has(t.id)).length;
       return {
         id: m.id,
         nome: m.nome,
-        total,
-        ok,
-        pct: total === 0 ? 0 : Math.round((ok / total) * 100),
+        cor: m.cor,
+        total: m.topicos.length,
+        ok: okTopicos,
+        pctConclusao: m.topicos.length === 0 ? 0 : Math.round((okTopicos / m.topicos.length) * 100),
+        myAvg,
+        allAvg,
+        sessions: mine.length,
       };
     });
+
     return {
       totalTopicos,
       concluidos,
       pctGeral: totalTopicos === 0 ? 0 : Math.round((concluidos / totalTopicos) * 100),
       porMateria,
     };
-  }, [materias, eventos]);
+  }, [materias, eventos, mySessions, allSessions]);
+
+  const abaixoDe60 = useMemo(
+    () => stats.porMateria.filter((m) => m.myAvg !== null && m.myAvg < 60),
+    [stats.porMateria],
+  );
+
+  // Histórico de revisões: agrupar sessões por tópico, pegando pior e melhor %
+  const historicoRevisoes = useMemo(() => {
+    const byTopico = new Map<string, SessionRow[]>();
+    mySessions.forEach((s) => {
+      const arr = byTopico.get(s.topico_id) ?? [];
+      arr.push(s);
+      byTopico.set(s.topico_id, arr);
+    });
+    const result: {
+      topicoId: string;
+      titulo: string;
+      materia: string;
+      cor: string;
+      tentativas: number;
+      pior: number;
+      melhor: number;
+      ultima: number;
+    }[] = [];
+    for (const m of materias) {
+      for (const t of m.topicos) {
+        const arr = byTopico.get(t.id);
+        if (!arr || arr.length < 2) continue; // só mostra com 2+ tentativas
+        const sorted = [...arr].sort((a, b) => a.data.localeCompare(b.data));
+        const percs = arr.map((s) => s.percentual_acerto);
+        result.push({
+          topicoId: t.id,
+          titulo: t.titulo,
+          materia: m.nome,
+          cor: m.cor,
+          tentativas: arr.length,
+          pior: Math.min(...percs),
+          melhor: Math.max(...percs),
+          ultima: sorted[sorted.length - 1].percentual_acerto,
+        });
+      }
+    }
+    return result.sort((a, b) => a.pior - b.pior);
+  }, [mySessions, materias]);
+
+  async function criarRevisao(materiaId: string, materiaNome: string, cor: string) {
+    if (!userId) return;
+    setCreatingRevisao(materiaId);
+    const data = nextWeekday(new Date());
+    const { error } = await supabase.from("user_calendar_events").insert({
+      user_id: userId,
+      cronograma_id: cronogramaId,
+      materia_id: materiaId,
+      titulo: `Revisão: ${materiaNome}`,
+      data,
+      is_revisao: true,
+      cor: colorForMateria(materiaNome, cor),
+      concluido: false,
+    });
+    setCreatingRevisao(null);
+    if (error) {
+      toast.error("Erro ao criar revisão");
+      return;
+    }
+    toast.success(`Revisão agendada para ${new Date(data + "T00:00").toLocaleDateString("pt-BR")}`);
+    onChange?.();
+  }
 
   if (materias.length === 0) {
     return (
@@ -49,39 +194,199 @@ export function DesempenhoTab({ materias, eventos }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Cards top */}
       <div className="grid grid-cols-3 gap-3">
         <div className="lei-card">
-          <div className="text-[11px] uppercase tracking-wider text-text-muted">Geral</div>
+          <div className="text-[11px] uppercase tracking-wider text-text-muted">Conclusão geral</div>
           <div className="font-serif text-[28px] text-text-main">{stats.pctGeral}%</div>
           <Progress value={stats.pctGeral} className="mt-2 h-1.5" />
         </div>
         <div className="lei-card">
           <div className="text-[11px] uppercase tracking-wider text-text-muted">Tópicos</div>
           <div className="font-serif text-[28px] text-text-main">
-            {stats.concluidos}<span className="text-text-muted text-[16px]">/{stats.totalTopicos}</span>
+            {stats.concluidos}
+            <span className="text-text-muted text-[16px]">/{stats.totalTopicos}</span>
           </div>
         </div>
         <div className="lei-card">
-          <div className="text-[11px] uppercase tracking-wider text-text-muted">Matérias</div>
-          <div className="font-serif text-[28px] text-text-main">{materias.length}</div>
+          <div className="text-[11px] uppercase tracking-wider text-text-muted">Sessões registradas</div>
+          <div className="font-serif text-[28px] text-text-main">{mySessions.length}</div>
         </div>
       </div>
 
-      <div className="lei-card">
-        <h3 className="font-serif text-[16px] text-text-main mb-3">Por matéria</h3>
-        <div className="flex flex-col gap-3">
-          {stats.porMateria.map((m) => (
-            <div key={m.id}>
-              <div className="flex justify-between text-[12px] mb-1">
-                <span className="text-text-main">{m.nome}</span>
-                <span className="text-text-muted">
-                  {m.ok}/{m.total} ({m.pct}%)
-                </span>
+      {/* Painel: Matérias abaixo de 60% */}
+      {loading ? (
+        <div className="lei-card text-center py-8 text-text-muted text-[13px]">Carregando...</div>
+      ) : abaixoDe60.length > 0 ? (
+        <div
+          className="lei-card"
+          style={{ borderLeft: "3px solid #D85A30", background: "rgba(216,90,48,0.04)" }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingDown size={16} style={{ color: "#D85A30" }} />
+            <h3 className="font-serif text-[16px] text-text-main">Matérias abaixo de 60%</h3>
+          </div>
+          <p className="text-[12px] text-text-muted mb-3">
+            Estas matérias precisam de revisão. Agende uma sessão para retomar o conteúdo.
+          </p>
+          <div className="flex flex-col gap-2">
+            {abaixoDe60.map((m) => (
+              <div
+                key={m.id}
+                className="flex items-center justify-between gap-3 p-3 rounded-[10px] bg-card border border-border"
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: colorForMateria(m.nome, m.cor) }}
+                  />
+                  <span className="text-[13px] text-text-main truncate">{m.nome}</span>
+                  <span
+                    className="text-[11px] font-medium px-2 py-[2px] rounded-full"
+                    style={{ background: "rgba(216,90,48,0.12)", color: "#D85A30" }}
+                  >
+                    {m.myAvg}%
+                  </span>
+                  {m.allAvg !== null && (
+                    <span className="text-[11px] text-text-muted">
+                      média alunos: {m.allAvg}%
+                    </span>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => criarRevisao(m.id, m.nome, m.cor)}
+                  disabled={creatingRevisao === m.id}
+                  className="gap-1 text-[12px] h-8"
+                >
+                  <RefreshCw size={12} />
+                  {creatingRevisao === m.id ? "Agendando..." : "Revisão"}
+                </Button>
               </div>
-              <Progress value={m.pct} className="h-1.5" />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+      ) : null}
+
+      {/* Comparação por matéria: meu vs média */}
+      <div className="lei-card">
+        <h3 className="font-serif text-[16px] text-text-main mb-1">Meu desempenho vs média</h3>
+        <p className="text-[12px] text-text-muted mb-4">
+          Percentual médio de acerto por matéria, comparado à média dos demais alunos.
+        </p>
+        <div className="flex flex-col gap-4">
+          {stats.porMateria.map((m) => {
+            const mine = m.myAvg ?? 0;
+            const others = m.allAvg ?? 0;
+            const cor = colorForMateria(m.nome, m.cor);
+            return (
+              <div key={m.id}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: cor }}
+                    />
+                    <span className="text-[13px] text-text-main truncate">{m.nome}</span>
+                  </div>
+                  <span className="text-[11px] text-text-muted">
+                    {m.sessions} {m.sessions === 1 ? "sessão" : "sessões"}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] w-16 text-text-muted">Eu</span>
+                    <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full transition-all"
+                        style={{ width: `${mine}%`, background: cor }}
+                      />
+                    </div>
+                    <span className="text-[11px] w-10 text-right tabular-nums text-text-main">
+                      {m.myAvg !== null ? `${mine}%` : "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] w-16 text-text-muted">Média</span>
+                    <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full transition-all opacity-60"
+                        style={{ width: `${others}%`, background: "var(--text-muted)" }}
+                      />
+                    </div>
+                    <span className="text-[11px] w-10 text-right tabular-nums text-text-muted">
+                      {m.allAvg !== null ? `${others}%` : "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Histórico de Revisões */}
+      <div className="lei-card">
+        <div className="flex items-center gap-2 mb-3">
+          <History size={16} className="text-text-muted" />
+          <h3 className="font-serif text-[16px] text-text-main">Histórico de revisões</h3>
+        </div>
+        {historicoRevisoes.length === 0 ? (
+          <p className="text-[12px] text-text-muted py-4 text-center">
+            Tópicos com 2 ou mais tentativas aparecerão aqui com pior e melhor desempenho.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="text-text-muted text-left">
+                  <th className="font-normal pb-2 pr-3">Tópico</th>
+                  <th className="font-normal pb-2 px-3">Tentativas</th>
+                  <th className="font-normal pb-2 px-3">Pior</th>
+                  <th className="font-normal pb-2 px-3">Melhor</th>
+                  <th className="font-normal pb-2 pl-3">Última</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historicoRevisoes.map((h) => (
+                  <tr key={h.topicoId} className="border-t border-border">
+                    <td className="py-2 pr-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: colorForMateria(h.materia, h.cor) }}
+                        />
+                        <div className="min-w-0">
+                          <div className="text-text-main truncate">{h.titulo}</div>
+                          <div className="text-[11px] text-text-muted truncate">{h.materia}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 tabular-nums text-text-main">{h.tentativas}</td>
+                    <td className="py-2 px-3">
+                      <span
+                        className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
+                        style={{ background: "rgba(216,90,48,0.12)", color: "#D85A30" }}
+                      >
+                        <TrendingDown size={10} /> {h.pior}%
+                      </span>
+                    </td>
+                    <td className="py-2 px-3">
+                      <span
+                        className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
+                        style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
+                      >
+                        <TrendingUp size={10} /> {h.melhor}%
+                      </span>
+                    </td>
+                    <td className="py-2 pl-3 tabular-nums text-text-main">{h.ultima}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
