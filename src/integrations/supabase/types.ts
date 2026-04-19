@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      badges: {
+        Row: {
+          cor: string
+          created_at: string
+          descricao: string
+          icone: string
+          id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          cor: string
+          created_at?: string
+          descricao: string
+          icone: string
+          id: string
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          descricao?: string
+          icone?: string
+          id?: string
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
       cronograma_materias: {
         Row: {
           cor: string
@@ -144,7 +174,10 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          concurso_alvo: string | null
           created_at: string
+          data_prova: string | null
           display_name: string | null
           friend_id: string
           id: string
@@ -152,7 +185,10 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          concurso_alvo?: string | null
           created_at?: string
+          data_prova?: string | null
           display_name?: string | null
           friend_id: string
           id: string
@@ -160,13 +196,57 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          concurso_alvo?: string | null
           created_at?: string
+          data_prova?: string | null
           display_name?: string | null
           friend_id?: string
           id?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          created_at: string
+          desbloqueada_em: string
+          destaque: boolean
+          id: string
+          publica: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          created_at?: string
+          desbloqueada_em?: string
+          destaque?: boolean
+          id?: string
+          publica?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          created_at?: string
+          desbloqueada_em?: string
+          destaque?: boolean
+          id?: string
+          publica?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_calendar_events: {
         Row: {
