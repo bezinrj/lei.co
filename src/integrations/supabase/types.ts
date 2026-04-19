@@ -264,6 +264,7 @@ export type Database = {
           hora_fim: string | null
           hora_inicio: string | null
           id: string
+          is_revisao: boolean
           materia_id: string | null
           titulo: string
           topico_id: string | null
@@ -279,6 +280,7 @@ export type Database = {
           hora_fim?: string | null
           hora_inicio?: string | null
           id?: string
+          is_revisao?: boolean
           materia_id?: string | null
           titulo: string
           topico_id?: string | null
@@ -294,6 +296,7 @@ export type Database = {
           hora_fim?: string | null
           hora_inicio?: string | null
           id?: string
+          is_revisao?: boolean
           materia_id?: string | null
           titulo?: string
           topico_id?: string | null
