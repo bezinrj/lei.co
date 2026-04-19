@@ -50,7 +50,22 @@ export function CronogramasAdminTab() {
       load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir");
+  }
+
+  async function handleDuplicate(c: AdminCronograma) {
+    if (duplicatingId) return;
+    if (!confirm(`Duplicar "${c.nome}"?\n\nUma cópia será criada com todas as matérias, tópicos e fontes.`)) return;
+    setDuplicatingId(c.id);
+    try {
+      await duplicateCronograma({ data: { id: c.id } });
+      toast.success("Cronograma duplicado");
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao duplicar");
+    } finally {
+      setDuplicatingId(null);
     }
+  }
   }
 
   const filtered = items.filter((c) => {
