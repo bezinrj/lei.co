@@ -253,12 +253,7 @@ type RowProps = {
   concluido: boolean;
   fonteProgresso: Record<string, boolean>;
   canEdit: boolean;
-  editing: boolean;
-  editTitulo: string;
-  setEditTitulo: (s: string) => void;
   onStartEdit: () => void;
-  onCancelEdit: () => void;
-  onSaveEdit: () => void;
   onToggle: (v: boolean) => void;
   onToggleFonte: (sigla: string, v: boolean) => void;
   onDelete: () => void;
