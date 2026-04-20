@@ -20,6 +20,8 @@ export type TopicoEditavel = {
   titulo: string;
   horas_estimadas: number;
   fontes: Fonte[];
+  ordem?: number;
+  totalNaMateria?: number;
 };
 
 type Props = {
@@ -45,6 +47,9 @@ export function NovoTopicoForm({
   const [materia, setMateria] = useState(editing?.materia_nome ?? "");
   const [assunto, setAssunto] = useState(editing?.titulo ?? "");
   const [horas, setHoras] = useState(editing?.horas_estimadas ?? 3);
+  const [posicao, setPosicao] = useState<number>(
+    editing ? (editing.ordem ?? 0) + 1 : 1,
+  );
   const [fontes, setFontes] = useState<Fonte[]>(
     editing?.fontes && editing.fontes.length > 0
       ? editing.fontes.map((f) => ({
@@ -110,6 +115,10 @@ export function NovoTopicoForm({
         }));
 
       if (isEdit && editing) {
+        const materiaChanged = materiaId !== editing.materia_id;
+        const oldOrdem = editing.ordem ?? 0;
+        const newOrdem = Math.max(0, (posicao || 1) - 1);
+
         const { error } = await supabase
           .from("cronograma_topicos")
           .update({
@@ -120,6 +129,24 @@ export function NovoTopicoForm({
           })
           .eq("id", editing.id);
         if (error) throw error;
+
+        // Reorder if needed (same matéria + position changed, or matéria changed)
+        if (materiaChanged || newOrdem !== oldOrdem) {
+          const { data: irmaos } = await supabase
+            .from("cronograma_topicos")
+            .select("id, ordem")
+            .eq("materia_id", materiaId)
+            .order("ordem", { ascending: true });
+
+          const lista = (irmaos ?? []).filter((t) => t.id !== editing.id);
+          const insertAt = Math.min(newOrdem, lista.length);
+          lista.splice(insertAt, 0, { id: editing.id, ordem: 0 });
+          await Promise.all(
+            lista.map((t, idx) =>
+              supabase.from("cronograma_topicos").update({ ordem: idx }).eq("id", t.id),
+            ),
+          );
+        }
         toast.success("Tópico atualizado");
       } else {
         const { count } = await supabase
@@ -191,6 +218,26 @@ export function NovoTopicoForm({
           />
         </div>
       </div>
+
+      {isEdit && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label className="text-[11px] text-text-muted mb-1 block">
+              Posição na matéria
+            </label>
+            <Input
+              type="number"
+              min={1}
+              value={posicao}
+              onChange={(e) => setPosicao(Math.max(1, Number(e.target.value) || 1))}
+              className="bg-background h-9"
+            />
+            <span className="text-[10px] text-text-muted mt-1 block">
+              Define a ordem do tópico dentro da matéria selecionada.
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="border-t border-border pt-3">
         <div className="flex items-center justify-between mb-2">
