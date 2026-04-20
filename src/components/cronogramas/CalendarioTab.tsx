@@ -536,6 +536,37 @@ export function CalendarioTab({
               else if (dias >= 1) statusLabel = { txt: `Atrasado ${dias} dias`, color: "#EF9F27" };
               else statusLabel = { txt: "Pendente", color: "#6b7280" };
 
+              const topico = ev.topico_id ? topicoById.get(ev.topico_id) : undefined;
+              const fontes = topico?.fontes ?? [];
+              const hasQuestoes = (f: Fonte) =>
+                !!(f.link_questoes ||
+                  (f.links_questoes && f.links_questoes.some((l) => !!l)));
+              const semQ = fontes.filter((f) => !hasQuestoes(f));
+              const comQ = fontes.filter((f) => hasQuestoes(f));
+
+              const linksQAll = fontes.flatMap((f) => {
+                const arr = f.links_questoes && f.links_questoes.length > 0
+                  ? f.links_questoes
+                  : f.link_questoes ? [f.link_questoes] : [];
+                return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, url }));
+              });
+              const linksDAll = fontes.flatMap((f) => {
+                const arr = f.links_dod && f.links_dod.length > 0
+                  ? f.links_dod
+                  : f.link_dod ? [f.link_dod] : [];
+                return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, url }));
+              });
+
+              const renderFonteRow = (f: Fonte, idx: number) => (
+                <div key={`${f.sigla}-${idx}`} className="flex items-start gap-2 py-[2px]">
+                  <Checkbox checked={false} disabled className="mt-[2px] h-3 w-3" />
+                  <span style={{ fontWeight: 600, fontSize: 11, minWidth: 36, color: "#374151" }}>
+                    {f.sigla}
+                  </span>
+                  <span style={{ fontSize: 11, color: "#6b7280" }}>{f.descricao}</span>
+                </div>
+              );
+
               return (
                 <div
                   key={ev.id}
@@ -548,12 +579,88 @@ export function CalendarioTab({
                   >
                     {ev.is_revisao ? `Rev — ${ev.materia_nome}` : ev.materia_nome}
                   </span>
-                  <div className="text-[13px] font-medium" style={{ color: "#111827" }}>
-                    {ev.titulo}
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>
+                    {topico?.titulo ?? ev.titulo}
                   </div>
+                  {topico && (
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+                      {topico.horas_estimadas}h estimadas
+                    </div>
+                  )}
+
+                  {fontes.length > 0 && (
+                    <div className="mt-2">
+                      <div style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>
+                        Fonte legal
+                      </div>
+                      {semQ.map((f, i) => renderFonteRow(f, i))}
+                      {comQ.length > 0 && (
+                        <>
+                          {semQ.length > 0 && (
+                            <div style={{ borderTop: "1px solid #e5e7eb", margin: "6px 0" }} />
+                          )}
+                          <div style={{ background: "#F7F4EE", borderRadius: 6, padding: "5px 7px", marginTop: 2 }}>
+                            {comQ.map((f, i) => renderFonteRow(f, i))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {(linksQAll.length > 0 || linksDAll.length > 0) && (
+                    <div className="mt-2 flex flex-col gap-1">
+                      {linksQAll.length > 0 && (
+                        <div className="flex flex-wrap gap-1 items-center">
+                          <span style={{ fontSize: 10, color: "#6b7280", marginRight: 2 }}>Questões:</span>
+                          {linksQAll.map((l, i) => (
+                            <a
+                              key={`q-${i}`}
+                              href={l.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1"
+                              style={{
+                                fontSize: 10,
+                                color: "#378ADD",
+                                border: "1px solid #B5D4F4",
+                                borderRadius: 20,
+                                padding: "1px 7px",
+                              }}
+                            >
+                              {l.sigla} <ExternalLink size={9} />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {linksDAll.length > 0 && (
+                        <div className="flex flex-wrap gap-1 items-center">
+                          <span style={{ fontSize: 10, color: "#6b7280", marginRight: 2 }}>DOD:</span>
+                          {linksDAll.map((l, i) => (
+                            <a
+                              key={`d-${i}`}
+                              href={l.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1"
+                              style={{
+                                fontSize: 10,
+                                color: "#378ADD",
+                                border: "1px solid #B5D4F4",
+                                borderRadius: 20,
+                                padding: "1px 7px",
+                              }}
+                            >
+                              {l.sigla} <ExternalLink size={9} />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div
-                    className="text-[12px] mt-1 font-medium"
-                    style={{ color: statusLabel.color }}
+                    className="mt-2"
+                    style={{ fontSize: 12, fontWeight: ev.concluido ? 500 : 400, color: statusLabel.color }}
                   >
                     {statusLabel.txt}
                   </div>
