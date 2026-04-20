@@ -110,16 +110,7 @@ export function MatrizTab({
     onChange();
   }
 
-  async function saveEdit(id: string) {
-    if (!editTitulo.trim()) return;
-    const { error } = await supabase
-      .from("cronograma_topicos")
-      .update({ titulo: editTitulo.trim() })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    setEditing(null);
-    onChange();
-  }
+  // edição agora ocorre via dialog (NovoTopicoForm em modo edit)
 
   async function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
