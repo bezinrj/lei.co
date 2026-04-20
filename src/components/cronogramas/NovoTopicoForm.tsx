@@ -47,6 +47,9 @@ export function NovoTopicoForm({
   const [materia, setMateria] = useState(editing?.materia_nome ?? "");
   const [assunto, setAssunto] = useState(editing?.titulo ?? "");
   const [horas, setHoras] = useState(editing?.horas_estimadas ?? 3);
+  const [posicao, setPosicao] = useState<number>(
+    editing ? (editing.ordem ?? 0) + 1 : 1,
+  );
   const [fontes, setFontes] = useState<Fonte[]>(
     editing?.fontes && editing.fontes.length > 0
       ? editing.fontes.map((f) => ({
