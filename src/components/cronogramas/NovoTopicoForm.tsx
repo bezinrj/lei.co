@@ -186,7 +186,8 @@ export function NovoTopicoForm({
     }
     setSaving(true);
     try {
-      // Find or create matéria
+      // Find or create matéria (sempre garante cor determinística)
+      const corDeterministica = colorForMateria(materia.trim());
       let materiaId = materias.find(
         (m) => m.nome.toLowerCase() === materia.trim().toLowerCase(),
       )?.id;
@@ -196,13 +197,19 @@ export function NovoTopicoForm({
           .insert({
             cronograma_id: cronogramaId,
             nome: materia.trim(),
-            cor: colorForMateria(materia.trim()),
+            cor: corDeterministica,
             ordem: materias.length,
           })
           .select("id")
           .single();
         if (errM) throw errM;
         materiaId = novaM.id;
+      } else {
+        // Garante que a cor armazenada esteja sempre correta
+        await supabase
+          .from("cronograma_materias")
+          .update({ cor: corDeterministica })
+          .eq("id", materiaId);
       }
 
       const fontesClean = fontes
