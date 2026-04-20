@@ -56,8 +56,7 @@ export function MatrizTab({
   onChange,
 }: Props) {
   const [items, setItems] = useState(topicos);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [editTitulo, setEditTitulo] = useState("");
+  const [editingTopico, setEditingTopico] = useState<TopicoEditavel | null>(null);
 
   useEffect(() => setItems(topicos), [topicos]);
 
