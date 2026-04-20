@@ -35,7 +35,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/perfil`,
             data: { display_name: displayName || email.split("@")[0] },
           },
         });
