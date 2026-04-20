@@ -192,15 +192,16 @@ export function MatrizTab({
                     concluido={!!progresso[t.id]}
                     fonteProgresso={fonteProgresso}
                     canEdit={canEdit}
-                    editing={editing === t.id}
-                    editTitulo={editTitulo}
-                    setEditTitulo={setEditTitulo}
-                    onStartEdit={() => {
-                      setEditing(t.id);
-                      setEditTitulo(t.titulo);
-                    }}
-                    onCancelEdit={() => setEditing(null)}
-                    onSaveEdit={() => saveEdit(t.id)}
+                    onStartEdit={() =>
+                      setEditingTopico({
+                        id: t.id,
+                        materia_id: t.materia_id,
+                        materia_nome: t.materia_nome,
+                        titulo: t.titulo,
+                        horas_estimadas: t.horas_estimadas,
+                        fontes: t.fontes,
+                      })
+                    }
                     onToggle={(v) => toggleTopico(t.id, v)}
                     onToggleFonte={(sigla, v) => toggleFonte(t.id, sigla, v)}
                     onDelete={() => delTopico(t.id)}
@@ -215,6 +216,33 @@ export function MatrizTab({
       {canEdit && (
         <NovoTopicoForm cronogramaId={cronogramaId} materias={materias} onAdded={onChange} />
       )}
+
+      <Dialog
+        open={!!editingTopico}
+        onOpenChange={(o) => !o && setEditingTopico(null)}
+      >
+        <DialogContent className="bg-card max-w-3xl rounded-[14px]">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-[18px] text-text-main">
+              Editar tópico
+            </DialogTitle>
+          </DialogHeader>
+          {editingTopico && (
+            <NovoTopicoForm
+              key={editingTopico.id}
+              cronogramaId={cronogramaId}
+              materias={materias}
+              editing={editingTopico}
+              embedded
+              onCancelEdit={() => setEditingTopico(null)}
+              onAdded={() => {
+                setEditingTopico(null);
+                onChange();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
