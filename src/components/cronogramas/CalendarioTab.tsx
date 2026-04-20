@@ -13,13 +13,15 @@ import {
   parseISO,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Info, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Info, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { colorForMateria } from "@/lib/materia-color";
+import type { Fonte } from "./NovoTopicoForm";
 import { CronometroBloco } from "./CronometroBloco";
 import { RegistrarSessaoModal } from "./RegistrarSessaoModal";
 import { LimparEventosModal } from "./LimparEventosModal";
