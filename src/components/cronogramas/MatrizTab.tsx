@@ -16,12 +16,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { colorForMateria } from "@/lib/materia-color";
-import { NovoTopicoForm, type Fonte } from "./NovoTopicoForm";
+import { NovoTopicoForm, type Fonte, type TopicoEditavel } from "./NovoTopicoForm";
 
 export type MatrizTopico = {
   id: string;
