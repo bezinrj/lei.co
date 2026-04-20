@@ -1,6 +1,8 @@
 import { sendLovableEmail } from '@lovable.dev/email-js'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
+
+import type { Database } from '@/integrations/supabase/types'
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
@@ -8,9 +10,53 @@ const DEFAULT_SEND_DELAY_MS = 200
 const DEFAULT_AUTH_TTL_MINUTES = 15
 const DEFAULT_TRANSACTIONAL_TTL_MINUTES = 60
 
-// Check if an error is a rate-limit (429) response.
-// Uses EmailAPIError.status when available (email-js >=0.x with structured errors),
-// falls back to parsing the error message for older versions.
+type EmailPayload = {
+  from?: string
+  html?: string
+  idempotency_key?: string
+  label?: string
+  message_id?: string
+  purpose?: string
+  queued_at?: string
+  run_id?: string
+  sender_domain?: string
+  subject?: string
+  text?: string
+  to?: string
+  unsubscribe_token?: string
+  [key: string]: unknown
+}
+
+type QueueMessage = {
+  enqueued_at?: string
+  message: EmailPayload
+  msg_id: number
+  read_ct?: number
+}
+
+type EmailState = {
+  auth_email_ttl_minutes?: number | null
+  batch_size?: number | null
+  retry_after_until?: string | null
+  send_delay_ms?: number | null
+  transactional_email_ttl_minutes?: number | null
+}
+
+type AdminClient = SupabaseClient<Database>
+
+function getAdminClient(url: string, key: string): AdminClient {
+  return createClient<Database>(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
+}
+
+function getDb(client: AdminClient): any {
+  return client as any
+}
+
 function isRateLimited(error: unknown): boolean {
   if (error && typeof error === 'object' && 'status' in error) {
     return (error as { status: number }).status === 429
@@ -18,8 +64,6 @@ function isRateLimited(error: unknown): boolean {
   return error instanceof Error && error.message.includes('429')
 }
 
-// Check if an error is a forbidden (403) response, which means emails are
-// disabled for this project. Retrying won't help — move straight to DLQ.
 function isForbidden(error: unknown): boolean {
   if (error && typeof error === 'object' && 'status' in error) {
     return (error as { status: number }).status === 403
@@ -27,7 +71,6 @@ function isForbidden(error: unknown): boolean {
   return error instanceof Error && error.message.includes('403')
 }
 
-// Extract Retry-After seconds from a structured EmailAPIError, or default to 60s.
 function getRetryAfterSeconds(error: unknown): number {
   if (error && typeof error === 'object' && 'retryAfterSeconds' in error) {
     return (error as { retryAfterSeconds: number | null }).retryAfterSeconds ?? 60
@@ -35,50 +78,51 @@ function getRetryAfterSeconds(error: unknown): number {
   return 60
 }
 
-// Move a message to the dead letter queue and log the reason.
+async function insertEmailLog(client: AdminClient, row: Record<string, unknown>): Promise<void> {
+  await getDb(client).from('email_send_log').insert(row)
+}
+
 async function moveToDlq(
-  supabase: ReturnType<typeof createClient>,
+  client: AdminClient,
   queue: string,
-  msg: { msg_id: number; message: Record<string, unknown> },
+  msg: QueueMessage,
   reason: string
 ): Promise<void> {
   const payload = msg.message
-  await supabase.from('email_send_log').insert({
+
+  await insertEmailLog(client, {
+    error_message: reason,
     message_id: payload.message_id,
-    template_name: (payload.label || queue) as string,
     recipient_email: payload.to,
     status: 'dlq',
-    error_message: reason,
+    template_name: payload.label || queue,
   })
-  const { error } = await supabase.rpc('move_to_dlq', {
-    source_queue: queue,
+
+  const { error } = await getDb(client).rpc('move_to_dlq', {
     dlq_name: `${queue}_dlq`,
     message_id: msg.msg_id,
     payload,
+    source_queue: queue,
   })
+
   if (error) {
-    console.error('Failed to move message to DLQ', { queue, msg_id: msg.msg_id, reason, error })
+    console.error('Failed to move message to DLQ', { error, msg_id: msg.msg_id, queue, reason })
   }
 }
 
-export const Route = createFileRoute("/lovable/email/queue/process")({
+export const Route = createFileRoute('/lovable/email/queue/process')({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const apiKey = process.env.LOVABLE_API_KEY
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
         if (!apiKey || !supabaseUrl || !supabaseServiceKey) {
           console.error('Missing required environment variables')
-          return Response.json(
-            { error: 'Server configuration error' },
-            { status: 500 }
-          )
+          return Response.json({ error: 'Server configuration error' }, { status: 500 })
         }
 
-        // Verify the caller is authorized with the service role key.
-        // In the TanStack stack, the pg_cron job sends the service role key as a Bearer token.
         const authHeader = request.headers.get('Authorization')
         if (!authHeader?.startsWith('Bearer ')) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -89,16 +133,16 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
           return Response.json({ error: 'Forbidden' }, { status: 403 })
         }
 
-        const supabase = createClient(supabaseUrl, supabaseServiceKey)
+        const supabase = getAdminClient(supabaseUrl, supabaseServiceKey)
+        const db = getDb(supabase)
 
-        // 1. Check rate-limit cooldown and read queue config
-        const { data: state } = await supabase
+        const { data: state } = await db
           .from('email_send_state')
           .select('retry_after_until, batch_size, send_delay_ms, auth_email_ttl_minutes, transactional_email_ttl_minutes')
-          .single()
+          .single<EmailState>()
 
         if (state?.retry_after_until && new Date(state.retry_after_until) > new Date()) {
-          return Response.json({ skipped: true, reason: 'rate_limited' })
+          return Response.json({ reason: 'rate_limited', skipped: true })
         }
 
         const batchSize = state?.batch_size ?? DEFAULT_BATCH_SIZE
@@ -110,36 +154,37 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
 
         let totalProcessed = 0
 
-        // 2. Process auth_emails first (priority), then transactional_emails
-        for (const queue of ['auth_emails', 'transactional_emails']) {
-          const { data: messages, error: readError } = await supabase.rpc('read_email_batch', {
-            queue_name: queue,
+        for (const queue of ['auth_emails', 'transactional_emails'] as const) {
+          const { data: rawMessages, error: readError } = await db.rpc('read_email_batch', {
             batch_size: batchSize,
+            queue_name: queue,
             vt: 30,
           })
 
           if (readError) {
-            console.error('Failed to read email batch', { queue, error: readError })
+            console.error('Failed to read email batch', { error: readError, queue })
             continue
           }
 
-          if (!messages?.length) continue
+          const messages = (rawMessages ?? []) as QueueMessage[]
+          if (!messages.length) continue
 
-          // Retry budget is based on real send failures, not pgmq read_ct.
           const messageIds = Array.from(
             new Set(
               messages
-                .map((msg: any) =>
+                .map((msg) =>
                   msg?.message?.message_id && typeof msg.message.message_id === 'string'
                     ? msg.message.message_id
                     : null
                 )
-                .filter((id: string | null): id is string => Boolean(id))
+                .filter((id): id is string => Boolean(id))
             )
           )
+
           const failedAttemptsByMessageId = new Map<string, number>()
+
           if (messageIds.length > 0) {
-            const { data: failedRows, error: failedRowsError } = await supabase
+            const { data: failedRows, error: failedRowsError } = await db
               .from('email_send_log')
               .select('message_id')
               .in('message_id', messageIds)
@@ -147,8 +192,8 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
 
             if (failedRowsError) {
               console.error('Failed to load failed-attempt counters', {
-                queue,
                 error: failedRowsError,
+                queue,
               })
             } else {
               for (const row of failedRows ?? []) {
@@ -166,21 +211,18 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
             const msg = messages[i]
             const payload = msg.message
             const failedAttempts =
-              payload?.message_id && typeof payload.message_id === 'string'
+              payload.message_id && typeof payload.message_id === 'string'
                 ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
-                : msg.read_ct ?? 0
+                : (msg.read_ct ?? 0)
 
-            // Drop expired messages (TTL exceeded).
-            // Prefer payload.queued_at when present; fall back to PGMQ's enqueued_at
-            // which is always set by the queue.
             const queuedAt = payload.queued_at ?? msg.enqueued_at
             if (queuedAt) {
               const ageMs = Date.now() - new Date(queuedAt).getTime()
               const maxAgeMs = ttlMinutes[queue] * 60 * 1000
               if (ageMs > maxAgeMs) {
                 console.warn('Email expired (TTL exceeded)', {
-                  queue,
                   msg_id: msg.msg_id,
+                  queue,
                   queued_at: queuedAt,
                   ttl_minutes: ttlMinutes[queue],
                 })
@@ -189,15 +231,18 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
               }
             }
 
-            // Move to DLQ if max failed send attempts reached.
             if (failedAttempts >= MAX_RETRIES) {
-              await moveToDlq(supabase, queue, msg, `Max retries (${MAX_RETRIES}) exceeded (attempted ${failedAttempts} times)`)
+              await moveToDlq(
+                supabase,
+                queue,
+                msg,
+                `Max retries (${MAX_RETRIES}) exceeded (attempted ${failedAttempts} times)`
+              )
               continue
             }
 
-            // Guard: skip if another worker already sent this message (VT expired race)
             if (payload.message_id) {
-              const { data: alreadySent } = await supabase
+              const { data: alreadySent } = await db
                 .from('email_send_log')
                 .select('id')
                 .eq('message_id', payload.message_id)
@@ -206,16 +251,20 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
 
               if (alreadySent) {
                 console.warn('Skipping duplicate send (already sent)', {
-                  queue,
-                  msg_id: msg.msg_id,
                   message_id: payload.message_id,
+                  msg_id: msg.msg_id,
+                  queue,
                 })
-                const { error: dupDelError } = await supabase.rpc('delete_email', {
-                  queue_name: queue,
+                const { error: dupDelError } = await db.rpc('delete_email', {
                   message_id: msg.msg_id,
+                  queue_name: queue,
                 })
                 if (dupDelError) {
-                  console.error('Failed to delete duplicate message from queue', { queue, msg_id: msg.msg_id, error: dupDelError })
+                  console.error('Failed to delete duplicate message from queue', {
+                    error: dupDelError,
+                    msg_id: msg.msg_id,
+                    queue,
+                  })
                 }
                 continue
               }
@@ -224,97 +273,92 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
             try {
               await sendLovableEmail(
                 {
-                  run_id: payload.run_id,
-                  to: payload.to,
                   from: payload.from,
+                  html: payload.html,
+                  idempotency_key: payload.idempotency_key,
+                  label: payload.label,
+                  message_id: payload.message_id,
+                  purpose: payload.purpose,
+                  run_id: payload.run_id,
                   sender_domain: payload.sender_domain,
                   subject: payload.subject,
-                  html: payload.html,
                   text: payload.text,
-                  purpose: payload.purpose,
-                  label: payload.label,
-                  idempotency_key: payload.idempotency_key,
+                  to: payload.to,
                   unsubscribe_token: payload.unsubscribe_token,
-                  message_id: payload.message_id,
                 },
                 { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
               )
 
-              // Log success
-              await supabase.from('email_send_log').insert({
+              await insertEmailLog(supabase, {
                 message_id: payload.message_id,
-                template_name: payload.label || queue,
                 recipient_email: payload.to,
                 status: 'sent',
+                template_name: payload.label || queue,
               })
 
-              // Delete from queue
-              const { error: delError } = await supabase.rpc('delete_email', {
-                queue_name: queue,
+              const { error: delError } = await db.rpc('delete_email', {
                 message_id: msg.msg_id,
+                queue_name: queue,
               })
               if (delError) {
-                console.error('Failed to delete sent message from queue', { queue, msg_id: msg.msg_id, error: delError })
+                console.error('Failed to delete sent message from queue', {
+                  error: delError,
+                  msg_id: msg.msg_id,
+                  queue,
+                })
               }
               totalProcessed++
             } catch (error) {
               const errorMsg = error instanceof Error ? error.message : String(error)
               console.error('Email send failed', {
-                queue,
-                msg_id: msg.msg_id,
-                read_ct: msg.read_ct,
-                failed_attempts: failedAttempts,
                 error: errorMsg,
+                failed_attempts: failedAttempts,
+                msg_id: msg.msg_id,
+                queue,
+                read_ct: msg.read_ct,
               })
 
               if (isRateLimited(error)) {
-                await supabase.from('email_send_log').insert({
+                await insertEmailLog(supabase, {
+                  error_message: errorMsg.slice(0, 1000),
                   message_id: payload.message_id,
-                  template_name: payload.label || queue,
                   recipient_email: payload.to,
                   status: 'failed',
-                  error_message: errorMsg.slice(0, 1000),
+                  template_name: payload.label || queue,
                 })
 
                 const retryAfterSecs = getRetryAfterSeconds(error)
-                await supabase
+                await db
                   .from('email_send_state')
                   .update({
-                    retry_after_until: new Date(
-                      Date.now() + retryAfterSecs * 1000
-                    ).toISOString(),
+                    retry_after_until: new Date(Date.now() + retryAfterSecs * 1000).toISOString(),
                     updated_at: new Date().toISOString(),
                   })
                   .eq('id', 1)
 
-                // Stop processing — remaining messages stay in queue (VT expires, retried next cycle)
                 return Response.json({ processed: totalProcessed, stopped: 'rate_limited' })
               }
 
-              // 403 means emails are disabled for this project — retrying won't help.
               if (isForbidden(error)) {
                 await moveToDlq(supabase, queue, msg, 'Emails disabled for this project')
                 return Response.json({ processed: totalProcessed, stopped: 'emails_disabled' })
               }
 
-              // Log non-429 failures to track real retry attempts.
-              await supabase.from('email_send_log').insert({
+              await insertEmailLog(supabase, {
+                error_message: errorMsg.slice(0, 1000),
                 message_id: payload.message_id,
-                template_name: payload.label || queue,
                 recipient_email: payload.to,
                 status: 'failed',
-                error_message: errorMsg.slice(0, 1000),
+                template_name: payload.label || queue,
               })
-              if (payload?.message_id && typeof payload.message_id === 'string') {
+
+              if (payload.message_id && typeof payload.message_id === 'string') {
                 failedAttemptsByMessageId.set(payload.message_id, failedAttempts + 1)
               }
-
-              // Non-429 errors: message stays invisible until VT expires, then retried
             }
 
-            // Small delay between sends to smooth bursts
             if (i < messages.length - 1) {
-              await new Promise((r) => setTimeout(r, sendDelayMs))
+              await new Promise((resolve) => setTimeout(resolve, sendDelayMs))
             }
           }
         }
