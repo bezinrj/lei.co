@@ -135,6 +135,23 @@ export function CalendarioTab({
     return Array.from(set.entries()).map(([id, nome]) => ({ id, nome }));
   }, [evs, refDate]);
 
+  // Flags de legenda condicionais ao mês visível
+  const { temRevisaoNoMes, temAtraso1d, temAtraso4d } = useMemo(() => {
+    let rev = false;
+    let a1 = false;
+    let a4 = false;
+    for (const e of evs) {
+      const d = parseISO(e.data);
+      if (!isSameMonth(d, refDate)) continue;
+      if (e.concluido) continue;
+      if (e.is_revisao) rev = true;
+      const diff = differenceInCalendarDays(today, d);
+      if (diff >= 4) a4 = true;
+      else if (diff >= 1) a1 = true;
+    }
+    return { temRevisaoNoMes: rev, temAtraso1d: a1, temAtraso4d: a4 };
+  }, [evs, refDate, today]);
+
   function statusCelula(d: Date, list: typeof evs): {
     bg: string;
     border: string;
