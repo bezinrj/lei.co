@@ -274,7 +274,7 @@ function CronogramaDetail() {
               </div>
             </div>
           ) : (
-            <Tabs defaultValue="matriz">
+            <Tabs value={tab} onValueChange={setTab}>
               <TabsList className="bg-muted">
                 <TabsTrigger value="matriz">Matriz</TabsTrigger>
                 <TabsTrigger value="calendario">Calendário</TabsTrigger>
