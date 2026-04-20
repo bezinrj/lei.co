@@ -23,7 +23,7 @@ function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: "/perfil" });
   }, [user, loading, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
