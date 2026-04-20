@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, GripVertical, Pencil, Trash2, Check, X } from "lucide-react";
+import { ExternalLink, GripVertical, Pencil, Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
