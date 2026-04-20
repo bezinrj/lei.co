@@ -231,10 +231,13 @@ function CronogramaDetail() {
               <div className="mt-4 flex gap-2">
                 {!isLocked && user && allTopicos.length > 0 && (
                   <Button
-                    onClick={() => setAtivarOpen(true)}
+                    onClick={() => {
+                      if (!ativacao) setAtivarOpen(true);
+                      else setTab("calendario");
+                    }}
                     className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] gap-2"
                   >
-                    <Play size={14} /> {ativacao ? "Reativar / Redistribuir" : "Ativar cronograma"}
+                    <Play size={14} /> {ativacao ? "Iniciar Estudos!" : "Ativar cronograma"}
                   </Button>
                 )}
               </div>
