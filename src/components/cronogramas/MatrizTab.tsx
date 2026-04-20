@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { colorForMateria } from "@/lib/materia-color";
+import { colorForMateria, getCorMateriaPastel } from "@/lib/materia-color";
 import { NovoTopicoForm, type Fonte, type TopicoEditavel } from "./NovoTopicoForm";
 
 export type MatrizTopico = {
@@ -281,7 +281,7 @@ function SortableRow({
     opacity: isDragging ? 0.5 : 1,
     background: concluido ? "rgba(0,0,0,0.04)" : undefined,
   };
-  const cor = colorForMateria(topico.materia_nome, topico.materia_cor);
+  const pastel = getCorMateriaPastel(topico.materia_nome);
   const inactiveColor = "#9ca3af";
 
   return (
@@ -319,10 +319,10 @@ function SortableRow({
       </td>
       <td className="py-3 px-2 align-top">
         <span
-          className="inline-block text-[11px] font-medium rounded px-2 py-1 text-white"
+          className="inline-block text-[11px] font-medium rounded px-2 py-1"
           style={{
-            background: concluido ? "#e5e7eb" : cor,
-            color: concluido ? inactiveColor : "white",
+            background: concluido ? "#e5e7eb" : pastel.background,
+            color: concluido ? inactiveColor : pastel.color,
             maxWidth: 140,
             width: "fit-content",
             whiteSpace: "nowrap",
