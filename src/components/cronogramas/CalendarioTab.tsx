@@ -43,6 +43,7 @@ type Topico = {
   materia_id: string;
   materia_nome: string;
   horas_estimadas: number;
+  fontes?: Fonte[];
 };
 
 type Props = {
