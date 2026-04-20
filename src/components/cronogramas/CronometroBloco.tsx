@@ -160,8 +160,8 @@ export function CronometroBloco({ hoje, eventosHoje, onStop }: Props) {
           <div className="flex gap-2">
             {!running && (
               <Button
+                type="button"
                 onClick={handleIniciar}
-                disabled={pendentes.length === 0}
                 className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] gap-2"
               >
                 <Play size={14} /> Iniciar estudos!

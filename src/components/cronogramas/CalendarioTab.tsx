@@ -470,8 +470,17 @@ export function CalendarioTab({
 
               <div className="flex flex-col gap-1">
                 {visiveis.map((ev) => {
-                  const cor = colorForMateria(ev.materia_nome);
-                  const fundo = ev.is_revisao && !ev.concluido ? "#6B7280" : cor;
+                  const pastel = getCorMateriaPastel(ev.materia_nome);
+                  const bg = ev.concluido
+                    ? "#e5e7eb"
+                    : ev.is_revisao
+                      ? "#F1EFE8"
+                      : pastel.background;
+                  const fg = ev.concluido
+                    ? "#9ca3af"
+                    : ev.is_revisao
+                      ? "#444441"
+                      : pastel.color;
                   return (
                     <div
                       key={ev.id}
@@ -486,13 +495,10 @@ export function CalendarioTab({
                         setDraggingId(null);
                         setDragOverDay(null);
                       }}
-                      className={`text-[11px] px-2 py-[2px] rounded-[99px] truncate ${
+                      className={`text-[11px] px-2 py-[2px] rounded-[99px] truncate font-medium ${
                         ev.concluido ? "line-through cursor-default" : "cursor-grab active:cursor-grabbing"
                       } ${draggingId === ev.id ? "opacity-50" : ""}`}
-                      style={{
-                        background: ev.concluido ? "#9ca3af" : fundo,
-                        color: "white",
-                      }}
+                      style={{ background: bg, color: fg }}
                       title={ev.titulo}
                     >
                       {ev.is_revisao && !ev.concluido ? `Rev: ${ev.titulo}` : ev.titulo}
