@@ -121,7 +121,7 @@ function AuthPage() {
           </div>
         </div>
         <div className="text-center mt-4">
-          <Link to="/dashboard" className="text-[12px] text-text-muted hover:text-text-main">
+          <Link to="/" className="text-[12px] text-text-muted hover:text-text-main">
             ← Voltar
           </Link>
         </div>
