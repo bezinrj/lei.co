@@ -353,8 +353,15 @@ function SortableRow({
         {topico.fontes.length === 0 ? (
           <span className="text-[12px] text-text-muted">—</span>
         ) : (
-          <div className="flex flex-col gap-2">
-            {topico.fontes.map((f, i) => {
+          (() => {
+            const comQuestoes = topico.fontes
+              .map((f, i) => ({ f, i }))
+              .filter((x) => x.f.link_questoes);
+            const semQuestoes = topico.fontes
+              .map((f, i) => ({ f, i }))
+              .filter((x) => !x.f.link_questoes);
+
+            const renderItem = (f: Fonte, i: number) => {
               const key = `${topico.id}:${f.sigla}`;
               const done = !!fonteProgresso[key];
               return (
@@ -381,8 +388,36 @@ function SortableRow({
                   </span>
                 </div>
               );
-            })}
-          </div>
+            };
+
+            return (
+              <>
+                {semQuestoes.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {semQuestoes.map((x) => renderItem(x.f, x.i))}
+                  </div>
+                )}
+                {comQuestoes.length > 0 && (
+                  <>
+                    {semQuestoes.length > 0 && (
+                      <div style={{ borderTop: "1px solid #e5e7eb", margin: "6px 0" }} />
+                    )}
+                    <div
+                      className="flex flex-col gap-2"
+                      style={{
+                        background: "#F7F4EE",
+                        borderRadius: 6,
+                        padding: "5px 7px",
+                        marginTop: 2,
+                      }}
+                    >
+                      {comQuestoes.map((x) => renderItem(x.f, x.i))}
+                    </div>
+                  </>
+                )}
+              </>
+            );
+          })()
         )}
       </td>
       <td className="py-3 px-2 align-top">
