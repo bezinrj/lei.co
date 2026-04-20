@@ -6,9 +6,22 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { VitePWA } from "vite-plugin-pwa";
+import { loadEnv } from "vite";
+import path from "node:path";
+
+// Load all (non-VITE_) env vars into process.env for server routes (e.g. SUPABASE_SERVICE_ROLE_KEY).
+const serverEnv = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "");
+Object.assign(process.env, serverEnv);
 
 export default defineConfig({
   vite: {
+    resolve: {
+      alias: {
+        "entities/lib/decode.js": path.resolve(__dirname, "node_modules/entities/lib/decode.js"),
+        "entities/lib/encode.js": path.resolve(__dirname, "node_modules/entities/lib/encode.js"),
+        entities: path.resolve(__dirname, "node_modules/entities"),
+      },
+    },
     plugins: [
       VitePWA({
         registerType: "autoUpdate",
@@ -32,7 +45,7 @@ export default defineConfig({
         },
         workbox: {
           navigateFallback: "/offline.html",
-          navigateFallbackDenylist: [/^\/_serverFn/, /^\/api/, /^\/~oauth/],
+          navigateFallbackDenylist: [/^\/_serverFn/, /^\/api/, /^\/~oauth/, /^\/lovable/, /^\/email/],
           globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
           runtimeCaching: [
             {
