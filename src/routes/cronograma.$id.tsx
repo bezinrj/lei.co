@@ -302,6 +302,7 @@ function CronogramaDetail() {
                       materia_id: t.materia_id,
                       materia_nome: t.materia_nome,
                       horas_estimadas: t.horas_estimadas,
+                      fontes: t.fontes,
                     }))}
                     userId={user.id}
                     cronogramaId={id}
