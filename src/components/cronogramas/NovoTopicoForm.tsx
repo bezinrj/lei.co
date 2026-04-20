@@ -115,6 +115,10 @@ export function NovoTopicoForm({
         }));
 
       if (isEdit && editing) {
+        const materiaChanged = materiaId !== editing.materia_id;
+        const oldOrdem = editing.ordem ?? 0;
+        const newOrdem = Math.max(0, (posicao || 1) - 1);
+
         const { error } = await supabase
           .from("cronograma_topicos")
           .update({
@@ -125,6 +129,24 @@ export function NovoTopicoForm({
           })
           .eq("id", editing.id);
         if (error) throw error;
+
+        // Reorder if needed (same matéria + position changed, or matéria changed)
+        if (materiaChanged || newOrdem !== oldOrdem) {
+          const { data: irmaos } = await supabase
+            .from("cronograma_topicos")
+            .select("id, ordem")
+            .eq("materia_id", materiaId)
+            .order("ordem", { ascending: true });
+
+          const lista = (irmaos ?? []).filter((t) => t.id !== editing.id);
+          const insertAt = Math.min(newOrdem, lista.length);
+          lista.splice(insertAt, 0, { id: editing.id, ordem: 0 });
+          await Promise.all(
+            lista.map((t, idx) =>
+              supabase.from("cronograma_topicos").update({ ordem: idx }).eq("id", t.id),
+            ),
+          );
+        }
         toast.success("Tópico atualizado");
       } else {
         const { count } = await supabase
