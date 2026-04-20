@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getCorMateriaPastel } from "@/lib/materia-color";
+import type { Fonte } from "./NovoTopicoForm";
 
 export type SessaoEvento = {
   id: string;
@@ -13,6 +15,7 @@ export type SessaoEvento = {
   topico_id: string | null;
   materia_nome: string;
   concluido: boolean;
+  fontes?: Fonte[];
 };
 
 type Props = {
@@ -30,6 +33,16 @@ type LinhaState = {
   acertos: string;
   concluido: boolean;
 };
+
+const LS_START = "timer_start";
+const LS_RUNNING = "timer_running";
+const LS_ACC = "timer_accumulated";
+
+function clearTimerLS() {
+  localStorage.removeItem(LS_START);
+  localStorage.removeItem(LS_RUNNING);
+  localStorage.removeItem(LS_ACC);
+}
 
 function fmtTempo(s: number) {
   const hh = Math.floor(s / 3600);
@@ -49,7 +62,23 @@ function corBarra(p: number): string {
   if (p < 50) return "#E24B4A";
   if (p < 60) return "#EF9F27";
   if (p < 80) return "#1D9E75";
-  return "#0F6F4F";
+  return "#16A085";
+}
+
+function fonteLabel(f: Fonte): string {
+  return f.descricao ? `${f.sigla} — ${f.descricao}` : f.sigla;
+}
+
+function linksQuestoes(fontes: Fonte[]): { sigla: string; url: string }[] {
+  return fontes.flatMap((f) => {
+    const arr =
+      f.links_questoes && f.links_questoes.length > 0
+        ? f.links_questoes
+        : f.link_questoes
+          ? [f.link_questoes]
+          : [];
+    return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, url: url as string }));
+  });
 }
 
 export function RegistrarSessaoModal({
@@ -85,6 +114,11 @@ export function RegistrarSessaoModal({
 
   function update(id: string, patch: Partial<LinhaState>) {
     setLinhas((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  }
+
+  function handleDescartar() {
+    clearTimerLS();
+    onOpenChange(false);
   }
 
   async function handleSave() {
@@ -125,6 +159,7 @@ export function RegistrarSessaoModal({
           );
         }
       }
+      clearTimerLS();
       toast.success("Sessão registrada");
       onOpenChange(false);
       onSaved();
@@ -136,12 +171,12 @@ export function RegistrarSessaoModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : handleDescartar())}>
       <DialogContent
-        className="sm:max-w-[520px] rounded-[14px] p-0 gap-0"
+        className="sm:max-w-[560px] rounded-[14px] p-0 gap-0"
         style={{ background: "#ffffff" }}
       >
-        <div className="flex items-center justify-between px-6 pt-5 pb-3">
+        <div className="flex items-center justify-between px-6 pt-5 pb-2">
           <DialogTitle
             className="font-medium"
             style={{ fontSize: "16px", color: "#111827", fontFamily: "inherit" }}
@@ -149,7 +184,7 @@ export function RegistrarSessaoModal({
             Registrar sessão de estudo
           </DialogTitle>
           <button
-            onClick={() => onOpenChange(false)}
+            onClick={handleDescartar}
             className="text-[#9ca3af] hover:text-[#374151]"
             aria-label="Fechar"
           >
@@ -157,7 +192,24 @@ export function RegistrarSessaoModal({
           </button>
         </div>
 
-        <div className="px-6 pb-5 max-h-[60vh] overflow-y-auto flex flex-col gap-3">
+        {/* Tempo total */}
+        <div className="px-6 pb-3">
+          <div className="text-[11px] uppercase tracking-wider" style={{ color: "#6b7280" }}>
+            Tempo total da sessão
+          </div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 500,
+              fontVariantNumeric: "tabular-nums",
+              color: "#1D9E75",
+            }}
+          >
+            {fmtTempo(segundosTotais)}
+          </div>
+        </div>
+
+        <div className="px-6 pb-5 max-h-[55vh] overflow-y-auto flex flex-col gap-3">
           {eventosPendentes.length === 0 && (
             <div className="text-[12px] text-[#6b7280] py-4 text-center">
               Nenhuma matéria pendente para hoje.
@@ -167,23 +219,43 @@ export function RegistrarSessaoModal({
             const l = linhas[ev.id];
             if (!l) return null;
             const pct = parsePct(l.questoes, l.acertos);
+            const pastel = getCorMateriaPastel(ev.materia_nome);
+            const fontes = ev.fontes ?? [];
+            const fontePrincipal = fontes[0];
+            const linksSug = linksQuestoes(fontes);
+
             return (
               <div
                 key={ev.id}
                 className="rounded-[10px] p-3 flex flex-col gap-2"
                 style={{ background: "#f9fafb", border: "1px solid #e5e7eb" }}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className="text-[11px] px-2 py-[2px] rounded-[6px] font-medium"
-                    style={{ background: "#f3f4f6", color: "#374151" }}
+                    className="text-[11px] px-2 py-[2px] rounded-[99px] font-medium"
+                    style={{ background: pastel.background, color: pastel.color }}
                   >
                     {ev.materia_nome}
                   </span>
-                  <span className="text-[13px]" style={{ color: "#111827" }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>
                     {ev.titulo}
                   </span>
                 </div>
+                {fontePrincipal && (
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>{fonteLabel(fontePrincipal)}</div>
+                )}
+
+                {/* Checkbox de conclusão */}
+                <label
+                  className="flex items-center gap-2 cursor-pointer select-none"
+                  style={{ fontSize: 13, color: "#374151" }}
+                >
+                  <Checkbox
+                    checked={l.concluido}
+                    onCheckedChange={(v) => update(ev.id, { concluido: !!v })}
+                  />
+                  Marcar esta matéria como concluída
+                </label>
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
@@ -203,7 +275,7 @@ export function RegistrarSessaoModal({
                   </div>
                   <div>
                     <label className="text-[11px]" style={{ color: "#6b7280" }}>
-                      Questões
+                      Questões feitas
                     </label>
                     <Input
                       type="number"
@@ -249,26 +321,53 @@ export function RegistrarSessaoModal({
                       />
                     </div>
                     <span
-                      className="text-[11px] font-medium"
-                      style={{ color: corBarra(pct), minWidth: 36, textAlign: "right" }}
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: corBarra(pct),
+                        minWidth: 36,
+                        textAlign: "right",
+                      }}
                     >
                       {pct}%
                     </span>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={l.concluido}
-                    onCheckedChange={(v) => update(ev.id, { concluido: v })}
-                  />
-                  <label
-                    className="text-[13px]"
-                    style={{ color: "#374151" }}
-                  >
-                    Marcar como concluída
-                  </label>
-                </div>
+                {linksSug.length > 0 && (
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#6b7280",
+                        marginTop: 8,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Links sugeridos
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {linksSug.map((l, i) => (
+                        <a
+                          key={`${l.sigla}-${i}`}
+                          href={l.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1"
+                          style={{
+                            fontSize: 10,
+                            color: "#378ADD",
+                            border: "1px solid #B5D4F4",
+                            borderRadius: 20,
+                            padding: "2px 8px",
+                          }}
+                        >
+                          {l.sigla} <ExternalLink size={9} />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -279,7 +378,7 @@ export function RegistrarSessaoModal({
           style={{ borderTop: "1px solid #e5e7eb" }}
         >
           <Button
-            onClick={() => onOpenChange(false)}
+            onClick={handleDescartar}
             disabled={saving}
             className="rounded-[8px] hover:opacity-90"
             style={{

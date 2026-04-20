@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { colorForMateria } from "@/lib/materia-color";
+import { colorForMateria, getCorMateriaPastel } from "@/lib/materia-color";
 import type { Fonte } from "./NovoTopicoForm";
 import { CronometroBloco } from "./CronometroBloco";
 import { RegistrarSessaoModal } from "./RegistrarSessaoModal";
@@ -360,15 +360,18 @@ export function CalendarioTab({
 
       {/* Legenda */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {materiasNoMes.map((m) => (
-          <span
-            key={m.id}
-            className="text-[11px] px-2 py-[2px] rounded-[99px] text-white"
-            style={{ background: colorForMateria(m.nome) }}
-          >
-            {m.nome}
-          </span>
-        ))}
+        {materiasNoMes.map((m) => {
+          const p = getCorMateriaPastel(m.nome);
+          return (
+            <span
+              key={m.id}
+              className="text-[11px] px-2 py-[2px] rounded-[99px] font-medium"
+              style={{ background: p.background, color: p.color }}
+            >
+              {m.nome}
+            </span>
+          );
+        })}
         {temRevisaoNoMes && (
           <span className="text-[11px] px-2 py-[2px] rounded-[99px] text-white" style={{ background: "#6B7280" }}>
             Revisão
@@ -526,7 +529,7 @@ export function CalendarioTab({
           </DialogTitle>
           <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
             {detailEvs.map((ev) => {
-              const cor = colorForMateria(ev.materia_nome);
+              const pastel = getCorMateriaPastel(ev.materia_nome);
               const dias = detailDay
                 ? differenceInCalendarDays(today, parseISO(detailDay))
                 : 0;
@@ -574,8 +577,12 @@ export function CalendarioTab({
                   style={{ background: "#ffffff", border: "1px solid #e5e7eb" }}
                 >
                   <span
-                    className="inline-block text-[11px] px-2 py-[2px] rounded-[99px] text-white mb-2"
-                    style={{ background: ev.is_revisao ? "#6B7280" : cor }}
+                    className="inline-block text-[11px] px-2 py-[2px] rounded-[99px] mb-2 font-medium"
+                    style={
+                      ev.is_revisao
+                        ? { background: "#F1EFE8", color: "#444441" }
+                        : { background: pastel.background, color: pastel.color }
+                    }
                   >
                     {ev.is_revisao ? `Rev — ${ev.materia_nome}` : ev.materia_nome}
                   </span>
@@ -680,13 +687,17 @@ export function CalendarioTab({
         segundosTotais={sessaoSegundos}
         eventosPendentes={eventosHoje
           .filter((e) => !e.concluido)
-          .map((e) => ({
-            id: e.id,
-            titulo: e.titulo,
-            topico_id: e.topico_id,
-            materia_nome: e.materia_nome,
-            concluido: e.concluido,
-          }))}
+          .map((e) => {
+            const t = e.topico_id ? topicoById.get(e.topico_id) : undefined;
+            return {
+              id: e.id,
+              titulo: e.titulo,
+              topico_id: e.topico_id,
+              materia_nome: e.materia_nome,
+              concluido: e.concluido,
+              fontes: t?.fontes ?? [],
+            };
+          })}
         userId={userId}
         onSaved={onChange}
       />
