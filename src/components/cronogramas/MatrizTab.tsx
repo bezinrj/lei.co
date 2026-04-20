@@ -421,50 +421,56 @@ function SortableRow({
         )}
       </td>
       <td className="py-3 px-2 align-top">
-        {topico.fontes.some((f) => f.link_questoes) ? (
-          <div className="flex flex-col gap-2">
-            {topico.fontes.map((f, i) =>
-              f.link_questoes ? (
+        {(() => {
+          const linksAll = topico.fontes.flatMap((f) => {
+            const arr = (f.links_questoes && f.links_questoes.length > 0)
+              ? f.links_questoes
+              : (f.link_questoes ? [f.link_questoes] : []);
+            return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, url }));
+          });
+          if (linksAll.length === 0) return <span className="text-[12px] text-text-muted">—</span>;
+          return (
+            <div className="flex flex-col gap-2">
+              {linksAll.map((l, i) => (
                 <a
                   key={i}
-                  href={f.link_questoes}
+                  href={l.url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-[12px] text-[#378ADD] hover:underline inline-flex items-center gap-1"
                 >
-                  <ExternalLink size={11} /> {f.sigla}
+                  <ExternalLink size={11} /> {l.sigla}
                 </a>
-              ) : (
-                <span key={i} className="text-[12px] text-text-muted">—</span>
-              ),
-            )}
-          </div>
-        ) : (
-          <span className="text-[12px] text-text-muted">—</span>
-        )}
+              ))}
+            </div>
+          );
+        })()}
       </td>
       <td className="py-3 px-2 align-top">
-        {topico.fontes.some((f) => f.link_dod) ? (
-          <div className="flex flex-col gap-2">
-            {topico.fontes.map((f, i) =>
-              f.link_dod ? (
+        {(() => {
+          const linksAll = topico.fontes.flatMap((f) => {
+            const arr = (f.links_dod && f.links_dod.length > 0)
+              ? f.links_dod
+              : (f.link_dod ? [f.link_dod] : []);
+            return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, url }));
+          });
+          if (linksAll.length === 0) return <span className="text-[12px] text-text-muted">—</span>;
+          return (
+            <div className="flex flex-col gap-2">
+              {linksAll.map((l, i) => (
                 <a
                   key={i}
-                  href={f.link_dod}
+                  href={l.url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-[12px] text-[#378ADD] hover:underline inline-flex items-center gap-1"
                 >
-                  <ExternalLink size={11} /> {f.sigla}
+                  <ExternalLink size={11} /> {l.sigla}
                 </a>
-              ) : (
-                <span key={i} className="text-[12px] text-text-muted">—</span>
-              ),
-            )}
-          </div>
-        ) : (
-          <span className="text-[12px] text-text-muted">—</span>
-        )}
+              ))}
+            </div>
+          );
+        })()}
       </td>
       {canEdit && (
         <td className="py-3 px-2 align-top">
