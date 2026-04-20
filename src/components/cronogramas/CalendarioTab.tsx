@@ -88,6 +88,12 @@ export function CalendarioTab({
     return m;
   }, [materias]);
 
+  const topicoById = useMemo(() => {
+    const m = new Map<string, Topico>();
+    topicos.forEach((t) => m.set(t.id, t));
+    return m;
+  }, [topicos]);
+
   // Add materia_nome derivative to events
   const evs = useMemo(
     () =>
