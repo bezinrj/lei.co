@@ -340,29 +340,11 @@ function SortableRow({
           transition: "all 0.25s ease",
         }}
       >
-        {editing ? (
-          <div className="flex gap-1">
-            <Input
-              value={editTitulo}
-              onChange={(e) => setEditTitulo(e.target.value)}
-              className="h-7 bg-background text-[13px]"
-            />
-            <button onClick={onSaveEdit} className="text-sage-dark p-1" aria-label="Salvar">
-              <Check size={14} />
-            </button>
-            <button onClick={onCancelEdit} className="text-text-muted p-1" aria-label="Cancelar">
-              <X size={14} />
-            </button>
+        <div>{topico.titulo}</div>
+        {topico.horas_estimadas > 0 && (
+          <div className="text-[11px] text-text-muted mt-0.5">
+            {topico.horas_estimadas}h estimadas
           </div>
-        ) : (
-          <>
-            <div>{topico.titulo}</div>
-            {topico.horas_estimadas > 0 && (
-              <div className="text-[11px] text-text-muted mt-0.5">
-                {topico.horas_estimadas}h estimadas
-              </div>
-            )}
-          </>
         )}
       </td>
       <td className="py-3 px-2 align-top">
