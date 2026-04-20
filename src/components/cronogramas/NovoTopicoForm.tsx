@@ -1,5 +1,20 @@
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { GripVertical, Plus, X } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +24,14 @@ import { colorForMateria } from "@/lib/materia-color";
 export type Fonte = {
   sigla: string;
   descricao: string;
+  /** Legado: link único de questões. Mantido para retrocompatibilidade. */
   link_questoes: string;
+  /** Legado: link único do DOD. Mantido para retrocompatibilidade. */
   link_dod: string;
+  /** Múltiplos links de questões. Quando presente, prevalece sobre link_questoes. */
+  links_questoes?: string[];
+  /** Múltiplos links DOD. Quando presente, prevalece sobre link_dod. */
+  links_dod?: string[];
 };
 
 export type TopicoEditavel = {
@@ -35,6 +56,45 @@ type Props = {
   embedded?: boolean;
 };
 
+type FonteRow = Fonte & { _key: string };
+
+let _rowKeySeq = 0;
+const newRowKey = () => `f_${Date.now()}_${++_rowKeySeq}`;
+
+function normalizeFonteIn(f: Fonte): FonteRow {
+  const lq = f.links_questoes && f.links_questoes.length > 0
+    ? f.links_questoes
+    : f.link_questoes
+      ? [f.link_questoes]
+      : [""];
+  const ld = f.links_dod && f.links_dod.length > 0
+    ? f.links_dod
+    : f.link_dod
+      ? [f.link_dod]
+      : [""];
+  return {
+    sigla: f.sigla ?? "",
+    descricao: f.descricao ?? "",
+    link_questoes: f.link_questoes ?? "",
+    link_dod: f.link_dod ?? "",
+    links_questoes: lq,
+    links_dod: ld,
+    _key: newRowKey(),
+  };
+}
+
+function emptyRow(): FonteRow {
+  return {
+    sigla: "",
+    descricao: "",
+    link_questoes: "",
+    link_dod: "",
+    links_questoes: [""],
+    links_dod: [""],
+    _key: newRowKey(),
+  };
+}
+
 export function NovoTopicoForm({
   cronogramaId,
   materias,
@@ -50,33 +110,73 @@ export function NovoTopicoForm({
   const [posicao, setPosicao] = useState<number>(
     editing ? (editing.ordem ?? 0) + 1 : 1,
   );
-  const [fontes, setFontes] = useState<Fonte[]>(
+  const [fontes, setFontes] = useState<FonteRow[]>(
     editing?.fontes && editing.fontes.length > 0
-      ? editing.fontes.map((f) => ({
-          sigla: f.sigla ?? "",
-          descricao: f.descricao ?? "",
-          link_questoes: f.link_questoes ?? "",
-          link_dod: f.link_dod ?? "",
-        }))
-      : [{ sigla: "", descricao: "", link_questoes: "", link_dod: "" }],
+      ? editing.fontes.map(normalizeFonteIn)
+      : [emptyRow()],
   );
   const [saving, setSaving] = useState(false);
 
-  function updateFonte(i: number, key: keyof Fonte, value: string) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  function updateFonteField(i: number, key: "sigla" | "descricao", value: string) {
     setFontes((f) => f.map((x, idx) => (idx === i ? { ...x, [key]: value } : x)));
   }
+  function updateFonteLink(
+    i: number,
+    field: "links_questoes" | "links_dod",
+    linkIdx: number,
+    value: string,
+  ) {
+    setFontes((f) =>
+      f.map((x, idx) => {
+        if (idx !== i) return x;
+        const arr = [...(x[field] ?? [""])];
+        arr[linkIdx] = value;
+        return { ...x, [field]: arr };
+      }),
+    );
+  }
+  function addLink(i: number, field: "links_questoes" | "links_dod") {
+    setFontes((f) =>
+      f.map((x, idx) => {
+        if (idx !== i) return x;
+        const arr = [...(x[field] ?? []), ""];
+        return { ...x, [field]: arr };
+      }),
+    );
+  }
+  function removeLink(i: number, field: "links_questoes" | "links_dod", linkIdx: number) {
+    setFontes((f) =>
+      f.map((x, idx) => {
+        if (idx !== i) return x;
+        const arr = (x[field] ?? []).filter((_, k) => k !== linkIdx);
+        return { ...x, [field]: arr.length > 0 ? arr : [""] };
+      }),
+    );
+  }
   function addFonte() {
-    setFontes((f) => [...f, { sigla: "", descricao: "", link_questoes: "", link_dod: "" }]);
+    setFontes((f) => [...f, emptyRow()]);
   }
   function removeFonte(i: number) {
     setFontes((f) => f.filter((_, idx) => idx !== i));
+  }
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setFontes((f) => {
+      const oldIndex = f.findIndex((x) => x._key === active.id);
+      const newIndex = f.findIndex((x) => x._key === over.id);
+      if (oldIndex < 0 || newIndex < 0) return f;
+      return arrayMove(f, oldIndex, newIndex);
+    });
   }
 
   function resetForm() {
     setMateria("");
     setAssunto("");
     setHoras(3);
-    setFontes([{ sigla: "", descricao: "", link_questoes: "", link_dod: "" }]);
+    setFontes([emptyRow()]);
   }
 
   async function save() {
@@ -107,12 +207,23 @@ export function NovoTopicoForm({
 
       const fontesClean = fontes
         .filter((f) => f.sigla.trim() || f.descricao.trim())
-        .map((f) => ({
-          sigla: f.sigla.trim(),
-          descricao: f.descricao.trim(),
-          link_questoes: f.link_questoes.trim(),
-          link_dod: f.link_dod.trim(),
-        }));
+        .map((f) => {
+          const linksQ = (f.links_questoes ?? [])
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const linksD = (f.links_dod ?? [])
+            .map((s) => s.trim())
+            .filter(Boolean);
+          return {
+            sigla: f.sigla.trim(),
+            descricao: f.descricao.trim(),
+            // Mantém compat: primeiro link nas chaves antigas
+            link_questoes: linksQ[0] ?? "",
+            link_dod: linksD[0] ?? "",
+            links_questoes: linksQ,
+            links_dod: linksD,
+          };
+        });
 
       if (isEdit && editing) {
         const materiaChanged = materiaId !== editing.materia_id;
@@ -130,7 +241,6 @@ export function NovoTopicoForm({
           .eq("id", editing.id);
         if (error) throw error;
 
-        // Reorder if needed (same matéria + position changed, or matéria changed)
         if (materiaChanged || newOrdem !== oldOrdem) {
           const { data: irmaos } = await supabase
             .from("cronograma_topicos")
@@ -246,46 +356,26 @@ export function NovoTopicoForm({
             <Plus size={12} /> Adicionar fonte
           </Button>
         </div>
-        <div className="flex flex-col gap-2">
-          {fontes.map((f, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-[80px_1fr_1fr_1fr_28px] gap-2 items-center"
-            >
-              <Input
-                value={f.sigla}
-                onChange={(e) => updateFonte(i, "sigla", e.target.value)}
-                placeholder="CF"
-                className="bg-background h-8 text-[12px] font-semibold"
-              />
-              <Input
-                value={f.descricao}
-                onChange={(e) => updateFonte(i, "descricao", e.target.value)}
-                placeholder="Art.1 ao Art.4"
-                className="bg-background h-8 text-[12px]"
-              />
-              <Input
-                value={f.link_questoes}
-                onChange={(e) => updateFonte(i, "link_questoes", e.target.value)}
-                placeholder="Link questões"
-                className="bg-background h-8 text-[12px]"
-              />
-              <Input
-                value={f.link_dod}
-                onChange={(e) => updateFonte(i, "link_dod", e.target.value)}
-                placeholder="Link DOD"
-                className="bg-background h-8 text-[12px]"
-              />
-              <button
-                onClick={() => removeFonte(i)}
-                className="text-text-muted hover:text-destructive p-1"
-                aria-label="Remover fonte"
-              >
-                <X size={14} />
-              </button>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={fontes.map((f) => f._key)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="flex flex-col gap-2">
+              {fontes.map((f, i) => (
+                <SortableFonteRow
+                  key={f._key}
+                  fonte={f}
+                  onUpdateField={(k, v) => updateFonteField(i, k, v)}
+                  onUpdateLink={(field, idx, v) => updateFonteLink(i, field, idx, v)}
+                  onAddLink={(field) => addLink(i, field)}
+                  onRemoveLink={(field, idx) => removeLink(i, field, idx)}
+                  onRemoveRow={() => removeFonte(i)}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       <div className="flex justify-end gap-2 mt-4">
@@ -302,6 +392,132 @@ export function NovoTopicoForm({
           {saving ? "Salvando..." : isEdit ? "Salvar alterações" : "Adicionar tópico"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+type SortableFonteRowProps = {
+  fonte: FonteRow;
+  onUpdateField: (k: "sigla" | "descricao", v: string) => void;
+  onUpdateLink: (field: "links_questoes" | "links_dod", idx: number, v: string) => void;
+  onAddLink: (field: "links_questoes" | "links_dod") => void;
+  onRemoveLink: (field: "links_questoes" | "links_dod", idx: number) => void;
+  onRemoveRow: () => void;
+};
+
+function SortableFonteRow({
+  fonte,
+  onUpdateField,
+  onUpdateLink,
+  onAddLink,
+  onRemoveLink,
+  onRemoveRow,
+}: SortableFonteRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: fonte._key });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  const linksQ = fonte.links_questoes ?? [""];
+  const linksD = fonte.links_dod ?? [""];
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="grid grid-cols-[18px_80px_1fr_1fr_1fr_28px] gap-2 items-start"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab text-text-muted hover:text-text-main p-1 mt-1"
+        aria-label="Arrastar fonte"
+        type="button"
+      >
+        <GripVertical size={14} />
+      </button>
+      <Input
+        value={fonte.sigla}
+        onChange={(e) => onUpdateField("sigla", e.target.value)}
+        placeholder="CF"
+        className="bg-background h-8 text-[12px] font-semibold"
+      />
+      <Input
+        value={fonte.descricao}
+        onChange={(e) => onUpdateField("descricao", e.target.value)}
+        placeholder="Art.1 ao Art.4"
+        className="bg-background h-8 text-[12px]"
+      />
+      <MultiLinkColumn
+        values={linksQ}
+        placeholder="Link questões"
+        onChange={(idx, v) => onUpdateLink("links_questoes", idx, v)}
+        onAdd={() => onAddLink("links_questoes")}
+        onRemove={(idx) => onRemoveLink("links_questoes", idx)}
+      />
+      <MultiLinkColumn
+        values={linksD}
+        placeholder="Link DOD"
+        onChange={(idx, v) => onUpdateLink("links_dod", idx, v)}
+        onAdd={() => onAddLink("links_dod")}
+        onRemove={(idx) => onRemoveLink("links_dod", idx)}
+      />
+      <button
+        onClick={onRemoveRow}
+        className="text-text-muted hover:text-destructive p-1 mt-1"
+        aria-label="Remover fonte"
+        type="button"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+
+function MultiLinkColumn({
+  values,
+  placeholder,
+  onChange,
+  onAdd,
+  onRemove,
+}: {
+  values: string[];
+  placeholder: string;
+  onChange: (idx: number, v: string) => void;
+  onAdd: () => void;
+  onRemove: (idx: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      {values.map((v, idx) => (
+        <div key={idx} className="flex items-center gap-1">
+          <Input
+            value={v}
+            onChange={(e) => onChange(idx, e.target.value)}
+            placeholder={placeholder}
+            className="bg-background h-8 text-[12px]"
+          />
+          {values.length > 1 && (
+            <button
+              type="button"
+              onClick={() => onRemove(idx)}
+              className="text-text-muted hover:text-destructive p-0.5"
+              aria-label="Remover link"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={onAdd}
+        className="text-[10px] text-text-muted hover:text-text-main inline-flex items-center gap-1 self-start mt-0.5"
+      >
+        <Plus size={10} /> link
+      </button>
     </div>
   );
 }
