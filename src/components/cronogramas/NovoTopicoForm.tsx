@@ -219,6 +219,26 @@ export function NovoTopicoForm({
         </div>
       </div>
 
+      {isEdit && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label className="text-[11px] text-text-muted mb-1 block">
+              Posição na matéria
+            </label>
+            <Input
+              type="number"
+              min={1}
+              value={posicao}
+              onChange={(e) => setPosicao(Math.max(1, Number(e.target.value) || 1))}
+              className="bg-background h-9"
+            />
+            <span className="text-[10px] text-text-muted mt-1 block">
+              Define a ordem do tópico dentro da matéria selecionada.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="border-t border-border pt-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[12px] font-medium text-text-main">Fontes legais</span>
