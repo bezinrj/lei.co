@@ -23,7 +23,7 @@ function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: "/perfil" });
   }, [user, loading, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -35,7 +35,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/perfil`,
             data: { display_name: displayName || email.split("@")[0] },
           },
         });
@@ -121,7 +121,7 @@ function AuthPage() {
           </div>
         </div>
         <div className="text-center mt-4">
-          <Link to="/dashboard" className="text-[12px] text-text-muted hover:text-text-main">
+          <Link to="/" className="text-[12px] text-text-muted hover:text-text-main">
             ← Voltar
           </Link>
         </div>
