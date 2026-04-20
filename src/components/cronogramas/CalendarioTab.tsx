@@ -360,15 +360,21 @@ export function CalendarioTab({
             {m.nome}
           </span>
         ))}
-        <span className="text-[11px] px-2 py-[2px] rounded-[99px] text-white" style={{ background: "#6B7280" }}>
-          Revisão
-        </span>
-        <span className="text-[11px] px-2 py-[2px] rounded-[99px]" style={{ background: "#FFFBEA", color: "#B86E07", border: "1px solid #EF9F27" }}>
-          Atrasado +1d
-        </span>
-        <span className="text-[11px] px-2 py-[2px] rounded-[99px]" style={{ background: "#FFF0F0", color: "#E24B4A", border: "1px solid #E24B4A" }}>
-          Atrasado +4d
-        </span>
+        {temRevisaoNoMes && (
+          <span className="text-[11px] px-2 py-[2px] rounded-[99px] text-white" style={{ background: "#6B7280" }}>
+            Revisão
+          </span>
+        )}
+        {temAtraso1d && (
+          <span className="text-[11px] px-2 py-[2px] rounded-[99px]" style={{ background: "#FFFBEA", color: "#B86E07", border: "1px solid #EF9F27" }}>
+            Atrasado +1d
+          </span>
+        )}
+        {temAtraso4d && (
+          <span className="text-[11px] px-2 py-[2px] rounded-[99px]" style={{ background: "#FFF0F0", color: "#E24B4A", border: "1px solid #E24B4A" }}>
+            Atrasado +4d
+          </span>
+        )}
       </div>
 
       {/* Cabeçalho de dias da semana */}
