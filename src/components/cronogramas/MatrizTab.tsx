@@ -354,12 +354,15 @@ function SortableRow({
           <span className="text-[12px] text-text-muted">—</span>
         ) : (
           (() => {
+            const hasQuestoes = (f: Fonte) =>
+              !!(f.link_questoes ||
+                (f.links_questoes && f.links_questoes.some((l) => !!l)));
             const comQuestoes = topico.fontes
               .map((f, i) => ({ f, i }))
-              .filter((x) => x.f.link_questoes);
+              .filter((x) => hasQuestoes(x.f));
             const semQuestoes = topico.fontes
               .map((f, i) => ({ f, i }))
-              .filter((x) => !x.f.link_questoes);
+              .filter((x) => !hasQuestoes(x.f));
 
             const renderItem = (f: Fonte, i: number) => {
               const key = `${topico.id}:${f.sigla}`;
