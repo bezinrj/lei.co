@@ -44,7 +44,7 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast.success("Bem-vinda de volta!");
+        toast.success("Bem-vindo de volta!");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao autenticar";

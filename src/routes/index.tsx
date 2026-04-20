@@ -128,7 +128,7 @@ function LandingPage() {
       <section className="max-w-3xl mx-auto px-6 pb-24">
         <div className="lei-card text-center bg-lilac-light">
           <h2 className="font-serif text-[28px] text-text-main mb-2">
-            Pronta para começar?
+            Pronto para começar?
           </h2>
           <p className="text-[14px] text-text-muted mb-6">
             Crie sua conta gratuita e desenhe o caminho até a sua aprovação.
