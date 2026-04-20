@@ -20,6 +20,8 @@ export type TopicoEditavel = {
   titulo: string;
   horas_estimadas: number;
   fontes: Fonte[];
+  ordem?: number;
+  totalNaMateria?: number;
 };
 
 type Props = {
