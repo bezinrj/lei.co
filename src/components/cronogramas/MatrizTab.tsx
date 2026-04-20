@@ -200,6 +200,8 @@ export function MatrizTab({
                         titulo: t.titulo,
                         horas_estimadas: t.horas_estimadas,
                         fontes: t.fontes,
+                        ordem: t.ordem,
+                        totalNaMateria: items.filter((x) => x.materia_id === t.materia_id).length,
                       })
                     }
                     onToggle={(v) => toggleTopico(t.id, v)}
