@@ -65,6 +65,7 @@ function CronogramaDetail() {
   const [ativacao, setAtivacao] = useState<{ data_inicio: string; data_prova: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [ativarOpen, setAtivarOpen] = useState(false);
+  const [tab, setTab] = useState<string>("matriz");
 
   const loadAll = useCallback(async () => {
     const { data: cronData } = await supabase
