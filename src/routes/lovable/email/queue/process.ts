@@ -310,7 +310,7 @@ export const Route = createFileRoute('/lovable/email/queue/process')({
                   run_id: typeof payload.run_id === 'string' ? payload.run_id : undefined,
                   sender_domain: requiredFields.sender_domain,
                   subject: requiredFields.subject,
-                  text: typeof payload.text === 'string' ? payload.text : undefined,
+                  text: typeof payload.text === 'string' ? payload.text : '',
                   to: requiredFields.to,
                   unsubscribe_token:
                     typeof payload.unsubscribe_token === 'string'
