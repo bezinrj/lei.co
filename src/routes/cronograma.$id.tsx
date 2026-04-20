@@ -65,6 +65,7 @@ function CronogramaDetail() {
   const [ativacao, setAtivacao] = useState<{ data_inicio: string; data_prova: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [ativarOpen, setAtivarOpen] = useState(false);
+  const [tab, setTab] = useState<string>("matriz");
 
   const loadAll = useCallback(async () => {
     const { data: cronData } = await supabase
@@ -230,10 +231,13 @@ function CronogramaDetail() {
               <div className="mt-4 flex gap-2">
                 {!isLocked && user && allTopicos.length > 0 && (
                   <Button
-                    onClick={() => setAtivarOpen(true)}
+                    onClick={() => {
+                      if (!ativacao) setAtivarOpen(true);
+                      else setTab("calendario");
+                    }}
                     className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] gap-2"
                   >
-                    <Play size={14} /> {ativacao ? "Reativar / Redistribuir" : "Ativar cronograma"}
+                    <Play size={14} /> {ativacao ? "Iniciar Estudos!" : "Ativar cronograma"}
                   </Button>
                 )}
               </div>
@@ -270,7 +274,7 @@ function CronogramaDetail() {
               </div>
             </div>
           ) : (
-            <Tabs defaultValue="matriz">
+            <Tabs value={tab} onValueChange={setTab}>
               <TabsList className="bg-muted">
                 <TabsTrigger value="matriz">Matriz</TabsTrigger>
                 <TabsTrigger value="calendario">Calendário</TabsTrigger>
