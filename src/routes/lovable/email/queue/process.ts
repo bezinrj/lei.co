@@ -136,10 +136,12 @@ export const Route = createFileRoute('/lovable/email/queue/process')({
         const supabase = getAdminClient(supabaseUrl, supabaseServiceKey)
         const db = getDb(supabase)
 
-        const { data: state } = await db
+        const { data: rawState } = await db
           .from('email_send_state')
           .select('retry_after_until, batch_size, send_delay_ms, auth_email_ttl_minutes, transactional_email_ttl_minutes')
-          .single<EmailState>()
+          .single()
+
+        const state = rawState as EmailState | null
 
         if (state?.retry_after_until && new Date(state.retry_after_until) > new Date()) {
           return Response.json({ reason: 'rate_limited', skipped: true })
@@ -270,21 +272,50 @@ export const Route = createFileRoute('/lovable/email/queue/process')({
               }
             }
 
+            const requiredFields = {
+              from: payload.from,
+              html: payload.html,
+              label: payload.label,
+              message_id: payload.message_id,
+              purpose: payload.purpose,
+              sender_domain: payload.sender_domain,
+              subject: payload.subject,
+              to: payload.to,
+            }
+
+            if (
+              typeof requiredFields.from !== 'string' ||
+              typeof requiredFields.html !== 'string' ||
+              typeof requiredFields.label !== 'string' ||
+              typeof requiredFields.message_id !== 'string' ||
+              typeof requiredFields.purpose !== 'string' ||
+              typeof requiredFields.sender_domain !== 'string' ||
+              typeof requiredFields.subject !== 'string' ||
+              typeof requiredFields.to !== 'string'
+            ) {
+              await moveToDlq(supabase, queue, msg, 'Invalid email payload in queue')
+              continue
+            }
+
             try {
               await sendLovableEmail(
                 {
-                  from: payload.from,
-                  html: payload.html,
-                  idempotency_key: payload.idempotency_key,
-                  label: payload.label,
-                  message_id: payload.message_id,
-                  purpose: payload.purpose,
-                  run_id: payload.run_id,
-                  sender_domain: payload.sender_domain,
-                  subject: payload.subject,
-                  text: payload.text,
-                  to: payload.to,
-                  unsubscribe_token: payload.unsubscribe_token,
+                  from: requiredFields.from,
+                  html: requiredFields.html,
+                  idempotency_key:
+                    typeof payload.idempotency_key === 'string' ? payload.idempotency_key : undefined,
+                  label: requiredFields.label,
+                  message_id: requiredFields.message_id,
+                  purpose: requiredFields.purpose,
+                  run_id: typeof payload.run_id === 'string' ? payload.run_id : undefined,
+                  sender_domain: requiredFields.sender_domain,
+                  subject: requiredFields.subject,
+                  text: typeof payload.text === 'string' ? payload.text : undefined,
+                  to: requiredFields.to,
+                  unsubscribe_token:
+                    typeof payload.unsubscribe_token === 'string'
+                      ? payload.unsubscribe_token
+                      : undefined,
                 },
                 { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
               )
