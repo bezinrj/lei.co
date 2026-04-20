@@ -13,19 +13,48 @@ export type Fonte = {
   link_dod: string;
 };
 
+export type TopicoEditavel = {
+  id: string;
+  materia_id: string;
+  materia_nome: string;
+  titulo: string;
+  horas_estimadas: number;
+  fontes: Fonte[];
+};
+
 type Props = {
   cronogramaId: string;
   materias: { id: string; nome: string }[];
   onAdded: () => void;
+  /** Quando definido, o form opera em modo edição. */
+  editing?: TopicoEditavel | null;
+  onCancelEdit?: () => void;
+  /** Esconde o card visual externo (útil dentro de Dialog). */
+  embedded?: boolean;
 };
 
-export function NovoTopicoForm({ cronogramaId, materias, onAdded }: Props) {
-  const [materia, setMateria] = useState("");
-  const [assunto, setAssunto] = useState("");
-  const [horas, setHoras] = useState(3);
-  const [fontes, setFontes] = useState<Fonte[]>([
-    { sigla: "", descricao: "", link_questoes: "", link_dod: "" },
-  ]);
+export function NovoTopicoForm({
+  cronogramaId,
+  materias,
+  onAdded,
+  editing = null,
+  onCancelEdit,
+  embedded = false,
+}: Props) {
+  const isEdit = !!editing;
+  const [materia, setMateria] = useState(editing?.materia_nome ?? "");
+  const [assunto, setAssunto] = useState(editing?.titulo ?? "");
+  const [horas, setHoras] = useState(editing?.horas_estimadas ?? 3);
+  const [fontes, setFontes] = useState<Fonte[]>(
+    editing?.fontes && editing.fontes.length > 0
+      ? editing.fontes.map((f) => ({
+          sigla: f.sigla ?? "",
+          descricao: f.descricao ?? "",
+          link_questoes: f.link_questoes ?? "",
+          link_dod: f.link_dod ?? "",
+        }))
+      : [{ sigla: "", descricao: "", link_questoes: "", link_dod: "" }],
+  );
   const [saving, setSaving] = useState(false);
 
   function updateFonte(i: number, key: keyof Fonte, value: string) {
@@ -36,6 +65,13 @@ export function NovoTopicoForm({ cronogramaId, materias, onAdded }: Props) {
   }
   function removeFonte(i: number) {
     setFontes((f) => f.filter((_, idx) => idx !== i));
+  }
+
+  function resetForm() {
+    setMateria("");
+    setAssunto("");
+    setHoras(3);
+    setFontes([{ sigla: "", descricao: "", link_questoes: "", link_dod: "" }]);
   }
 
   async function save() {
@@ -64,12 +100,6 @@ export function NovoTopicoForm({ cronogramaId, materias, onAdded }: Props) {
         materiaId = novaM.id;
       }
 
-      // Find next ordem
-      const { count } = await supabase
-        .from("cronograma_topicos")
-        .select("*", { count: "exact", head: true })
-        .eq("materia_id", materiaId);
-
       const fontesClean = fontes
         .filter((f) => f.sigla.trim() || f.descricao.trim())
         .map((f) => ({
@@ -79,19 +109,35 @@ export function NovoTopicoForm({ cronogramaId, materias, onAdded }: Props) {
           link_dod: f.link_dod.trim(),
         }));
 
-      const { error } = await supabase.from("cronograma_topicos").insert({
-        materia_id: materiaId,
-        titulo: assunto.trim(),
-        ordem: count ?? 0,
-        horas_estimadas: horas,
-        fontes: fontesClean,
-      });
-      if (error) throw error;
+      if (isEdit && editing) {
+        const { error } = await supabase
+          .from("cronograma_topicos")
+          .update({
+            materia_id: materiaId,
+            titulo: assunto.trim(),
+            horas_estimadas: horas,
+            fontes: fontesClean,
+          })
+          .eq("id", editing.id);
+        if (error) throw error;
+        toast.success("Tópico atualizado");
+      } else {
+        const { count } = await supabase
+          .from("cronograma_topicos")
+          .select("*", { count: "exact", head: true })
+          .eq("materia_id", materiaId);
 
-      setAssunto("");
-      setHoras(3);
-      setFontes([{ sigla: "", descricao: "", link_questoes: "", link_dod: "" }]);
-      toast.success("Tópico adicionado");
+        const { error } = await supabase.from("cronograma_topicos").insert({
+          materia_id: materiaId,
+          titulo: assunto.trim(),
+          ordem: count ?? 0,
+          horas_estimadas: horas,
+          fontes: fontesClean,
+        });
+        if (error) throw error;
+        resetForm();
+        toast.success("Tópico adicionado");
+      }
       onAdded();
     } catch (e) {
       toast.error((e as Error).message);
@@ -100,9 +146,15 @@ export function NovoTopicoForm({ cronogramaId, materias, onAdded }: Props) {
     }
   }
 
+  const containerClass = embedded ? "" : "lei-card mt-4";
+
   return (
-    <div className="lei-card mt-4">
-      <h3 className="font-serif text-[15px] text-text-main mb-3">Adicionar tópico</h3>
+    <div className={containerClass}>
+      {!embedded && (
+        <h3 className="font-serif text-[15px] text-text-main mb-3">
+          {isEdit ? "Editar tópico" : "Adicionar tópico"}
+        </h3>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
         <div>
           <label className="text-[11px] text-text-muted mb-1 block">Matéria</label>
@@ -189,13 +241,18 @@ export function NovoTopicoForm({ cronogramaId, materias, onAdded }: Props) {
         </div>
       </div>
 
-      <div className="flex justify-end mt-4">
+      <div className="flex justify-end gap-2 mt-4">
+        {isEdit && onCancelEdit && (
+          <Button variant="outline" onClick={onCancelEdit} disabled={saving}>
+            Cancelar
+          </Button>
+        )}
         <Button
           onClick={save}
           disabled={saving}
           className="bg-sage-dark hover:bg-sage-dark/90 text-white"
         >
-          {saving ? "Salvando..." : "Adicionar tópico"}
+          {saving ? "Salvando..." : isEdit ? "Salvar alterações" : "Adicionar tópico"}
         </Button>
       </div>
     </div>

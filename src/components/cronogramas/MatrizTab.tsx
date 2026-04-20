@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, GripVertical, Pencil, Trash2, Check, X } from "lucide-react";
+import { ExternalLink, GripVertical, Pencil, Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -16,12 +16,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { colorForMateria } from "@/lib/materia-color";
-import { NovoTopicoForm, type Fonte } from "./NovoTopicoForm";
+import { NovoTopicoForm, type Fonte, type TopicoEditavel } from "./NovoTopicoForm";
 
 export type MatrizTopico = {
   id: string;
@@ -56,8 +56,7 @@ export function MatrizTab({
   onChange,
 }: Props) {
   const [items, setItems] = useState(topicos);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [editTitulo, setEditTitulo] = useState("");
+  const [editingTopico, setEditingTopico] = useState<TopicoEditavel | null>(null);
 
   useEffect(() => setItems(topicos), [topicos]);
 
@@ -111,16 +110,7 @@ export function MatrizTab({
     onChange();
   }
 
-  async function saveEdit(id: string) {
-    if (!editTitulo.trim()) return;
-    const { error } = await supabase
-      .from("cronograma_topicos")
-      .update({ titulo: editTitulo.trim() })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    setEditing(null);
-    onChange();
-  }
+  // edição agora ocorre via dialog (NovoTopicoForm em modo edit)
 
   async function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -202,15 +192,16 @@ export function MatrizTab({
                     concluido={!!progresso[t.id]}
                     fonteProgresso={fonteProgresso}
                     canEdit={canEdit}
-                    editing={editing === t.id}
-                    editTitulo={editTitulo}
-                    setEditTitulo={setEditTitulo}
-                    onStartEdit={() => {
-                      setEditing(t.id);
-                      setEditTitulo(t.titulo);
-                    }}
-                    onCancelEdit={() => setEditing(null)}
-                    onSaveEdit={() => saveEdit(t.id)}
+                    onStartEdit={() =>
+                      setEditingTopico({
+                        id: t.id,
+                        materia_id: t.materia_id,
+                        materia_nome: t.materia_nome,
+                        titulo: t.titulo,
+                        horas_estimadas: t.horas_estimadas,
+                        fontes: t.fontes,
+                      })
+                    }
                     onToggle={(v) => toggleTopico(t.id, v)}
                     onToggleFonte={(sigla, v) => toggleFonte(t.id, sigla, v)}
                     onDelete={() => delTopico(t.id)}
@@ -225,6 +216,33 @@ export function MatrizTab({
       {canEdit && (
         <NovoTopicoForm cronogramaId={cronogramaId} materias={materias} onAdded={onChange} />
       )}
+
+      <Dialog
+        open={!!editingTopico}
+        onOpenChange={(o) => !o && setEditingTopico(null)}
+      >
+        <DialogContent className="bg-card max-w-3xl rounded-[14px]">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-[18px] text-text-main">
+              Editar tópico
+            </DialogTitle>
+          </DialogHeader>
+          {editingTopico && (
+            <NovoTopicoForm
+              key={editingTopico.id}
+              cronogramaId={cronogramaId}
+              materias={materias}
+              editing={editingTopico}
+              embedded
+              onCancelEdit={() => setEditingTopico(null)}
+              onAdded={() => {
+                setEditingTopico(null);
+                onChange();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -235,12 +253,7 @@ type RowProps = {
   concluido: boolean;
   fonteProgresso: Record<string, boolean>;
   canEdit: boolean;
-  editing: boolean;
-  editTitulo: string;
-  setEditTitulo: (s: string) => void;
   onStartEdit: () => void;
-  onCancelEdit: () => void;
-  onSaveEdit: () => void;
   onToggle: (v: boolean) => void;
   onToggleFonte: (sigla: string, v: boolean) => void;
   onDelete: () => void;
@@ -252,12 +265,7 @@ function SortableRow({
   concluido,
   fonteProgresso,
   canEdit,
-  editing,
-  editTitulo,
-  setEditTitulo,
   onStartEdit,
-  onCancelEdit,
-  onSaveEdit,
   onToggle,
   onToggleFonte,
   onDelete,
@@ -332,29 +340,11 @@ function SortableRow({
           transition: "all 0.25s ease",
         }}
       >
-        {editing ? (
-          <div className="flex gap-1">
-            <Input
-              value={editTitulo}
-              onChange={(e) => setEditTitulo(e.target.value)}
-              className="h-7 bg-background text-[13px]"
-            />
-            <button onClick={onSaveEdit} className="text-sage-dark p-1" aria-label="Salvar">
-              <Check size={14} />
-            </button>
-            <button onClick={onCancelEdit} className="text-text-muted p-1" aria-label="Cancelar">
-              <X size={14} />
-            </button>
+        <div>{topico.titulo}</div>
+        {topico.horas_estimadas > 0 && (
+          <div className="text-[11px] text-text-muted mt-0.5">
+            {topico.horas_estimadas}h estimadas
           </div>
-        ) : (
-          <>
-            <div>{topico.titulo}</div>
-            {topico.horas_estimadas > 0 && (
-              <div className="text-[11px] text-text-muted mt-0.5">
-                {topico.horas_estimadas}h estimadas
-              </div>
-            )}
-          </>
         )}
       </td>
       <td className="py-3 px-2 align-top">
