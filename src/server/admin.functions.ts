@@ -349,6 +349,9 @@ export type AlunoListItem = {
   id: string;
   display_name: string | null;
   friend_id: string | null;
+  email: string | null;
+  telefone: string | null;
+  plano: "free" | "premium" | null;
   ativacoes: number;
 };
 
@@ -358,9 +361,11 @@ export const listAlunos = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await requireAdminOrModAccess(supabase, userId);
 
-    const [{ data: profiles }, { data: ativ }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, friend_id"),
+    const [{ data: profiles }, { data: ativ }, { data: plans }, authUsersRes] = await Promise.all([
+      supabase.from("profiles").select("id, display_name, friend_id, telefone"),
       supabase.from("user_cronograma_ativacao").select("user_id, ativo"),
+      supabase.from("user_plans").select("user_id, tipo"),
+      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     ]);
 
     const ativMap = new Map<string, number>();
@@ -368,10 +373,18 @@ export const listAlunos = createServerFn({ method: "POST" })
       .filter((a) => a.ativo)
       .forEach((a) => ativMap.set(a.user_id, (ativMap.get(a.user_id) ?? 0) + 1));
 
+    const plansMap = new Map((plans ?? []).map((p) => [p.user_id, p.tipo as "free" | "premium"]));
+    const emailMap = new Map(
+      (authUsersRes.data?.users ?? []).map((u) => [u.id, u.email ?? null]),
+    );
+
     const result: AlunoListItem[] = (profiles ?? []).map((p) => ({
       id: p.id,
       display_name: p.display_name,
       friend_id: p.friend_id,
+      email: emailMap.get(p.id) ?? null,
+      telefone: p.telefone ?? null,
+      plano: plansMap.get(p.id) ?? "free",
       ativacoes: ativMap.get(p.id) ?? 0,
     }));
     result.sort((a, b) => b.ativacoes - a.ativacoes);
@@ -379,7 +392,14 @@ export const listAlunos = createServerFn({ method: "POST" })
   });
 
 export type AlunoDetalhes = {
-  profile: { id: string; display_name: string | null; friend_id: string | null };
+  profile: {
+    id: string;
+    display_name: string | null;
+    friend_id: string | null;
+    email: string | null;
+    telefone: string | null;
+    plano: "free" | "premium" | null;
+  };
   cronogramas: { id: string; nome: string; data_inicio: string; data_prova: string }[];
   eventos: {
     id: string;
