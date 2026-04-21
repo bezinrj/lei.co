@@ -9,6 +9,8 @@ type Props = {
   onOpenChange: (v: boolean) => void;
   userId: string;
   cronogramaId: string;
+  /** ids de tópicos que pertencem a este cronograma (para limitar o escopo de sessions/revisões) */
+  topicoIds: string[];
   onCleared: () => void;
 };
 
@@ -17,37 +19,88 @@ export function LimparEventosModal({
   onOpenChange,
   userId,
   cronogramaId,
+  topicoIds,
   onCleared,
 }: Props) {
   const [busy, setBusy] = useState(false);
 
   async function clearAll() {
     setBusy(true);
-    const { error } = await supabase
-      .from("user_calendar_events")
-      .delete()
-      .eq("user_id", userId)
-      .eq("cronograma_id", cronogramaId);
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Calendário limpo");
-    onOpenChange(false);
-    onCleared();
+    try {
+      // 1. Apagar todos os eventos do calendário deste cronograma
+      const { error: e1 } = await supabase
+        .from("user_calendar_events")
+        .delete()
+        .eq("user_id", userId)
+        .eq("cronograma_id", cronogramaId);
+      if (e1) throw e1;
+
+      // 2. Apagar sessões de estudo (limitadas aos tópicos deste cronograma)
+      if (topicoIds.length > 0) {
+        const { error: e2 } = await supabase
+          .from("user_sessions")
+          .delete()
+          .eq("user_id", userId)
+          .in("topico_id", topicoIds);
+        if (e2) throw e2;
+      }
+
+      toast.success("Calendário limpo com sucesso!");
+      onOpenChange(false);
+      onCleared();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao limpar";
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function clearPending() {
     setBusy(true);
-    const { error } = await supabase
-      .from("user_calendar_events")
-      .delete()
-      .eq("user_id", userId)
-      .eq("cronograma_id", cronogramaId)
-      .eq("concluido", false);
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Pendentes removidos");
-    onOpenChange(false);
-    onCleared();
+    try {
+      // 1. Buscar tópicos com pelo menos um evento concluído (a preservar)
+      const { data: concluidosRows, error: eq } = await supabase
+        .from("user_calendar_events")
+        .select("topico_id")
+        .eq("user_id", userId)
+        .eq("cronograma_id", cronogramaId)
+        .eq("concluido", true)
+        .not("topico_id", "is", null);
+      if (eq) throw eq;
+      const preservar = new Set(
+        (concluidosRows ?? []).map((r) => r.topico_id).filter((x): x is string => !!x),
+      );
+
+      // 2. Apagar eventos não concluídos
+      const { error: e1 } = await supabase
+        .from("user_calendar_events")
+        .delete()
+        .eq("user_id", userId)
+        .eq("cronograma_id", cronogramaId)
+        .eq("concluido", false);
+      if (e1) throw e1;
+
+      // 3. Apagar sessões de tópicos que NÃO estão na lista a preservar
+      const aLimpar = topicoIds.filter((id) => !preservar.has(id));
+      if (aLimpar.length > 0) {
+        const { error: e2 } = await supabase
+          .from("user_sessions")
+          .delete()
+          .eq("user_id", userId)
+          .in("topico_id", aLimpar);
+        if (e2) throw e2;
+      }
+
+      toast.success("Calendário limpo com sucesso!");
+      onOpenChange(false);
+      onCleared();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao limpar";
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -74,7 +127,8 @@ export function LimparEventosModal({
               Limpar todos os registros
             </div>
             <div className="text-[12px] mt-1" style={{ color: "#9b3a39" }}>
-              Remove todos os eventos deste cronograma, inclusive concluídos.
+              Remove todos os eventos do calendário, sessões de estudo e histórico de revisões deste
+              cronograma.
             </div>
           </button>
 
@@ -85,10 +139,11 @@ export function LimparEventosModal({
             style={{ border: "1px solid #e5e7eb", background: "#f9fafb" }}
           >
             <div className="text-[14px] font-medium" style={{ color: "#374151" }}>
-              Limpar apenas não concluídas
+              Limpar apenas pendentes
             </div>
             <div className="text-[12px] mt-1" style={{ color: "#6b7280" }}>
-              Mantém o histórico de tópicos já finalizados.
+              Remove eventos não concluídos. Preserva sessões e revisões de tópicos com pelo menos
+              uma conclusão.
             </div>
           </button>
         </div>
@@ -97,6 +152,7 @@ export function LimparEventosModal({
           onClick={() => onOpenChange(false)}
           variant="outline"
           className="mt-4 rounded-[8px] self-end"
+          disabled={busy}
         >
           Cancelar
         </Button>
