@@ -575,6 +575,9 @@ function CardCiclo({
           className="flex flex-col gap-1"
           style={{ opacity: concluido ? 0.4 : 1, transition: "opacity 0.25s ease" }}
         >
+          <div className="text-[9px] uppercase tracking-wider text-text-muted font-semibold">
+            DOD
+          </div>
           <div className="flex flex-wrap gap-1">
             {linksDod.map((l, i) => (
               <a
