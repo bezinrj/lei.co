@@ -232,6 +232,18 @@ function PerfilPage() {
     }
   }
 
+  async function handleSavePhone() {
+    const trimmed = phoneValue.trim();
+    if (trimmed === (profile?.telefone ?? "")) {
+      setEditingPhone(false);
+      return;
+    }
+    if (await saveProfile({ telefone: trimmed || null } as Partial<Profile>)) {
+      setEditingPhone(false);
+      toast.success("Telefone atualizado.");
+    }
+  }
+
   async function handleAvatarUpload(file: File) {
     if (!user) return;
     if (file.size > 2 * 1024 * 1024) {
