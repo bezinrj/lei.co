@@ -6,7 +6,7 @@ import { ArrowLeft, Lock, Play, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { usePlan } from "@/hooks/usePlan";
+import { useAcesso } from "@/hooks/useAcesso";
 import { MatrizTab, type MatrizTopico } from "@/components/cronogramas/MatrizTab";
 import { CalendarioTab } from "@/components/cronogramas/CalendarioTab";
 import { DesempenhoTab } from "@/components/cronogramas/DesempenhoTab";
