@@ -192,6 +192,20 @@ function MeuPlanoPage() {
     }
   }
 
+  async function cancelarAssinatura() {
+    setCancelando(true);
+    try {
+      const res = await cancelarFn({ data: {} });
+      toast.success(res.message ?? "Assinatura cancelada com sucesso");
+      setConfirmCancel(false);
+      setPlanoAtual("gratuito");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao cancelar assinatura");
+    } finally {
+      setCancelando(false);
+    }
+  }
+
   if (loading || carregando) {
     return (
       <AppShell title="Meu Plano">
