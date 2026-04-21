@@ -297,9 +297,18 @@ function MeuPlanoPage() {
                     {isCurrent ? "Plano atual" : "Sempre disponível"}
                   </Button>
                 ) : isCurrent ? (
-                  <Button disabled className="w-full">
-                    Ativo
-                  </Button>
+                  <div className="space-y-2">
+                    <Button disabled className="w-full">
+                      Ativo
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmCancel(true)}
+                      className="w-full text-[12px] text-text-muted hover:text-red-600 transition-colors underline-offset-2 hover:underline"
+                    >
+                      Cancelar assinatura
+                    </button>
+                  </div>
                 ) : (
                   <Button
                     onClick={() => assinar(plano!)}
