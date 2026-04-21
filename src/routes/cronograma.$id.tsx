@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Lock, Play, Sparkles } from "lucide-react";
+import { ArrowLeft, Play, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,6 +56,7 @@ function CronogramaDetail() {
   const { id } = Route.useParams();
   const { user, isAdminOrMod } = useAuth();
   const acesso = useAcesso();
+  const navigate = useNavigate();
 
   const [cron, setCron] = useState<Cronograma | null>(null);
   const [materias, setMaterias] = useState<Materia[]>([]);
