@@ -400,6 +400,35 @@ function MeuPlanoPage() {
           )}
         </section>
       </div>
+
+      <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar assinatura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sua assinatura será cancelada ao final do período já pago. Você manterá
+              o acesso até lá e não será cobrado novamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelando}>Manter assinatura</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                cancelarAssinatura();
+              }}
+              disabled={cancelando}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {cancelando ? (
+                <><Loader2 className="animate-spin mr-2" size={14} /> Cancelando…</>
+              ) : (
+                "Sim, cancelar"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
