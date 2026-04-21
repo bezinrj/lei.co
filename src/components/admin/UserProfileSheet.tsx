@@ -386,6 +386,18 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
                     Teste 3 dias
                   </PillButton>
                 </div>
+                {profile.assinatura &&
+                  ["ativa", "cortesia", "teste"].includes(profile.assinatura.status) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-2 mt-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={handleRevogar}
+                      disabled={busy}
+                    >
+                      <Trash2 size={14} /> Remover benefícios VIP
+                    </Button>
+                  )}
               </div>
             </div>
 
