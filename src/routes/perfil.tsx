@@ -5,6 +5,7 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { WeeklyPerformance } from "@/components/dashboard/WeeklyPerformance";
 import { TodaySchedule } from "@/components/dashboard/TodaySchedule";
 import { GroupRanking } from "@/components/dashboard/GroupRanking";
+import { SubjectPerformance } from "@/components/dashboard/SubjectPerformance";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -48,8 +49,10 @@ type UserBadge = {
 
 type Stats = {
   horasTotais: number;
+  sequenciaAtual: number;
   maiorSequencia: number;
   totalQuestoes: number;
+  mediaAcerto: number;
   cronogramasAtivos: number;
 };
 
@@ -81,8 +84,10 @@ function PerfilPage() {
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [stats, setStats] = useState<Stats>({
     horasTotais: 0,
+    sequenciaAtual: 0,
     maiorSequencia: 0,
     totalQuestoes: 0,
+    mediaAcerto: 0,
     cronogramasAtivos: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -103,24 +108,33 @@ function PerfilPage() {
     let mounted = true;
 
     (async () => {
-      const [profileRes, badgesRes, userBadgesRes, progressoRes, ativacaoRes, eventosRes] =
-        await Promise.all([
-          supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-          supabase.from("badges").select("*").order("ordem"),
-          supabase.from("user_badges").select("*").eq("user_id", user.id),
-          supabase.from("user_topico_progresso").select("minutos_estudados").eq("user_id", user.id),
-          supabase
-            .from("user_cronograma_ativacao")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id)
-            .eq("ativo", true),
-          supabase
-            .from("user_calendar_events")
-            .select("data, concluido")
-            .eq("user_id", user.id)
-            .eq("concluido", true)
-            .order("data", { ascending: true }),
-        ]);
+      const [
+        profileRes,
+        badgesRes,
+        userBadgesRes,
+        ativacaoRes,
+        eventosRes,
+        sessoesRes,
+      ] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+        supabase.from("badges").select("*").order("ordem"),
+        supabase.from("user_badges").select("*").eq("user_id", user.id),
+        supabase
+          .from("user_cronograma_ativacao")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("ativo", true),
+        supabase
+          .from("user_calendar_events")
+          .select("data, concluido")
+          .eq("user_id", user.id)
+          .eq("concluido", true)
+          .order("data", { ascending: true }),
+        supabase
+          .from("user_sessions")
+          .select("tempo_estudado, questoes, acertos")
+          .eq("user_id", user.id),
+      ]);
 
       if (!mounted) return;
 
@@ -137,12 +151,18 @@ function PerfilPage() {
       setBadges((badgesRes.data ?? []) as Badge[]);
       setUserBadges((userBadgesRes.data ?? []) as UserBadge[]);
 
-      const minutosTotais = (progressoRes.data ?? []).reduce(
-        (acc, r) => acc + (r.minutos_estudados ?? 0),
-        0,
-      );
+      // Horas / questões / % acerto a partir de user_sessions
+      const sessoes = sessoesRes.data ?? [];
+      const horasTotais = sessoes.reduce((acc, s) => {
+        const [h, m] = (s.tempo_estudado ?? "0:0").split(":");
+        return acc + (parseInt(h, 10) || 0) + (parseInt(m, 10) || 0) / 60;
+      }, 0);
+      const totalQuestoes = sessoes.reduce((acc, s) => acc + (s.questoes ?? 0), 0);
+      const totalAcertos = sessoes.reduce((acc, s) => acc + (s.acertos ?? 0), 0);
+      const mediaAcerto =
+        totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
 
-      // Calcula maior sequência de dias consecutivos com evento concluído
+      // Sequências (maior + atual) de dias consecutivos com evento concluído
       const datas = Array.from(
         new Set((eventosRes.data ?? []).map((e) => e.data)),
       ).sort();
@@ -160,11 +180,23 @@ function PerfilPage() {
         if (atual > maior) maior = atual;
         prev = cur;
       }
+      // sequência "atual" só vale se a última data for hoje ou ontem
+      let sequenciaAtual = 0;
+      if (prev) {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const last = new Date(prev);
+        last.setHours(0, 0, 0, 0);
+        const diffDias = Math.round((hoje.getTime() - last.getTime()) / 86400000);
+        if (diffDias <= 1) sequenciaAtual = atual;
+      }
 
       setStats({
-        horasTotais: Math.round((minutosTotais / 60) * 10) / 10,
+        horasTotais: Math.round(horasTotais * 10) / 10,
+        sequenciaAtual,
         maiorSequencia: maior,
-        totalQuestoes: 0,
+        totalQuestoes,
+        mediaAcerto,
         cronogramasAtivos: ativacaoRes.count ?? 0,
       });
 
@@ -339,16 +371,40 @@ function PerfilPage() {
     <AppShell title="Meu Perfil">
       {/* Resumo / Dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MetricCard label="Horas estudadas" value="26h 15m" hint="esta semana" tone="sage" />
-        <MetricCard label="Questões feitas" value="412" hint="78% de acerto" tone="blush" />
-        <MetricCard label="🔥 Sequência" value="14 dias" hint="seu recorde: 22" tone="lilac" />
-        <MetricCard label="Medalhas" value="9 / 24" hint="próxima: Madrugadora" tone="sky" />
+        <MetricCard
+          label="Horas estudadas"
+          value={`${stats.horasTotais}h`}
+          hint="total registrado"
+          tone="sage"
+        />
+        <MetricCard
+          label="Questões feitas"
+          value={`${stats.totalQuestoes}`}
+          hint={stats.totalQuestoes > 0 ? `${stats.mediaAcerto}% de acerto` : "sem dados ainda"}
+          tone="blush"
+        />
+        <MetricCard
+          label="🔥 Sequência"
+          value={`${stats.sequenciaAtual} dias`}
+          hint={stats.maiorSequencia > 0 ? `seu recorde: ${stats.maiorSequencia}` : "comece hoje"}
+          tone="lilac"
+        />
+        <MetricCard
+          label="Medalhas"
+          value={`${userBadges.length} / ${badges.length}`}
+          hint={`${badges.length - userBadges.length} para desbloquear`}
+          tone="sky"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <WeeklyPerformance />
         <TodaySchedule />
         <GroupRanking />
+      </div>
+
+      <div className="grid grid-cols-1 mb-8">
+        <SubjectPerformance />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 mb-6">
