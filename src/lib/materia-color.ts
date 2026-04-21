@@ -8,7 +8,7 @@
 //    sistema (matriz, legenda do calendário, modal de detalhes, modal de
 //    sessão, painel de desempenho).
 
-export type MateriaPastel = { background: string; color: string };
+export type MateriaPastel = { background: string; color: string; border: string };
 
 function normalize(materia: string): string {
   return (materia || "")
@@ -35,28 +35,28 @@ export function getCorMateria(materia: string): string {
   return "#888780";
 }
 
-/** Cor PASTEL para BADGES de matéria — fundo claro + texto escuro da mesma família. */
+/** Cor PASTEL para BADGES de matéria — fundo claro + texto escuro + borda forte. */
 export function getCorMateriaPastel(materia: string): MateriaPastel {
   const m = normalize(materia);
   if (m.includes("constitucional"))
-    return { background: "#E1F5EE", color: "#085041" };
+    return { background: "#E1F5EE", color: "#085041", border: "#1D9E75" };
   if (m.includes("processo civil") || m.includes("processual civil"))
-    return { background: "#FAEEDA", color: "#412402" };
+    return { background: "#FAEEDA", color: "#412402", border: "#BA7517" };
   if (m.includes("civil") && !m.includes("processo") && !m.includes("processual"))
-    return { background: "#E6F1FB", color: "#042C53" };
+    return { background: "#E6F1FB", color: "#042C53", border: "#378ADD" };
   if (m.includes("processo penal") || m.includes("processual penal"))
-    return { background: "#FCEBEB", color: "#501313" };
+    return { background: "#FCEBEB", color: "#501313", border: "#E24B4A" };
   if (m.includes("penal") && !m.includes("processo") && !m.includes("processual"))
-    return { background: "#FAECE7", color: "#4A1B0C" };
+    return { background: "#FAECE7", color: "#4A1B0C", border: "#D85A30" };
   if (m.includes("administrativo"))
-    return { background: "#EEEDFE", color: "#26215C" };
+    return { background: "#EEEDFE", color: "#26215C", border: "#7F77DD" };
   if (m.includes("empresarial"))
-    return { background: "#FBEAF0", color: "#4B1528" };
+    return { background: "#FBEAF0", color: "#4B1528", border: "#D4537E" };
   if (m.includes("revisao"))
-    return { background: "#F1EFE8", color: "#444441" };
+    return { background: "#F1EFE8", color: "#444441", border: "#888780" };
   if (m.includes("simulado"))
-    return { background: "#F1EFE8", color: "#444441" };
-  return { background: "#F1EFE8", color: "#444441" };
+    return { background: "#F1EFE8", color: "#444441", border: "#888780" };
+  return { background: "#F1EFE8", color: "#444441", border: "#888780" };
 }
 
 /**
