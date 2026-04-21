@@ -263,9 +263,10 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
                 color={profile.telefone ? "#374151" : "#9ca3af"}
               />
               <div className="flex items-center gap-2 text-[11px] text-text-muted font-mono">
-                <span className="truncate">{profile.id}</span>
+                <span title={profile.id}>ID: {profile.id.slice(0, 8)}…</span>
                 <button
                   className="hover:text-text-main"
+                  title="Copiar ID completo"
                   onClick={() => {
                     navigator.clipboard.writeText(profile.id);
                     toast.success("ID copiado");
