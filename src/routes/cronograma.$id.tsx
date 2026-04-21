@@ -1,12 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Lock, Play, Sparkles } from "lucide-react";
+import { ArrowLeft, Play, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { usePlan } from "@/hooks/usePlan";
+import { useAcesso } from "@/hooks/useAcesso";
 import { MatrizTab, type MatrizTopico } from "@/components/cronogramas/MatrizTab";
 import { CalendarioTab } from "@/components/cronogramas/CalendarioTab";
 import { DesempenhoTab } from "@/components/cronogramas/DesempenhoTab";
@@ -55,7 +55,8 @@ type Evento = {
 function CronogramaDetail() {
   const { id } = Route.useParams();
   const { user, isAdminOrMod } = useAuth();
-  const { isPremium } = usePlan();
+  const acesso = useAcesso();
+  const navigate = useNavigate();
 
   const [cron, setCron] = useState<Cronograma | null>(null);
   const [materias, setMaterias] = useState<Materia[]>([]);
@@ -174,11 +175,13 @@ function CronogramaDetail() {
   }, [materias]);
 
   const previewTopicos: MatrizTopico[] = useMemo(
-    () => allTopicos.slice(0, 6),
+    () => allTopicos.slice(0, 3),
     [allTopicos],
   );
 
-  const isLocked = cron?.premium && !isPremium;
+  // Acesso ao cronograma (gratuito sempre passa; premium depende de compra/Diamante/staff)
+  const temAcesso = cron ? acesso.temAcessoCronograma(id, cron.premium) : true;
+  const podeCalendario = cron ? acesso.podeUsarCalendario(id, cron.premium) : false;
 
   return (
     <AppShell title={cron?.nome ?? "Cronograma"}>
@@ -229,7 +232,7 @@ function CronogramaDetail() {
                 </span>
               )}
               <div className="mt-4 flex gap-2">
-                {!isLocked && user && allTopicos.length > 0 && !ativacao && (
+                {temAcesso && podeCalendario && user && allTopicos.length > 0 && !ativacao && (
                   <Button
                     onClick={() => setAtivarOpen(true)}
                     className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] gap-2"
@@ -241,33 +244,43 @@ function CronogramaDetail() {
             </div>
           </div>
 
-          {isLocked ? (
-            <div className="lei-card text-center py-12">
-              <div className="w-12 h-12 rounded-full bg-sage-light mx-auto flex items-center justify-center mb-3">
-                <Lock className="text-sage-dark" size={20} />
-              </div>
-              <h2 className="font-serif text-[20px] text-text-main mb-2">Conteúdo Premium</h2>
-              <p className="text-[13px] text-text-muted max-w-md mx-auto mb-4">
-                Este cronograma é exclusivo para assinantes. Faça upgrade para ativar, distribuir
-                tópicos no seu calendário e acompanhar seu desempenho.
-              </p>
-              <Button className="bg-sage-dark hover:bg-sage-dark/90 text-white gap-2">
-                <Sparkles size={14} /> Fazer upgrade
-              </Button>
-              <div className="mt-8 text-left">
-                <h3 className="font-serif text-[14px] text-text-muted mb-3 text-center">
-                  Prévia do conteúdo
-                </h3>
-                <MatrizTab
-                  cronogramaId={id}
-                  topicos={previewTopicos}
-                  materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
-                  progresso={{}}
-                  fonteProgresso={{}}
-                  canEdit={false}
-                  userId={null}
-                  onChange={loadAll}
-                />
+          {!temAcesso ? (
+            // Premium sem acesso: apenas Matriz com fade nas 3 primeiras linhas
+            <div className="relative">
+              <MatrizTab
+                cronogramaId={id}
+                topicos={previewTopicos}
+                materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
+                progresso={{}}
+                fonteProgresso={{}}
+                canEdit={false}
+                userId={null}
+                onChange={loadAll}
+              />
+              <div
+                className="absolute left-0 right-0 bottom-0 flex items-end justify-center pb-5 pointer-events-none"
+                style={{
+                  height: 220,
+                  background:
+                    "linear-gradient(to bottom, transparent 0%, var(--color-cream, #F7F4EE) 70%)",
+                }}
+              >
+                <div className="bg-white border border-border rounded-[14px] px-6 py-4 text-center shadow-sm pointer-events-auto">
+                  <div className="text-2xl mb-1">🔒</div>
+                  <div className="text-[13px] font-medium text-text-main mb-1">
+                    Conteúdo Premium
+                  </div>
+                  <div className="text-[12px] text-text-muted mb-3">
+                    Adquira este cronograma ou assine o Plano Diamante
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate({ to: "/meu-plano" })}
+                    className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[20px] gap-2"
+                  >
+                    <Sparkles size={14} /> Ver planos
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
@@ -291,21 +304,51 @@ function CronogramaDetail() {
               </TabsContent>
               <TabsContent value="calendario" className="mt-4">
                 {user ? (
-                  <CalendarioTab
-                    eventos={eventos}
-                    topicos={allTopicos.map((t) => ({
-                      id: t.id,
-                      titulo: t.titulo,
-                      materia_id: t.materia_id,
-                      materia_nome: t.materia_nome,
-                      horas_estimadas: t.horas_estimadas,
-                      fontes: t.fontes,
-                    }))}
-                    userId={user.id}
-                    cronogramaId={id}
-                    materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
-                    onChange={loadAll}
-                  />
+                  <div className="relative">
+                    <CalendarioTab
+                      eventos={eventos}
+                      topicos={allTopicos.map((t) => ({
+                        id: t.id,
+                        titulo: t.titulo,
+                        materia_id: t.materia_id,
+                        materia_nome: t.materia_nome,
+                        horas_estimadas: t.horas_estimadas,
+                        fontes: t.fontes,
+                      }))}
+                      userId={user.id}
+                      cronogramaId={id}
+                      materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
+                      onChange={loadAll}
+                    />
+                    {!podeCalendario && (
+                      <div
+                        className="absolute inset-0 flex items-center justify-center rounded-[14px] z-10"
+                        style={{
+                          background: "rgba(247,244,238,0.85)",
+                          backdropFilter: "blur(4px)",
+                        }}
+                      >
+                        <div className="text-center max-w-sm px-4">
+                          <div className="text-3xl mb-2">📅</div>
+                          <div className="text-[14px] font-medium text-text-main mb-1">
+                            Calendário bloqueado
+                          </div>
+                          <div className="text-[12px] text-text-muted mb-4">
+                            Você possui acesso à matriz deste cronograma.
+                            <br />
+                            Assine um plano para usar o calendário e cronômetro.
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => navigate({ to: "/meu-plano" })}
+                            className="bg-sage hover:bg-sage/90 text-white rounded-[20px]"
+                          >
+                            Assinar agora
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="lei-card text-center py-12 text-text-muted text-[13px]">
                     Faça login para ver seu calendário.
@@ -313,13 +356,32 @@ function CronogramaDetail() {
                 )}
               </TabsContent>
               <TabsContent value="desempenho" className="mt-4">
-                <DesempenhoTab
-                  cronogramaId={id}
-                  userId={user?.id ?? null}
-                  materias={materias}
-                  eventos={eventos}
-                  onChange={loadAll}
-                />
+                {podeCalendario ? (
+                  <DesempenhoTab
+                    cronogramaId={id}
+                    userId={user?.id ?? null}
+                    materias={materias}
+                    eventos={eventos}
+                    onChange={loadAll}
+                  />
+                ) : (
+                  <div className="lei-card text-center py-12">
+                    <div className="text-3xl mb-2">📊</div>
+                    <div className="text-[14px] font-medium text-text-main mb-1">
+                      Desempenho bloqueado
+                    </div>
+                    <div className="text-[12px] text-text-muted mb-4">
+                      Assine um plano para acompanhar suas estatísticas.
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate({ to: "/meu-plano" })}
+                      className="bg-sage hover:bg-sage/90 text-white rounded-[20px]"
+                    >
+                      Assinar agora
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           )}

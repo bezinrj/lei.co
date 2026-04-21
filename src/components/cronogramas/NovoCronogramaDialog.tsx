@@ -62,12 +62,26 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
         data: { user },
       } = await supabase.auth.getUser();
 
+      // Verifica se é admin/mod para decidir se é cronograma "próprio" do aluno
+      let isStaff = false;
+      if (user) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+        isStaff = (roles ?? []).some(
+          (r) => r.role === "admin" || r.role === "moderador",
+        );
+      }
+
       const { error } = await supabase.from("cronogramas").insert({
         nome: nome.trim(),
         categoria: categoria.trim() || null,
         imagem_url,
         premium,
         created_by: user?.id ?? null,
+        criado_por: !isStaff ? user?.id ?? null : null,
+        is_proprio: !isStaff,
       });
       if (error) throw error;
 

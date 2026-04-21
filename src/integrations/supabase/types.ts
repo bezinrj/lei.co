@@ -227,8 +227,10 @@ export type Database = {
           categoria: string | null
           created_at: string
           created_by: string | null
+          criado_por: string | null
           id: string
           imagem_url: string | null
+          is_proprio: boolean
           nome: string
           preco_centavos: number | null
           premium: boolean
@@ -239,8 +241,10 @@ export type Database = {
           categoria?: string | null
           created_at?: string
           created_by?: string | null
+          criado_por?: string | null
           id?: string
           imagem_url?: string | null
+          is_proprio?: boolean
           nome: string
           preco_centavos?: number | null
           premium?: boolean
@@ -251,15 +255,25 @@ export type Database = {
           categoria?: string | null
           created_at?: string
           created_by?: string | null
+          criado_por?: string | null
           id?: string
           imagem_url?: string | null
+          is_proprio?: boolean
           nome?: string
           preco_centavos?: number | null
           premium?: boolean
           stripe_price_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cronogramas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_log: {
         Row: {

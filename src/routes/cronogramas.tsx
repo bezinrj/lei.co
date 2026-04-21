@@ -5,9 +5,11 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { usePlan } from "@/hooks/usePlan";
+import { useAcesso } from "@/hooks/useAcesso";
 import { CategoryRow } from "@/components/cronogramas/CategoryRow";
 import { NovoCronogramaDialog } from "@/components/cronogramas/NovoCronogramaDialog";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const Route = createFileRoute("/cronogramas")({
   head: () => ({ meta: [{ title: "Cronogramas — Lei.co" }] }),
@@ -22,18 +24,18 @@ type Cronograma = {
   premium: boolean;
 };
 
-// Module-level cache so voltar para /cronogramas é instantâneo
 let cachedItems: Cronograma[] | null = null;
 let cachedAt = 0;
 const STALE_MS = 30_000;
 
 function CronogramasPage() {
   const { isAdminOrMod } = useAuth();
-  const { isPremium } = usePlan();
+  const acesso = useAcesso();
   const navigate = useNavigate();
   const [items, setItems] = useState<Cronograma[]>(cachedItems ?? []);
   const [loading, setLoading] = useState(cachedItems === null);
   const [open, setOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const load = useCallback(async (force = false) => {
     const fresh = Date.now() - cachedAt < STALE_MS;
@@ -55,13 +57,30 @@ function CronogramasPage() {
     load();
   }, [load]);
 
-  // Group by categoria
   const grouped = items.reduce<Record<string, Cronograma[]>>((acc, c) => {
     const key = c.categoria?.trim() || "Sem categoria";
     if (!acc[key]) acc[key] = [];
     acc[key].push(c);
     return acc;
   }, {});
+
+  // Botão "Novo Cronograma":
+  // - Admin/mod: sempre disponível (criação institucional)
+  // - Usuário com assinatura: 1 cronograma próprio
+  // - Sem assinatura: oculto
+  const isStaff = isAdminOrMod;
+  const mostrarBotaoNovo = isStaff || acesso.temAssinatura;
+  const jaTemProprio = !!acesso.cronogramaProprioId;
+  const botaoDesabilitado = !isStaff && jaTemProprio;
+
+  function handleSelect(c: Cronograma) {
+    const liberado = acesso.temAcessoCronograma(c.id, c.premium);
+    if (!liberado) {
+      setUpgradeOpen(true);
+      return;
+    }
+    navigate({ to: "/cronograma/$id", params: { id: c.id } });
+  }
 
   return (
     <AppShell title="Cronogramas">
@@ -72,13 +91,25 @@ function CronogramasPage() {
             Sua biblioteca de planos de estudo
           </p>
         </div>
-        {isAdminOrMod && (
-          <Button
-            onClick={() => setOpen(true)}
-            className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[20px] gap-2"
-          >
-            <Plus size={16} /> Novo Cronograma
-          </Button>
+        {mostrarBotaoNovo && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    onClick={() => setOpen(true)}
+                    disabled={botaoDesabilitado}
+                    className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[20px] gap-2"
+                  >
+                    <Plus size={16} /> Novo Cronograma
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {botaoDesabilitado && (
+                <TooltipContent>Você já possui um cronograma ativo</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
 
@@ -102,14 +133,18 @@ function CronogramasPage() {
               key={cat}
               title={cat}
               items={list}
-              isLocked={(c) => c.premium && !isPremium}
-              onSelect={(id) => navigate({ to: "/cronograma/$id", params: { id } })}
+              isLocked={(c) => !acesso.temAcessoCronograma(c.id, c.premium)}
+              onSelect={(id) => {
+                const c = list.find((x) => x.id === id);
+                if (c) handleSelect(c);
+              }}
             />
           ))}
         </div>
       )}
 
       <NovoCronogramaDialog open={open} onOpenChange={setOpen} onCreated={() => load(true)} />
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </AppShell>
   );
 }
