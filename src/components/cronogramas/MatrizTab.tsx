@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, GripVertical, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ExternalLink, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -12,15 +12,13 @@ import {
   SortableContext,
   arrayMove,
   useSortable,
-  verticalListSortingStrategy,
+  horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { getCorMateriaPastel } from "@/lib/materia-color";
+import { getCorMateriaPastel, type MateriaPastel } from "@/lib/materia-color";
 import { NovoTopicoForm, type Fonte, type TopicoEditavel } from "./NovoTopicoForm";
 
 export type MatrizTopico = {
@@ -45,6 +43,42 @@ type Props = {
   onChange: () => void;
 };
 
+/** Ajusta uma cor hex para uma versão pastel clara (mistura com branco). */
+function pastelFromHex(hex: string, mixWhite = 0.85): string {
+  const m = hex.replace("#", "");
+  if (m.length !== 6) return "#F1EFE8";
+  const r = parseInt(m.slice(0, 2), 16);
+  const g = parseInt(m.slice(2, 4), 16);
+  const b = parseInt(m.slice(4, 6), 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * mixWhite);
+  const toHex = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
+}
+
+/** Escurece uma cor hex (usado para texto legível). */
+function darkenHex(hex: string, amount = 0.55): string {
+  const m = hex.replace("#", "");
+  if (m.length !== 6) return "#1f2937";
+  const r = parseInt(m.slice(0, 2), 16);
+  const g = parseInt(m.slice(2, 4), 16);
+  const b = parseInt(m.slice(4, 6), 16);
+  const dk = (c: number) => Math.max(0, Math.round(c * (1 - amount)));
+  const toHex = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${toHex(dk(r))}${toHex(dk(g))}${toHex(dk(b))}`;
+}
+
+/** Resolve a paleta do card priorizando a cor salva no banco da matéria. */
+function resolvePaleta(materiaNome: string, materiaCor: string | null): MateriaPastel {
+  if (materiaCor && /^#[0-9a-fA-F]{6}$/.test(materiaCor)) {
+    return {
+      border: materiaCor,
+      background: pastelFromHex(materiaCor, 0.85),
+      color: darkenHex(materiaCor, 0.55),
+    };
+  }
+  return getCorMateriaPastel(materiaNome);
+}
+
 export function MatrizTab({
   cronogramaId,
   topicos,
@@ -57,8 +91,36 @@ export function MatrizTab({
 }: Props) {
   const [items, setItems] = useState(topicos);
   const [editingTopico, setEditingTopico] = useState<TopicoEditavel | null>(null);
+  const [adicionandoNovo, setAdicionandoNovo] = useState(false);
+  const [notas, setNotas] = useState<Record<string, string>>({});
 
   useEffect(() => setItems(topicos), [topicos]);
+
+  // Carrega notas do usuário para os tópicos visíveis
+  useEffect(() => {
+    if (!userId || topicos.length === 0) {
+      setNotas({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const ids = topicos.map((t) => t.id);
+      const { data } = await supabase
+        .from("user_notas")
+        .select("topico_id, nota")
+        .eq("user_id", userId)
+        .in("topico_id", ids);
+      if (cancelled) return;
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((n) => {
+        map[n.topico_id] = n.nota ?? "";
+      });
+      setNotas(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, topicos]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -71,7 +133,6 @@ export function MatrizTab({
 
   async function toggleTopico(topicoId: string, novoValor: boolean) {
     if (!userId) return toast.error("Faça login para marcar progresso");
-    // Optimistic UI handled by parent reload; do upsert + sync calendar
     const { error } = await supabase.from("user_topico_progresso").upsert(
       {
         user_id: userId,
@@ -83,7 +144,6 @@ export function MatrizTab({
     );
     if (error) return toast.error(error.message);
 
-    // Sync calendar events (skip is_revisao=true if column existed; we don't track yet)
     await supabase
       .from("user_calendar_events")
       .update({ concluido: novoValor })
@@ -110,8 +170,6 @@ export function MatrizTab({
     onChange();
   }
 
-  // edição agora ocorre via dialog (NovoTopicoForm em modo edit)
-
   async function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
@@ -119,13 +177,27 @@ export function MatrizTab({
     const newIndex = items.findIndex((i) => i.id === over.id);
     const newItems = arrayMove(items, oldIndex, newIndex);
     setItems(newItems);
-    // Update ordem in batch
     await Promise.all(
       newItems.map((t, idx) =>
         supabase.from("cronograma_topicos").update({ ordem: idx }).eq("id", t.id),
       ),
     );
     onChange();
+  }
+
+  // Notas — debounce manual por tópico
+  const notaTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  function handleNotaChange(topicoId: string, value: string) {
+    setNotas((prev) => ({ ...prev, [topicoId]: value }));
+    if (!userId) return;
+    if (notaTimers.current[topicoId]) clearTimeout(notaTimers.current[topicoId]);
+    notaTimers.current[topicoId] = setTimeout(async () => {
+      const { error } = await supabase.from("user_notas").upsert(
+        { user_id: userId, topico_id: topicoId, nota: value },
+        { onConflict: "user_id,topico_id" },
+      );
+      if (error) toast.error("Erro ao salvar nota: " + error.message);
+    }, 800);
   }
 
   if (items.length === 0) {
@@ -159,66 +231,83 @@ export function MatrizTab({
         </div>
       </div>
 
-      <div className="lei-card overflow-x-auto p-0">
-        <table className="w-full text-[13px]" style={{ minWidth: 920 }}>
-          <thead>
-            <tr className="border-b border-border bg-muted/40 text-left text-[11px] uppercase tracking-wider text-text-muted">
-              {canEdit && <th className="w-8 py-2 px-2"></th>}
-              <th className="w-10 py-2 px-2"></th>
-              <th className="w-12 py-2 px-2">#</th>
-              <th className="py-2 px-2" style={{ minWidth: 140 }}>Matéria</th>
-              <th className="py-2 px-2" style={{ minWidth: 220 }}>Assunto</th>
-              <th className="py-2 px-2" style={{ minWidth: 240 }}>Fonte Legal</th>
-              <th className="py-2 px-2 w-20">Questões</th>
-              <th className="py-2 px-2 w-20">DOD</th>
-              {canEdit && <th className="py-2 px-2 w-20">Ações</th>}
-            </tr>
-          </thead>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+      {/* Cards horizontais */}
+      <div
+        className="overflow-x-auto pb-3"
+        style={{ scrollbarWidth: "thin" }}
+      >
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={items.map((i) => i.id)}
+            strategy={horizontalListSortingStrategy}
           >
-            <SortableContext
-              items={items.map((i) => i.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <tbody>
-                {items.map((t, idx) => (
-                  <SortableRow
-                    key={t.id}
-                    topico={t}
-                    index={idx + 1}
-                    concluido={!!progresso[t.id]}
-                    fonteProgresso={fonteProgresso}
-                    canEdit={canEdit}
-                    onStartEdit={() =>
-                      setEditingTopico({
-                        id: t.id,
-                        materia_id: t.materia_id,
-                        materia_nome: t.materia_nome,
-                        titulo: t.titulo,
-                        horas_estimadas: t.horas_estimadas,
-                        fontes: t.fontes,
-                        ordem: t.ordem,
-                        totalNaMateria: items.filter((x) => x.materia_id === t.materia_id).length,
-                      })
-                    }
-                    onToggle={(v) => toggleTopico(t.id, v)}
-                    onToggleFonte={(sigla, v) => toggleFonte(t.id, sigla, v)}
-                    onDelete={() => delTopico(t.id)}
-                  />
-                ))}
-              </tbody>
-            </SortableContext>
-          </DndContext>
-        </table>
+            <div className="flex gap-3" style={{ minWidth: "min-content" }}>
+              {items.map((t, idx) => (
+                <CardCiclo
+                  key={t.id}
+                  topico={t}
+                  index={idx + 1}
+                  concluido={!!progresso[t.id]}
+                  fonteProgresso={fonteProgresso}
+                  nota={notas[t.id] ?? ""}
+                  canEdit={canEdit}
+                  onToggle={(v) => toggleTopico(t.id, v)}
+                  onToggleFonte={(sigla, v) => toggleFonte(t.id, sigla, v)}
+                  onNotaChange={(v) => handleNotaChange(t.id, v)}
+                  onStartEdit={() =>
+                    setEditingTopico({
+                      id: t.id,
+                      materia_id: t.materia_id,
+                      materia_nome: t.materia_nome,
+                      titulo: t.titulo,
+                      horas_estimadas: t.horas_estimadas,
+                      fontes: t.fontes,
+                      ordem: t.ordem,
+                      totalNaMateria: items.filter((x) => x.materia_id === t.materia_id).length,
+                    })
+                  }
+                  onDelete={() => delTopico(t.id)}
+                />
+              ))}
+
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setAdicionandoNovo(true)}
+                  className="rounded-[14px] flex flex-col items-center justify-center gap-2 transition-all"
+                  style={{
+                    width: 220,
+                    minWidth: 220,
+                    minHeight: 280,
+                    background: "var(--card)",
+                    border: "2px dashed var(--border)",
+                    color: "var(--text-muted, #8A8478)",
+                    flexShrink: 0,
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#B8C9B0";
+                    e.currentTarget.style.color = "#7A9A70";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.color = "var(--text-muted, #8A8478)";
+                  }}
+                >
+                  <Plus size={22} />
+                  <span className="text-[11px] font-medium">Adicionar ciclo</span>
+                </button>
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
-      {canEdit && (
-        <NovoTopicoForm cronogramaId={cronogramaId} materias={materias} onAdded={onChange} />
-      )}
-
+      {/* Dialog edição */}
       <Dialog
         open={!!editingTopico}
         onOpenChange={(o) => !o && setEditingTopico(null)}
@@ -245,256 +334,306 @@ export function MatrizTab({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog novo ciclo */}
+      <Dialog open={adicionandoNovo} onOpenChange={setAdicionandoNovo}>
+        <DialogContent className="bg-card max-w-3xl rounded-[14px]">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-[18px] text-text-main">
+              Novo tópico
+            </DialogTitle>
+          </DialogHeader>
+          <NovoTopicoForm
+            cronogramaId={cronogramaId}
+            materias={materias}
+            embedded
+            onAdded={() => {
+              setAdicionandoNovo(false);
+              onChange();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-type RowProps = {
+type CardProps = {
   topico: MatrizTopico;
   index: number;
   concluido: boolean;
   fonteProgresso: Record<string, boolean>;
+  nota: string;
   canEdit: boolean;
-  onStartEdit: () => void;
   onToggle: (v: boolean) => void;
   onToggleFonte: (sigla: string, v: boolean) => void;
+  onNotaChange: (v: string) => void;
+  onStartEdit: () => void;
   onDelete: () => void;
 };
 
-function SortableRow({
+function CardCiclo({
   topico,
   index,
   concluido,
   fonteProgresso,
+  nota,
   canEdit,
-  onStartEdit,
   onToggle,
   onToggleFonte,
+  onNotaChange,
+  onStartEdit,
   onDelete,
-}: RowProps) {
+}: CardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: topico.id,
   });
+  const cor = resolvePaleta(topico.materia_nome, topico.materia_cor);
+
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    background: concluido ? "rgba(0,0,0,0.04)" : undefined,
+    width: 240,
+    minWidth: 240,
+    flexShrink: 0,
+    background: "#fff",
+    borderRadius: 14,
+    border: `1px solid ${cor.border}`,
+    borderTop: `4px solid ${cor.border}`,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    padding: 12,
   };
-  const pastel = getCorMateriaPastel(topico.materia_nome);
-  const inactiveColor = "#9ca3af";
+
+  const fontesSemLink = topico.fontes.filter(
+    (f) =>
+      !(f.link_questoes ||
+        (f.links_questoes && f.links_questoes.some((l) => !!l)) ||
+        f.link_dod ||
+        (f.links_dod && f.links_dod.some((l) => !!l))),
+  );
+  const linksQuestoes = topico.fontes.flatMap((f) => {
+    const arr =
+      f.links_questoes && f.links_questoes.length > 0
+        ? f.links_questoes
+        : f.link_questoes
+          ? [f.link_questoes]
+          : [];
+    return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, descricao: f.descricao, url }));
+  });
+  const linksDod = topico.fontes.flatMap((f) => {
+    const arr =
+      f.links_dod && f.links_dod.length > 0
+        ? f.links_dod
+        : f.link_dod
+          ? [f.link_dod]
+          : [];
+    return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, descricao: f.descricao, url }));
+  });
 
   return (
-    <tr
-      ref={setNodeRef}
-      style={style}
-      className="border-b border-border align-top"
-    >
-      {canEdit && (
-        <td className="py-3 px-2 align-top">
+    <div ref={setNodeRef} style={style}>
+      {/* CABEÇALHO */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded"
+            style={{ background: cor.background, color: cor.color }}
+          >
+            {String(index).padStart(2, "0")}
+          </span>
+          <span
+            className="text-[11px] font-semibold truncate"
+            style={{ color: cor.color }}
+            title={topico.materia_nome}
+          >
+            {topico.materia_nome}
+          </span>
+        </div>
+        {canEdit && (
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab text-text-muted hover:text-text-main p-1"
+            className="cursor-grab text-text-muted hover:text-text-main p-0.5"
             aria-label="Arrastar"
           >
-            <GripVertical size={14} />
+            <GripVertical size={13} />
           </button>
-        </td>
-      )}
-      <td className="py-3 px-2 align-top">
-        <Checkbox
-          checked={concluido}
-          onCheckedChange={(v) => onToggle(!!v)}
-          className={
-            concluido ? "data-[state=checked]:bg-[#1D9E75] border-[#1D9E75]" : ""
-          }
-        />
-      </td>
-      <td
-        className="py-3 px-2 align-top text-[12px]"
-        style={{ color: concluido ? inactiveColor : undefined }}
-      >
-        {index}
-      </td>
-      <td className="py-3 px-2 align-top">
-        <span
-          className="inline-block text-[11px] font-medium rounded px-2 py-1"
-          style={{
-            background: concluido ? "#e5e7eb" : pastel.background,
-            color: concluido ? inactiveColor : pastel.color,
-            maxWidth: 140,
-            width: "fit-content",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-          title={topico.materia_nome}
-        >
-          {topico.materia_nome}
-        </span>
-      </td>
-      <td
-        className="py-3 px-2 align-top"
+        )}
+      </div>
+
+      <div
+        className="text-[12px] font-medium leading-snug"
         style={{
-          color: concluido ? inactiveColor : undefined,
+          color: concluido ? "#9ca3af" : "var(--text-main)",
           textDecoration: concluido ? "line-through" : undefined,
-          transition: "all 0.25s ease",
         }}
       >
-        <div>{topico.titulo}</div>
-        {topico.horas_estimadas > 0 && (
-          <div className="text-[11px] text-text-muted mt-0.5">
-            {topico.horas_estimadas}h estimadas
-          </div>
-        )}
-      </td>
-      <td className="py-3 px-2 align-top">
-        {topico.fontes.length === 0 ? (
-          <span className="text-[12px] text-text-muted">—</span>
-        ) : (
-          (() => {
-            const hasQuestoes = (f: Fonte) =>
-              !!(f.link_questoes ||
-                (f.links_questoes && f.links_questoes.some((l) => !!l)));
-            const comQuestoes = topico.fontes
-              .map((f, i) => ({ f, i }))
-              .filter((x) => hasQuestoes(x.f));
-            const semQuestoes = topico.fontes
-              .map((f, i) => ({ f, i }))
-              .filter((x) => !hasQuestoes(x.f));
+        {topico.titulo}
+      </div>
 
-            const renderItem = (f: Fonte, i: number) => {
-              const key = `${topico.id}:${f.sigla}`;
-              const done = !!fonteProgresso[key];
-              return (
-                <div key={i} className="flex items-start gap-2">
-                  <Checkbox
-                    checked={done}
-                    onCheckedChange={(v) => onToggleFonte(f.sigla, !!v)}
-                    className="mt-0.5"
-                  />
-                  <span
-                    className="font-semibold text-[12px]"
-                    style={{ minWidth: 40, color: done || concluido ? inactiveColor : undefined }}
-                  >
-                    {f.sigla}
-                  </span>
-                  <span
-                    className="text-[12px]"
-                    style={{
-                      color: "#6b7280",
-                      textDecoration: done ? "line-through" : undefined,
-                    }}
-                  >
-                    {f.descricao}
-                  </span>
-                </div>
-              );
-            };
+      {topico.horas_estimadas > 0 && (
+        <div className="text-[10px] text-text-muted">
+          {topico.horas_estimadas}h estimadas
+        </div>
+      )}
 
+      {/* FONTES — fundo pastel */}
+      {fontesSemLink.length > 0 && (
+        <div
+          className="rounded-[8px] flex flex-col gap-1.5"
+          style={{ background: cor.background, padding: "7px 8px" }}
+        >
+          {fontesSemLink.map((fonte, i) => {
+            const key = `${topico.id}:${fonte.sigla}`;
+            const done = !!fonteProgresso[key];
             return (
-              <>
-                {semQuestoes.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    {semQuestoes.map((x) => renderItem(x.f, x.i))}
-                  </div>
-                )}
-                {comQuestoes.length > 0 && (
-                  <>
-                    {semQuestoes.length > 0 && (
-                      <div style={{ borderTop: "1px solid #e5e7eb", margin: "6px 0" }} />
-                    )}
-                    <div
-                      className="flex flex-col gap-2"
-                      style={{
-                        background: "#F7F4EE",
-                        borderRadius: 6,
-                        padding: "5px 7px",
-                        marginTop: 2,
-                      }}
-                    >
-                      {comQuestoes.map((x) => renderItem(x.f, x.i))}
-                    </div>
-                  </>
-                )}
-              </>
+              <label
+                key={i}
+                className="flex items-start gap-1.5 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={done}
+                  onChange={(e) => onToggleFonte(fonte.sigla, e.target.checked)}
+                  style={{ accentColor: cor.border, marginTop: 2, flexShrink: 0 }}
+                />
+                <span
+                  className="text-[10px] font-bold"
+                  style={{ color: cor.color, minWidth: 32 }}
+                >
+                  {fonte.sigla}
+                </span>
+                <span
+                  className="text-[10px] flex-1"
+                  style={{
+                    color: cor.color,
+                    opacity: 0.85,
+                    textDecoration: done ? "line-through" : undefined,
+                  }}
+                >
+                  {fonte.descricao}
+                </span>
+              </label>
             );
-          })()
-        )}
-      </td>
-      <td className="py-3 px-2 align-top">
-        {(() => {
-          const linksAll = topico.fontes.flatMap((f) => {
-            const arr = (f.links_questoes && f.links_questoes.length > 0)
-              ? f.links_questoes
-              : (f.link_questoes ? [f.link_questoes] : []);
-            return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, url }));
-          });
-          if (linksAll.length === 0) return <span className="text-[12px] text-text-muted">—</span>;
-          return (
-            <div className="flex flex-col gap-2">
-              {linksAll.map((l, i) => (
-                <a
-                  key={i}
-                  href={l.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[12px] text-[#378ADD] hover:underline inline-flex items-center gap-1"
-                >
-                  <ExternalLink size={11} /> {l.sigla}
-                </a>
-              ))}
-            </div>
-          );
-        })()}
-      </td>
-      <td className="py-3 px-2 align-top">
-        {(() => {
-          const linksAll = topico.fontes.flatMap((f) => {
-            const arr = (f.links_dod && f.links_dod.length > 0)
-              ? f.links_dod
-              : (f.link_dod ? [f.link_dod] : []);
-            return arr.filter(Boolean).map((url) => ({ sigla: f.sigla, url }));
-          });
-          if (linksAll.length === 0) return <span className="text-[12px] text-text-muted">—</span>;
-          return (
-            <div className="flex flex-col gap-2">
-              {linksAll.map((l, i) => (
-                <a
-                  key={i}
-                  href={l.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[12px] text-[#378ADD] hover:underline inline-flex items-center gap-1"
-                >
-                  <ExternalLink size={11} /> {l.sigla}
-                </a>
-              ))}
-            </div>
-          );
-        })()}
-      </td>
-      {canEdit && (
-        <td className="py-3 px-2 align-top">
+          })}
+        </div>
+      )}
+
+      {/* QUESTÕES */}
+      {linksQuestoes.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <div className="text-[9px] uppercase tracking-wider text-text-muted font-semibold">
+            Questões
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {linksQuestoes.map((l, i) => (
+              <a
+                key={i}
+                href={l.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] inline-flex items-center gap-1 px-2 py-0.5 rounded-full hover:underline"
+                style={{ background: "#F1EFE8", color: "#378ADD" }}
+              >
+                <ExternalLink size={9} />
+                {l.sigla || `Q${i + 1}`}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* DOD */}
+      {linksDod.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <div className="text-[9px] uppercase tracking-wider text-text-muted font-semibold">
+            DOD
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {linksDod.map((l, i) => (
+              <a
+                key={i}
+                href={l.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] inline-flex items-center gap-1 px-2 py-0.5 rounded-full hover:underline"
+                style={{ background: "#F1EFE8", color: "#378ADD" }}
+              >
+                📖 {l.descricao || l.sigla || `DOD ${i + 1}`}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* NOTAS */}
+      <div className="flex flex-col gap-1">
+        <div className="text-[9px] uppercase tracking-wider text-text-muted font-semibold">
+          Notas
+        </div>
+        <textarea
+          value={nota}
+          onChange={(e) => onNotaChange(e.target.value)}
+          placeholder="Adicione suas anotações..."
+          style={{
+            width: "100%",
+            minHeight: 56,
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            padding: 7,
+            fontSize: 10,
+            color: "#374151",
+            background: "#fafafa",
+            resize: "vertical",
+            fontFamily: "inherit",
+            outline: "none",
+          }}
+          onFocus={(e) => (e.target.style.borderColor = cor.border)}
+          onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
+        />
+      </div>
+
+      {/* RODAPÉ */}
+      <div
+        className="flex items-center justify-between pt-1.5"
+        style={{ borderTop: "1px solid #f3f4f6" }}
+      >
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={concluido}
+            onChange={(e) => onToggle(e.target.checked)}
+            style={{ accentColor: "#1D9E75" }}
+          />
+          <span
+            className="text-[10px] font-medium"
+            style={{ color: concluido ? "#1D9E75" : "#8A8478" }}
+          >
+            {concluido ? "Concluído ✓" : "Concluir"}
+          </span>
+        </label>
+        {canEdit && (
           <div className="flex gap-1">
             <button
               onClick={onStartEdit}
-              className="text-text-muted hover:text-text-main p-1"
+              className="text-text-muted hover:text-text-main p-0.5"
               aria-label="Editar"
             >
-              <Pencil size={13} />
+              <Pencil size={12} />
             </button>
             <button
               onClick={onDelete}
-              className="text-text-muted hover:text-destructive p-1"
+              className="text-text-muted hover:text-destructive p-0.5"
               aria-label="Excluir"
             >
-              <Trash2 size={13} />
+              <Trash2 size={12} />
             </button>
           </div>
-        </td>
-      )}
-    </tr>
+        )}
+      </div>
+    </div>
   );
 }
