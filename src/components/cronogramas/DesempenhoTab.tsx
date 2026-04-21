@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 type Topico = { id: string; titulo: string };
 type Materia = { id: string; nome: string; cor: string; topicos: Topico[] };
-type Evento = { topico_id: string | null; concluido: boolean };
+type Evento = { topico_id: string | null; concluido: boolean; is_revisao?: boolean };
 
 type Props = {
   cronogramaId: string;
@@ -117,10 +117,55 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
     };
   }, [materias, eventos, mySessions, allSessions]);
 
-  const abaixoDe60 = useMemo(
-    () => stats.porMateria.filter((m) => m.myAvg !== null && m.myAvg < 60),
-    [stats.porMateria],
-  );
+  // Tópicos aguardando revisão (evento is_revisao=true ainda não concluído neste cronograma)
+  const aguardandoRevisao = useMemo(() => {
+    const set = new Set<string>();
+    eventos.forEach((e) => {
+      if (e.is_revisao && !e.concluido && e.topico_id) set.add(e.topico_id);
+    });
+    return set;
+  }, [eventos]);
+
+  // Painel por TÓPICO: média < 60%, excluindo os que já têm revisão pendente
+  type TopicoBaixo = {
+    topicoId: string;
+    titulo: string;
+    materiaId: string;
+    materiaNome: string;
+    materiaCor: string;
+    media: number;
+    tentativas: number;
+  };
+  const topicosBaixos = useMemo<TopicoBaixo[]>(() => {
+    const byTopico = new Map<string, SessionRow[]>();
+    mySessions.forEach((s) => {
+      const arr = byTopico.get(s.topico_id) ?? [];
+      arr.push(s);
+      byTopico.set(s.topico_id, arr);
+    });
+    const out: TopicoBaixo[] = [];
+    for (const m of materias) {
+      for (const t of m.topicos) {
+        const arr = byTopico.get(t.id);
+        if (!arr || arr.length === 0) continue;
+        const media = Math.round(
+          arr.reduce((acc, s) => acc + s.percentual_acerto, 0) / arr.length,
+        );
+        if (media >= 60) continue;
+        if (aguardandoRevisao.has(t.id)) continue; // já tem revisão pendente
+        out.push({
+          topicoId: t.id,
+          titulo: t.titulo,
+          materiaId: m.id,
+          materiaNome: m.nome,
+          materiaCor: m.cor,
+          media,
+          tentativas: arr.length,
+        });
+      }
+    }
+    return out.sort((a, b) => a.media - b.media);
+  }, [mySessions, materias, aguardandoRevisao]);
 
   // Histórico de revisões: agrupar sessões por tópico, pegando pior e melhor %
   const historicoRevisoes = useMemo(() => {
@@ -134,11 +179,15 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
       topicoId: string;
       titulo: string;
       materia: string;
+      materiaId: string;
+      materiaCor: string;
       cor: string;
       tentativas: number;
       pior: number;
       melhor: number;
       ultima: number;
+      superado: boolean;
+      aguardando: boolean;
     }[] = [];
     for (const m of materias) {
       for (const t of m.topicos) {
@@ -146,30 +195,42 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
         if (!arr || arr.length < 2) continue; // só mostra com 2+ tentativas
         const sorted = [...arr].sort((a, b) => a.data.localeCompare(b.data));
         const percs = arr.map((s) => s.percentual_acerto);
+        const melhor = Math.max(...percs);
         result.push({
           topicoId: t.id,
           titulo: t.titulo,
           materia: m.nome,
+          materiaId: m.id,
+          materiaCor: m.cor,
           cor: m.cor,
           tentativas: arr.length,
           pior: Math.min(...percs),
-          melhor: Math.max(...percs),
+          melhor,
           ultima: sorted[sorted.length - 1].percentual_acerto,
+          superado: melhor >= 60,
+          aguardando: aguardandoRevisao.has(t.id),
         });
       }
     }
     return result.sort((a, b) => a.pior - b.pior);
-  }, [mySessions, materias]);
+  }, [mySessions, materias, aguardandoRevisao]);
 
-  async function criarRevisao(materiaId: string, materiaNome: string, cor: string) {
+  async function criarRevisaoTopico(
+    topicoId: string,
+    materiaId: string,
+    titulo: string,
+    materiaNome: string,
+    cor: string,
+  ) {
     if (!userId) return;
-    setCreatingRevisao(materiaId);
+    setCreatingRevisao(topicoId);
     const data = nextWeekday(new Date());
     const { error } = await supabase.from("user_calendar_events").insert({
       user_id: userId,
       cronograma_id: cronogramaId,
       materia_id: materiaId,
-      titulo: `Revisão: ${materiaNome}`,
+      topico_id: topicoId,
+      titulo: `Revisão: ${titulo}`,
       data,
       is_revisao: true,
       cor: colorForMateria(materiaNome, cor),
@@ -214,54 +275,63 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
         </div>
       </div>
 
-      {/* Painel: Matérias abaixo de 60% */}
+      {/* Painel: Tópicos abaixo de 60% (filtra os que já têm revisão pendente) */}
       {loading ? (
         <div className="lei-card text-center py-8 text-text-muted text-[13px]">Carregando...</div>
-      ) : abaixoDe60.length > 0 ? (
+      ) : topicosBaixos.length > 0 ? (
         <div
           className="lei-card"
           style={{ borderLeft: "3px solid #D85A30", background: "rgba(216,90,48,0.04)" }}
         >
           <div className="flex items-center gap-2 mb-3">
             <TrendingDown size={16} style={{ color: "#D85A30" }} />
-            <h3 className="font-serif text-[16px] text-text-main">Matérias abaixo de 60%</h3>
+            <h3 className="font-serif text-[16px] text-text-main">Tópicos abaixo de 60%</h3>
           </div>
           <p className="text-[12px] text-text-muted mb-3">
-            Estas matérias precisam de revisão. Agende uma sessão para retomar o conteúdo.
+            Estes tópicos precisam de revisão. Agende uma sessão para retomar o conteúdo.
           </p>
           <div className="flex flex-col gap-2">
-            {abaixoDe60.map((m) => (
+            {topicosBaixos.map((t) => (
               <div
-                key={m.id}
+                key={t.topicoId}
                 className="flex items-center justify-between gap-3 p-3 rounded-[10px] bg-card border border-border"
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: colorForMateria(m.nome, m.cor) }}
+                    style={{ background: colorForMateria(t.materiaNome, t.materiaCor) }}
                   />
-                  <span className="text-[13px] text-text-main truncate">{m.nome}</span>
+                  <div className="min-w-0">
+                    <div className="text-[13px] text-text-main truncate">{t.titulo}</div>
+                    <div className="text-[11px] text-text-muted truncate">{t.materiaNome}</div>
+                  </div>
                   <span
                     className="text-[11px] font-medium px-2 py-[2px] rounded-full"
                     style={{ background: "rgba(216,90,48,0.12)", color: "#D85A30" }}
                   >
-                    {m.myAvg}%
+                    {t.media}%
                   </span>
-                  {m.allAvg !== null && (
-                    <span className="text-[11px] text-text-muted">
-                      média alunos: {m.allAvg}%
-                    </span>
-                  )}
+                  <span className="text-[11px] text-text-muted">
+                    {t.tentativas} {t.tentativas === 1 ? "tentativa" : "tentativas"}
+                  </span>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => criarRevisao(m.id, m.nome, m.cor)}
-                  disabled={creatingRevisao === m.id}
+                  onClick={() =>
+                    criarRevisaoTopico(
+                      t.topicoId,
+                      t.materiaId,
+                      t.titulo,
+                      t.materiaNome,
+                      t.materiaCor,
+                    )
+                  }
+                  disabled={creatingRevisao === t.topicoId}
                   className="gap-1 text-[12px] h-8"
                 >
                   <RefreshCw size={12} />
-                  {creatingRevisao === m.id ? "Agendando..." : "Revisão"}
+                  {creatingRevisao === t.topicoId ? "Agendando..." : "+ Revisão"}
                 </Button>
               </div>
             ))}
@@ -394,23 +464,7 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                   </div>
                 )}
 
-                {m.myAvg !== null && m.myAvg < 60 && (
-                  <button
-                    onClick={() => criarRevisao(m.id, m.nome, m.cor)}
-                    disabled={creatingRevisao === m.id}
-                    style={{
-                      background: "#1D9E75",
-                      color: "white",
-                      borderRadius: 20,
-                      padding: "4px 10px",
-                      fontSize: 10,
-                      marginTop: 8,
-                      opacity: creatingRevisao === m.id ? 0.6 : 1,
-                    }}
-                  >
-                    {creatingRevisao === m.id ? "Agendando..." : "+ Revisão"}
-                  </button>
-                )}
+                {/* Botão de revisão movido para o painel "Tópicos abaixo de 60%" (granularidade por tópico) */}
               </div>
             );
           })}
@@ -436,44 +490,76 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                   <th className="font-normal pb-2 px-3">Tentativas</th>
                   <th className="font-normal pb-2 px-3">Pior</th>
                   <th className="font-normal pb-2 px-3">Melhor</th>
-                  <th className="font-normal pb-2 pl-3">Última</th>
+                  <th className="font-normal pb-2 px-3">Última</th>
+                  <th className="font-normal pb-2 pl-3">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {historicoRevisoes.map((h) => (
-                  <tr key={h.topicoId} className="border-t border-border">
-                    <td className="py-2 pr-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ background: colorForMateria(h.materia, h.cor) }}
-                        />
-                        <div className="min-w-0">
-                          <div className="text-text-main truncate">{h.titulo}</div>
-                          <div className="text-[11px] text-text-muted truncate">{h.materia}</div>
+                {historicoRevisoes
+                  .filter((h) => !h.aguardando) /* esconde temporariamente enquanto há revisão pendente */
+                  .map((h) => (
+                    <tr key={h.topicoId} className="border-t border-border">
+                      <td className="py-2 pr-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: colorForMateria(h.materia, h.cor) }}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-text-main truncate">{h.titulo}</div>
+                            <div className="text-[11px] text-text-muted truncate">{h.materia}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-2 px-3 tabular-nums text-text-main">{h.tentativas}</td>
-                    <td className="py-2 px-3">
-                      <span
-                        className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
-                        style={{ background: "rgba(216,90,48,0.12)", color: "#D85A30" }}
-                      >
-                        <TrendingDown size={10} /> {h.pior}%
-                      </span>
-                    </td>
-                    <td className="py-2 px-3">
-                      <span
-                        className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
-                        style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
-                      >
-                        <TrendingUp size={10} /> {h.melhor}%
-                      </span>
-                    </td>
-                    <td className="py-2 pl-3 tabular-nums text-text-main">{h.ultima}%</td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-2 px-3 tabular-nums text-text-main">{h.tentativas}</td>
+                      <td className="py-2 px-3">
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
+                          style={{ background: "rgba(216,90,48,0.12)", color: "#D85A30" }}
+                        >
+                          <TrendingDown size={10} /> {h.pior}%
+                        </span>
+                      </td>
+                      <td className="py-2 px-3">
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
+                          style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
+                        >
+                          <TrendingUp size={10} /> {h.melhor}%
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 tabular-nums text-text-main">{h.ultima}%</td>
+                      <td className="py-2 pl-3">
+                        {h.superado ? (
+                          <span
+                            className="inline-block text-[11px] font-medium px-2 py-[2px] rounded-full"
+                            style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
+                          >
+                            🎉 Superado
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              criarRevisaoTopico(
+                                h.topicoId,
+                                h.materiaId,
+                                h.titulo,
+                                h.materia,
+                                h.materiaCor,
+                              )
+                            }
+                            disabled={creatingRevisao === h.topicoId}
+                            className="gap-1 text-[11px] h-7"
+                          >
+                            <RefreshCw size={11} />
+                            {creatingRevisao === h.topicoId ? "Agendando..." : "Revisar novamente"}
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
