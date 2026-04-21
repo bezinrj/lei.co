@@ -126,6 +126,9 @@ function MeuPlanoPage() {
 
   const checkoutSubFn = useServerFn(createCheckoutSession);
   const checkoutAvulsoFn = useServerFn(createCheckoutAvulso);
+  const cancelarFn = useServerFn(cancelSubscription);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
