@@ -371,16 +371,40 @@ function PerfilPage() {
     <AppShell title="Meu Perfil">
       {/* Resumo / Dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MetricCard label="Horas estudadas" value="26h 15m" hint="esta semana" tone="sage" />
-        <MetricCard label="Questões feitas" value="412" hint="78% de acerto" tone="blush" />
-        <MetricCard label="🔥 Sequência" value="14 dias" hint="seu recorde: 22" tone="lilac" />
-        <MetricCard label="Medalhas" value="9 / 24" hint="próxima: Madrugadora" tone="sky" />
+        <MetricCard
+          label="Horas estudadas"
+          value={`${stats.horasTotais}h`}
+          hint="total registrado"
+          tone="sage"
+        />
+        <MetricCard
+          label="Questões feitas"
+          value={`${stats.totalQuestoes}`}
+          hint={stats.totalQuestoes > 0 ? `${stats.mediaAcerto}% de acerto` : "sem dados ainda"}
+          tone="blush"
+        />
+        <MetricCard
+          label="🔥 Sequência"
+          value={`${stats.sequenciaAtual} dias`}
+          hint={stats.maiorSequencia > 0 ? `seu recorde: ${stats.maiorSequencia}` : "comece hoje"}
+          tone="lilac"
+        />
+        <MetricCard
+          label="Medalhas"
+          value={`${userBadges.length} / ${badges.length}`}
+          hint={`${badges.length - userBadges.length} para desbloquear`}
+          tone="sky"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <WeeklyPerformance />
         <TodaySchedule />
         <GroupRanking />
+      </div>
+
+      <div className="grid grid-cols-1 mb-8">
+        <SubjectPerformance />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 mb-6">
