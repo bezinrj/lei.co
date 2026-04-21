@@ -5,6 +5,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
 import { usePresence } from "@/hooks/usePresence";
+import { useLastSeen } from "@/hooks/useLastSeen";
 import { PWARegister } from "@/components/PWARegister";
 
 function NotFoundComponent() {
@@ -80,6 +81,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function PresenceTracker() {
   usePresence();
+  useLastSeen();
   return null;
 }
 
