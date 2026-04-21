@@ -261,6 +261,34 @@ export const concederCortesia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// =================== Revogar cortesia / assinatura ativa ===================
+
+export const revogarCortesia = createServerFn({ method: "POST" })
+  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .inputValidator((input: { userId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requireAdmin(supabase, userId);
+
+    const nowIso = new Date().toISOString();
+
+    // Encerra todas as assinaturas ativas (ativa/cortesia/teste) do usuário
+    const { error } = await supabaseAdmin
+      .from("assinaturas")
+      .update({ status: "cancelada", fim: nowIso })
+      .eq("user_id", data.userId)
+      .in("status", ["ativa", "cortesia", "teste"]);
+    if (error) throw new Error(error.message);
+
+    // Garante que o profile volte para 'gratuito' (caso o trigger não dispare)
+    await supabaseAdmin
+      .from("profiles")
+      .update({ plano_atual: "gratuito" })
+      .eq("id", data.userId);
+
+    return { ok: true };
+  });
+
 // =================== Reset de senha ===================
 
 export const enviarResetSenha = createServerFn({ method: "POST" })

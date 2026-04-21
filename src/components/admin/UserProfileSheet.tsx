@@ -48,6 +48,7 @@ import {
   getAdminUserProfile,
   toggleUserBloqueado,
   concederCortesia,
+  revogarCortesia,
   enviarResetSenha,
   deletarUsuario,
   getAdminUserReport,
