@@ -59,7 +59,7 @@ const PLANO_VISUAL: Record<string, { bg: string; border?: string; benefits: stri
     subtitle: "Para começar com flexibilidade",
     benefits: [
       "Acesso à plataforma e 1 cronograma editável",
-      "Calendário de revisões inteligente",
+      "Calendário inteligente",
       "Dashboard de desempenho",
       "Gestor de Revisões",
       "Criação de grupos (Study Rats)",
