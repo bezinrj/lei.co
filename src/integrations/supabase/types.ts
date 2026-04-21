@@ -230,7 +230,9 @@ export type Database = {
           id: string
           imagem_url: string | null
           nome: string
+          preco_centavos: number | null
           premium: boolean
+          stripe_price_id: string | null
           updated_at: string
         }
         Insert: {
@@ -240,7 +242,9 @@ export type Database = {
           id?: string
           imagem_url?: string | null
           nome: string
+          preco_centavos?: number | null
           premium?: boolean
+          stripe_price_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -250,7 +254,9 @@ export type Database = {
           id?: string
           imagem_url?: string | null
           nome?: string
+          preco_centavos?: number | null
           premium?: boolean
+          stripe_price_id?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as MeuPlanoRouteImport } from './routes/meu-plano'
 import { Route as MedalhasRouteImport } from './routes/medalhas'
 import { Route as GruposRouteImport } from './routes/grupos'
 import { Route as CronogramasRouteImport } from './routes/cronogramas'
@@ -18,6 +19,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CronogramaIdRouteImport } from './routes/cronograma.$id'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe.webhook'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -30,6 +32,11 @@ const RankingRoute = RankingRouteImport.update({
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeuPlanoRoute = MeuPlanoRouteImport.update({
+  id: '/meu-plano',
+  path: '/meu-plano',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MedalhasRoute = MedalhasRouteImport.update({
@@ -67,6 +74,11 @@ const CronogramaIdRoute = CronogramaIdRouteImport.update({
   path: '/cronograma/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -91,9 +103,11 @@ export interface FileRoutesByFullPath {
   '/cronogramas': typeof CronogramasRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
+  '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -105,9 +119,11 @@ export interface FileRoutesByTo {
   '/cronogramas': typeof CronogramasRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
+  '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -120,9 +136,11 @@ export interface FileRoutesById {
   '/cronogramas': typeof CronogramasRoute
   '/grupos': typeof GruposRoute
   '/medalhas': typeof MedalhasRoute
+  '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -136,9 +154,11 @@ export interface FileRouteTypes {
     | '/cronogramas'
     | '/grupos'
     | '/medalhas'
+    | '/meu-plano'
     | '/perfil'
     | '/ranking'
     | '/cronograma/$id'
+    | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -150,9 +170,11 @@ export interface FileRouteTypes {
     | '/cronogramas'
     | '/grupos'
     | '/medalhas'
+    | '/meu-plano'
     | '/perfil'
     | '/ranking'
     | '/cronograma/$id'
+    | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -164,9 +186,11 @@ export interface FileRouteTypes {
     | '/cronogramas'
     | '/grupos'
     | '/medalhas'
+    | '/meu-plano'
     | '/perfil'
     | '/ranking'
     | '/cronograma/$id'
+    | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -179,9 +203,11 @@ export interface RootRouteChildren {
   CronogramasRoute: typeof CronogramasRoute
   GruposRoute: typeof GruposRoute
   MedalhasRoute: typeof MedalhasRoute
+  MeuPlanoRoute: typeof MeuPlanoRoute
   PerfilRoute: typeof PerfilRoute
   RankingRoute: typeof RankingRoute
   CronogramaIdRoute: typeof CronogramaIdRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -201,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/perfil'
       fullPath: '/perfil'
       preLoaderRoute: typeof PerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meu-plano': {
+      id: '/meu-plano'
+      path: '/meu-plano'
+      fullPath: '/meu-plano'
+      preLoaderRoute: typeof MeuPlanoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/medalhas': {
@@ -252,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CronogramaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
       path: '/lovable/email/queue/process'
@@ -283,9 +323,11 @@ const rootRouteChildren: RootRouteChildren = {
   CronogramasRoute: CronogramasRoute,
   GruposRoute: GruposRoute,
   MedalhasRoute: MedalhasRoute,
+  MeuPlanoRoute: MeuPlanoRoute,
   PerfilRoute: PerfilRoute,
   RankingRoute: RankingRoute,
   CronogramaIdRoute: CronogramaIdRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
@@ -293,12 +335,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
