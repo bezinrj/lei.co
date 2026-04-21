@@ -12,10 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, Camera, Copy, Check, Lock, Star, Loader2 } from "lucide-react";
+import { Pencil, Camera, Copy, Check, Lock, Star, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { maskPhoneBR } from "@/lib/phone-mask";
 
 type Profile = {
   id: string;
@@ -25,6 +26,7 @@ type Profile = {
   bio: string | null;
   concurso_alvo: string | null;
   data_prova: string | null;
+  telefone: string | null;
   created_at: string;
 };
 
@@ -90,6 +92,8 @@ function PerfilPage() {
   const [bioValue, setBioValue] = useState("");
   const [concursoValue, setConcursoValue] = useState("");
   const [dataProvaValue, setDataProvaValue] = useState("");
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneValue, setPhoneValue] = useState("");
   const [copied, setCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -127,6 +131,7 @@ function PerfilPage() {
         setBioValue(p.bio ?? "");
         setConcursoValue(p.concurso_alvo ?? "");
         setDataProvaValue(p.data_prova ?? "");
+        setPhoneValue(p.telefone ?? "");
       }
 
       setBadges((badgesRes.data ?? []) as Badge[]);
@@ -224,6 +229,18 @@ function PerfilPage() {
       })
     ) {
       toast.success("Meta atualizada.");
+    }
+  }
+
+  async function handleSavePhone() {
+    const trimmed = phoneValue.trim();
+    if (trimmed === (profile?.telefone ?? "")) {
+      setEditingPhone(false);
+      return;
+    }
+    if (await saveProfile({ telefone: trimmed || null } as Partial<Profile>)) {
+      setEditingPhone(false);
+      toast.success("Telefone atualizado.");
     }
   }
 
@@ -475,6 +492,71 @@ function PerfilPage() {
 
             <div className="text-[12px] text-text-muted">
               Estudando desde <strong className="text-text-main">{desdeFmt}</strong>
+            </div>
+
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-text-muted">
+                Email
+              </label>
+              <div className="mt-1 text-[13px] text-text-main truncate">
+                {user?.email ?? "—"}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-text-muted">
+                Telefone
+              </label>
+              {editingPhone ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <Input
+                    type="tel"
+                    inputMode="numeric"
+                    value={phoneValue}
+                    onChange={(e) => setPhoneValue(maskPhoneBR(e.target.value))}
+                    placeholder="(11) 99999-9999"
+                    maxLength={15}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSavePhone();
+                      if (e.key === "Escape") {
+                        setPhoneValue(profile.telefone ?? "");
+                        setEditingPhone(false);
+                      }
+                    }}
+                  />
+                  <Button size="sm" onClick={handleSavePhone}>
+                    Salvar
+                  </Button>
+                  <button
+                    onClick={() => {
+                      setPhoneValue(profile.telefone ?? "");
+                      setEditingPhone(false);
+                    }}
+                    aria-label="Cancelar"
+                    className="text-text-muted hover:text-text-main p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <span
+                    className={`text-[13px] ${
+                      profile.telefone ? "text-text-main" : "text-text-muted"
+                    }`}
+                  >
+                    {profile.telefone || "Adicionar telefone"}
+                  </span>
+                  <button
+                    onClick={() => setEditingPhone(true)}
+                    aria-label="Editar telefone"
+                    className="text-text-muted hover:text-text-main transition"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="rounded-[12px] bg-lilac-light border border-border px-3 py-3">
