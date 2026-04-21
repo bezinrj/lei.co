@@ -50,17 +50,19 @@ const PLANO_VISUAL: Record<string, { bg: string; border?: string; benefits: stri
     subtitle: "Acesso básico à plataforma",
     benefits: [
       "Cronogramas gratuitos",
-      "Registro de sessões de estudo",
-      "Ranking e medalhas",
+      "Ranking Semanal",
+      "Medalhas e gamificação",
     ],
   },
   mensal: {
     bg: "#E8F0E5",
     subtitle: "Para começar com flexibilidade",
     benefits: [
-      "Acesso a todos os cronogramas premium",
+      "Acesso à plataforma e 1 cronograma editável",
       "Calendário de revisões inteligente",
-      "Suporte prioritário",
+      "Dashboard de desempenho",
+      "Gestor de Revisões",
+      "Criação de grupos (Study Rats)",
     ],
   },
   trimestral: {
@@ -89,6 +91,8 @@ const PLANO_VISUAL: Record<string, { bg: string; border?: string; benefits: stri
       "Tudo do plano Anual",
       "Mentoria individual inclusa",
       "Acesso a TODOS os cronogramas premium sem custo extra",
+      "Badge exclusivo de assinante Diamante",
+      "Acesso antecipado a novas funcionalidades",
       "Atendimento VIP",
     ],
   },
