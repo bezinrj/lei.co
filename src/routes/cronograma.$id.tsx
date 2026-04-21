@@ -55,7 +55,7 @@ type Evento = {
 function CronogramaDetail() {
   const { id } = Route.useParams();
   const { user, isAdminOrMod } = useAuth();
-  const { isPremium } = usePlan();
+  const acesso = useAcesso();
 
   const [cron, setCron] = useState<Cronograma | null>(null);
   const [materias, setMaterias] = useState<Materia[]>([]);
