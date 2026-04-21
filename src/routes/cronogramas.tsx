@@ -9,7 +9,21 @@ import { useAcesso } from "@/hooks/useAcesso";
 import { CategoryRow } from "@/components/cronogramas/CategoryRow";
 import { NovoCronogramaDialog } from "@/components/cronogramas/NovoCronogramaDialog";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { EditarCronogramaDialog } from "@/components/admin/EditarCronogramaDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { duplicateCronograma, deleteCronograma, type AdminCronograma } from "@/server/admin.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/cronogramas")({
   head: () => ({ meta: [{ title: "Cronogramas — Lei.co" }] }),
@@ -22,6 +36,10 @@ type Cronograma = {
   categoria: string | null;
   imagem_url: string | null;
   premium: boolean;
+  is_proprio: boolean;
+  criado_por: string | null;
+  preco_centavos: number | null;
+  stripe_price_id: string | null;
 };
 
 let cachedItems: Cronograma[] | null = null;
@@ -29,13 +47,19 @@ let cachedAt = 0;
 const STALE_MS = 30_000;
 
 function CronogramasPage() {
-  const { isAdminOrMod } = useAuth();
+  const { isAdminOrMod, user } = useAuth();
   const acesso = useAcesso();
   const navigate = useNavigate();
   const [items, setItems] = useState<Cronograma[]>(cachedItems ?? []);
   const [loading, setLoading] = useState(cachedItems === null);
   const [open, setOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Cronograma | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Cronograma | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const duplicateFn = useServerFn(duplicateCronograma);
+  const deleteFn = useServerFn(deleteCronograma);
 
   const load = useCallback(async (force = false) => {
     const fresh = Date.now() - cachedAt < STALE_MS;
@@ -43,12 +67,12 @@ function CronogramasPage() {
     if (!cachedItems) setLoading(true);
     const { data, error } = await supabase
       .from("cronogramas")
-      .select("id, nome, categoria, imagem_url, premium")
+      .select("id, nome, categoria, imagem_url, premium, is_proprio, criado_por, preco_centavos, stripe_price_id")
       .order("created_at", { ascending: false });
     if (!error && data) {
-      cachedItems = data;
+      cachedItems = data as Cronograma[];
       cachedAt = Date.now();
-      setItems(data);
+      setItems(data as Cronograma[]);
     }
     setLoading(false);
   }, []);
@@ -57,17 +81,17 @@ function CronogramasPage() {
     load();
   }, [load]);
 
-  const grouped = items.reduce<Record<string, Cronograma[]>>((acc, c) => {
+  // Separa "Meu Cronograma" do resto
+  const meusProprios = items.filter((c) => c.is_proprio && c.criado_por === user?.id);
+  const institucionais = items.filter((c) => !c.is_proprio || c.criado_por !== user?.id);
+
+  const grouped = institucionais.reduce<Record<string, Cronograma[]>>((acc, c) => {
     const key = c.categoria?.trim() || "Sem categoria";
     if (!acc[key]) acc[key] = [];
     acc[key].push(c);
     return acc;
   }, {});
 
-  // Botão "Novo Cronograma":
-  // - Admin/mod: sempre disponível (criação institucional)
-  // - Usuário com assinatura: 1 cronograma próprio
-  // - Sem assinatura: oculto
   const isStaff = isAdminOrMod;
   const mostrarBotaoNovo = isStaff || acesso.temAssinatura;
   const jaTemProprio = !!acesso.cronogramaProprioId;
@@ -81,6 +105,52 @@ function CronogramasPage() {
     }
     navigate({ to: "/cronograma/$id", params: { id: c.id } });
   }
+
+  async function handleDuplicate(c: Cronograma) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await duplicateFn({ data: { id: c.id } });
+      toast.success("Cronograma duplicado!");
+      await load(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao duplicar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+    setBusy(true);
+    try {
+      await deleteFn({ data: { id: deleteTarget.id } });
+      toast.success("Cronograma excluído!");
+      setDeleteTarget(null);
+      await load(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Adapta cronograma local para AdminCronograma esperado pelo EditarCronogramaDialog
+  const editTargetAdmin: AdminCronograma | null = editTarget
+    ? {
+        id: editTarget.id,
+        nome: editTarget.nome,
+        categoria: editTarget.categoria,
+        premium: editTarget.premium,
+        imagem_url: editTarget.imagem_url,
+        preco_centavos: editTarget.preco_centavos,
+        stripe_price_id: editTarget.stripe_price_id,
+        total_materias: 0,
+        total_topicos: 0,
+        total_alunos_ativos: 0,
+        created_at: "",
+      }
+    : null;
 
   return (
     <AppShell title="Cronogramas">
@@ -128,16 +198,34 @@ function CronogramasPage() {
         </div>
       ) : (
         <div>
+          {meusProprios.length > 0 && (
+            <CategoryRow
+              title="Meu Cronograma"
+              items={meusProprios}
+              isLocked={() => false}
+              showActions
+              onSelect={(id) => {
+                const c = meusProprios.find((x) => x.id === id);
+                if (c) handleSelect(c);
+              }}
+              onEdit={(c) => setEditTarget(c)}
+              onDelete={(c) => setDeleteTarget(c)}
+            />
+          )}
           {Object.entries(grouped).map(([cat, list]) => (
             <CategoryRow
               key={cat}
               title={cat}
               items={list}
               isLocked={(c) => !acesso.temAcessoCronograma(c.id, c.premium)}
+              showActions={isStaff}
               onSelect={(id) => {
                 const c = list.find((x) => x.id === id);
                 if (c) handleSelect(c);
               }}
+              onEdit={isStaff ? (c) => setEditTarget(c) : undefined}
+              onDuplicate={isStaff ? (c) => handleDuplicate(c) : undefined}
+              onDelete={isStaff ? (c) => setDeleteTarget(c) : undefined}
             />
           ))}
         </div>
@@ -145,6 +233,40 @@ function CronogramasPage() {
 
       <NovoCronogramaDialog open={open} onOpenChange={setOpen} onCreated={() => load(true)} />
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+
+      <EditarCronogramaDialog
+        open={!!editTarget}
+        onOpenChange={(v) => !v && setEditTarget(null)}
+        cronograma={editTargetAdmin}
+        onSaved={() => load(true)}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-medium text-text-main">
+              Excluir cronograma
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteTarget?.nome}</strong>? Os tópicos
+              da matriz serão removidos. Os dados de progresso dos alunos não serão afetados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteConfirm();
+              }}
+              disabled={busy}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {busy ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
