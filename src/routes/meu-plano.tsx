@@ -304,7 +304,7 @@ function MeuPlanoPage() {
                     <button
                       type="button"
                       onClick={() => setConfirmCancel(true)}
-                      className="w-full text-[12px] text-text-muted hover:text-red-600 transition-colors underline-offset-2 hover:underline"
+                      className="w-full text-[12px] text-text-muted hover:text-destructive transition-colors underline-offset-2 hover:underline"
                     >
                       Cancelar assinatura
                     </button>
