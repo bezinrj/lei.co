@@ -442,13 +442,22 @@ function CardCiclo({
         <div className="flex items-center gap-2 min-w-0">
           <span
             className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded"
-            style={{ background: cor.background, color: cor.color }}
+            style={{
+              background: concluido ? "transparent" : cor.background,
+              color: concluido ? "#c4c4c4" : cor.color,
+              fontFamily: concluido ? "'Playfair Display', serif" : undefined,
+              fontSize: concluido ? 14 : undefined,
+              transition: "all 0.25s ease",
+            }}
           >
             {String(index).padStart(2, "0")}
           </span>
           <span
             className="text-[11px] font-semibold truncate"
-            style={{ color: cor.color }}
+            style={{
+              color: concluido ? mutedText : cor.color,
+              transition: "color 0.25s ease",
+            }}
             title={topico.materia_nome}
           >
             {topico.materia_nome}
@@ -469,15 +478,19 @@ function CardCiclo({
       <div
         className="text-[12px] font-medium leading-snug"
         style={{
-          color: concluido ? "#9ca3af" : "var(--text-main)",
+          color: concluido ? mutedText : "var(--text-main)",
           textDecoration: concluido ? "line-through" : undefined,
+          transition: "color 0.25s ease",
         }}
       >
         {topico.titulo}
       </div>
 
       {topico.horas_estimadas > 0 && (
-        <div className="text-[10px] text-text-muted">
+        <div
+          className="text-[10px]"
+          style={{ color: concluido ? mutedText : "var(--text-muted, #8A8478)" }}
+        >
           {topico.horas_estimadas}h estimadas
         </div>
       )}
@@ -486,7 +499,12 @@ function CardCiclo({
       {fontesSemLink.length > 0 && (
         <div
           className="rounded-[8px] flex flex-col gap-1.5"
-          style={{ background: cor.background, padding: "7px 8px" }}
+          style={{
+            background: cor.background,
+            padding: "7px 8px",
+            opacity: concluido ? 0.5 : 1,
+            transition: "opacity 0.25s ease",
+          }}
         >
           {fontesSemLink.map((fonte, i) => {
             const key = `${topico.id}:${fonte.sigla}`;
