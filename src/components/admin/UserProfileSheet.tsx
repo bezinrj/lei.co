@@ -65,6 +65,13 @@ type Props = {
 
 type PlanoTipo = "diamante" | "anual" | "trimestral" | "mensal";
 
+const PLANO_LABEL: Record<PlanoTipo, string> = {
+  diamante: "Diamante",
+  anual: "Anual",
+  trimestral: "Trimestral",
+  mensal: "Mensal",
+};
+
 export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Props) {
   const [profile, setProfile] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(false);
