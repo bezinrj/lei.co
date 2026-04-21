@@ -713,6 +713,7 @@ export function CalendarioTab({
         onOpenChange={setLimparOpen}
         userId={userId}
         cronogramaId={cronogramaId}
+        topicoIds={topicos.map((t) => t.id)}
         onCleared={onChange}
       />
     </div>
