@@ -11,7 +11,7 @@ import {
 } from "@/server/admin.functions";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, ArrowLeft, Trash2, Calendar, BookOpen, Activity, RefreshCw, Download } from "lucide-react";
+import { Search, ArrowLeft, Trash2, Calendar, BookOpen, Activity, RefreshCw, Download, Mail, Phone, Crown } from "lucide-react";
 import { toast } from "sonner";
 
 export function AlunosAdminTab() {
@@ -176,13 +176,49 @@ function AlunoDetail({ alunoId, onBack }: { alunoId: string; onBack: () => void 
 
       <div className="lei-card mb-4">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="font-serif text-[20px] text-text-main">
-              {data.profile.display_name ?? "—"}
-            </h2>
-            <div className="font-mono text-[11px] text-text-muted">{data.profile.friend_id}</div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="font-serif text-[20px] text-text-main">
+                {data.profile.display_name ?? "—"}
+              </h2>
+              {data.profile.plano === "premium" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gradient-to-r from-amber-100 to-amber-200 text-amber-900 border border-amber-300">
+                  <Crown size={12} className="fill-current" /> 👑 Diamante
+                </span>
+              )}
+            </div>
+            <div className="font-mono text-[11px] text-text-muted mt-0.5">
+              {data.profile.friend_id}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
+              <a
+                href={data.profile.email ? `mailto:${data.profile.email}` : undefined}
+                className={`inline-flex items-center gap-1.5 ${
+                  data.profile.email
+                    ? "text-text-main hover:underline"
+                    : "text-text-muted pointer-events-none"
+                }`}
+              >
+                <Mail size={13} className="text-text-muted" />
+                {data.profile.email ?? "Email não informado"}
+              </a>
+              {data.profile.telefone ? (
+                <a
+                  href={`tel:${data.profile.telefone.replace(/\D/g, "")}`}
+                  className="inline-flex items-center gap-1.5 text-text-main hover:underline"
+                >
+                  <Phone size={13} className="text-text-muted" />
+                  {data.profile.telefone}
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-text-muted">
+                  <Phone size={13} />
+                  Não informado
+                </span>
+              )}
+            </div>
           </div>
-          <button onClick={load} className="text-[12px] text-text-muted hover:text-text-main">
+          <button onClick={load} className="text-[12px] text-text-muted hover:text-text-main shrink-0">
             <RefreshCw size={14} className="inline mr-1" /> Atualizar
           </button>
         </div>
