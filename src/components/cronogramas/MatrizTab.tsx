@@ -390,17 +390,19 @@ function CardCiclo({
   });
   const cor = resolvePaleta(topico.materia_nome, topico.materia_cor);
 
+  const mutedBorder = "#e5e7eb";
+  const mutedText = "#9ca3af";
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition ?? "all 0.25s ease",
+    opacity: isDragging ? 0.5 : concluido ? 0.65 : 1,
     width: 240,
     minWidth: 240,
     flexShrink: 0,
     background: "#fff",
     borderRadius: 14,
-    border: `1px solid ${cor.border}`,
-    borderTop: `4px solid ${cor.border}`,
+    border: `1px solid ${concluido ? mutedBorder : cor.border}`,
+    borderTop: `4px solid ${concluido ? mutedBorder : cor.border}`,
     display: "flex",
     flexDirection: "column",
     gap: 8,
