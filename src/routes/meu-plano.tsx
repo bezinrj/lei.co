@@ -5,9 +5,19 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { createCheckoutSession, createCheckoutAvulso } from "@/server/stripe.functions";
+import { createCheckoutSession, createCheckoutAvulso, cancelSubscription } from "@/server/stripe.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/meu-plano")({
   component: MeuPlanoPage,
@@ -116,6 +126,9 @@ function MeuPlanoPage() {
 
   const checkoutSubFn = useServerFn(createCheckoutSession);
   const checkoutAvulsoFn = useServerFn(createCheckoutAvulso);
+  const cancelarFn = useServerFn(cancelSubscription);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -176,6 +189,20 @@ function MeuPlanoPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao iniciar checkout");
       setProcessando(null);
+    }
+  }
+
+  async function cancelarAssinatura() {
+    setCancelando(true);
+    try {
+      const res = await cancelarFn({ data: {} });
+      toast.success(res.message ?? "Assinatura cancelada com sucesso");
+      setConfirmCancel(false);
+      setPlanoAtual("gratuito");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao cancelar assinatura");
+    } finally {
+      setCancelando(false);
     }
   }
 
@@ -270,9 +297,18 @@ function MeuPlanoPage() {
                     {isCurrent ? "Plano atual" : "Sempre disponível"}
                   </Button>
                 ) : isCurrent ? (
-                  <Button disabled className="w-full">
-                    Ativo
-                  </Button>
+                  <div className="space-y-2">
+                    <Button disabled className="w-full">
+                      Ativo
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmCancel(true)}
+                      className="w-full text-[12px] text-text-muted hover:text-destructive transition-colors underline-offset-2 hover:underline"
+                    >
+                      Cancelar assinatura
+                    </button>
+                  </div>
                 ) : (
                   <Button
                     onClick={() => assinar(plano!)}
@@ -364,6 +400,35 @@ function MeuPlanoPage() {
           )}
         </section>
       </div>
+
+      <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar assinatura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sua assinatura será cancelada ao final do período já pago. Você manterá
+              o acesso até lá e não será cobrado novamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelando}>Manter assinatura</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                cancelarAssinatura();
+              }}
+              disabled={cancelando}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {cancelando ? (
+                <><Loader2 className="animate-spin mr-2" size={14} /> Cancelando…</>
+              ) : (
+                "Sim, cancelar"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
