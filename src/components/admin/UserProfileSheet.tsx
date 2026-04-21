@@ -130,6 +130,20 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
     });
   }
 
+  async function handleRevogar() {
+    if (!profile) return;
+    await withBusy(async () => {
+      try {
+        await revogarCortesia({ data: { userId: profile.id } });
+        toast.success("Benefícios VIP removidos");
+        await load();
+        onChanged?.();
+      } catch (e: any) {
+        toast.error(e?.message ?? "Erro ao remover");
+      }
+    });
+  }
+
   async function handleRole(role: "admin" | "moderador" | "user") {
     if (!profile) return;
     await withBusy(async () => {
