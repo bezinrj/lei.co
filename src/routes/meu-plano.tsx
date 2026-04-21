@@ -181,7 +181,7 @@ function MeuPlanoPage() {
 
   if (loading || carregando) {
     return (
-      <AppShell>
+      <AppShell title="Meu Plano">
         <div className="flex items-center justify-center py-20 text-text-muted">
           <Loader2 className="animate-spin" />
         </div>
@@ -200,7 +200,7 @@ function MeuPlanoPage() {
   ];
 
   return (
-    <AppShell>
+    <AppShell title="Meu Plano">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <header className="mb-10 text-center">
           <h1 className="font-serif text-3xl md:text-4xl text-text-main mb-2">Meu Plano</h1>

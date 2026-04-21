@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY não configurada");
-  return new Stripe(key, { apiVersion: "2024-12-18.acacia" as Stripe.LatestApiVersion });
+  return new Stripe(key);
 }
 
 function calcularFim(tipo: string | undefined): string | null {
@@ -97,13 +97,13 @@ export const Route = createFileRoute("/api/stripe/webhook")({
                     ? "expirada"
                     : null;
             if (status) {
+              const periodEnd = (sub as unknown as { current_period_end?: number })
+                .current_period_end;
               await supabaseAdmin
                 .from("assinaturas")
                 .update({
                   status,
-                  fim: sub.current_period_end
-                    ? new Date(sub.current_period_end * 1000).toISOString()
-                    : null,
+                  fim: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
                 })
                 .eq("stripe_subscription_id", sub.id);
             }

@@ -14,7 +14,7 @@ const attachAuthHeader = createMiddleware({ type: "function" }).client(async ({ 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY não configurada");
-  return new Stripe(key, { apiVersion: "2024-12-18.acacia" as Stripe.LatestApiVersion });
+  return new Stripe(key);
 }
 
 function getSiteUrl(fallbackOrigin?: string) {
@@ -42,7 +42,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       throw new Error("Plano sem preço configurado");
 
     // Define recorrência por tipo
-    const recurring: Record<string, Stripe.Checkout.SessionCreateParams.LineItem.PriceData.Recurring> = {
+    const recurring: Record<string, { interval: "day" | "week" | "month" | "year"; interval_count?: number }> = {
       mensal: { interval: "month" },
       trimestral: { interval: "month", interval_count: 3 },
       anual: { interval: "year" },
