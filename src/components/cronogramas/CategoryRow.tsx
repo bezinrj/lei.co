@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CronogramaCard } from "./CronogramaCard";
 
-type Cronograma = {
+type CronogramaBase = {
   id: string;
   nome: string;
   categoria: string | null;
@@ -11,18 +11,18 @@ type Cronograma = {
   is_proprio?: boolean;
 };
 
-type Props = {
+type Props<T extends CronogramaBase> = {
   title: string;
-  items: Cronograma[];
+  items: T[];
   onSelect: (id: string) => void;
-  isLocked?: (c: Cronograma) => boolean;
+  isLocked?: (c: T) => boolean;
   showActions?: boolean;
-  onEdit?: (c: Cronograma) => void;
-  onDuplicate?: (c: Cronograma) => void;
-  onDelete?: (c: Cronograma) => void;
+  onEdit?: (c: T) => void;
+  onDuplicate?: (c: T) => void;
+  onDelete?: (c: T) => void;
 };
 
-export function CategoryRow({
+export function CategoryRow<T extends CronogramaBase>({
   title,
   items,
   onSelect,
@@ -31,7 +31,7 @@ export function CategoryRow({
   onEdit,
   onDuplicate,
   onDelete,
-}: Props) {
+}: Props<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scroll(dir: "left" | "right") {
