@@ -2,22 +2,36 @@ import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CronogramaCard } from "./CronogramaCard";
 
-type Cronograma = {
+type CronogramaBase = {
   id: string;
   nome: string;
   categoria: string | null;
   imagem_url: string | null;
   premium: boolean;
+  is_proprio?: boolean;
 };
 
-type Props = {
+type Props<T extends CronogramaBase> = {
   title: string;
-  items: Cronograma[];
+  items: T[];
   onSelect: (id: string) => void;
-  isLocked?: (c: Cronograma) => boolean;
+  isLocked?: (c: T) => boolean;
+  showActions?: boolean;
+  onEdit?: (c: T) => void;
+  onDuplicate?: (c: T) => void;
+  onDelete?: (c: T) => void;
 };
 
-export function CategoryRow({ title, items, onSelect, isLocked }: Props) {
+export function CategoryRow<T extends CronogramaBase>({
+  title,
+  items,
+  onSelect,
+  isLocked,
+  showActions,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: Props<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scroll(dir: "left" | "right") {
@@ -58,8 +72,13 @@ export function CategoryRow({ title, items, onSelect, isLocked }: Props) {
             nome={c.nome}
             imagem_url={c.imagem_url}
             premium={c.premium}
+            isProprio={c.is_proprio}
             locked={isLocked?.(c) ?? false}
+            showActions={showActions}
             onClick={() => onSelect(c.id)}
+            onEdit={onEdit ? () => onEdit(c) : undefined}
+            onDuplicate={onDuplicate ? () => onDuplicate(c) : undefined}
+            onDelete={onDelete ? () => onDelete(c) : undefined}
           />
         ))}
       </div>
