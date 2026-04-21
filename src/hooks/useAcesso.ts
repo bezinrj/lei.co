@@ -13,9 +13,8 @@ const PLANOS_COM_ASSINATURA: Plano[] = [
 ];
 
 export function useAcesso() {
-  const { user, isAdminOrMod, isAdmin, loading: authLoading } = useAuth() as ReturnType<
-    typeof useAuth
-  > & { isAdmin?: boolean };
+  const { user, isAdminOrMod, roles, loading: authLoading } = useAuth();
+  const isAdmin = roles.includes("admin");
   const [plano, setPlano] = useState<Plano>("gratuito");
   const [compras, setCompras] = useState<string[]>([]);
   const [cronogramaProprioId, setCronogramaProprioId] = useState<string | null>(null);

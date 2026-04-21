@@ -411,12 +411,14 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          bloqueado: boolean
           concurso_alvo: string | null
           created_at: string
           data_prova: string | null
           display_name: string | null
           friend_id: string
           id: string
+          last_seen: string | null
           plano_atual: string
           telefone: string | null
           updated_at: string
@@ -424,12 +426,14 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          bloqueado?: boolean
           concurso_alvo?: string | null
           created_at?: string
           data_prova?: string | null
           display_name?: string | null
           friend_id: string
           id: string
+          last_seen?: string | null
           plano_atual?: string
           telefone?: string | null
           updated_at?: string
@@ -437,12 +441,14 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          bloqueado?: boolean
           concurso_alvo?: string | null
           created_at?: string
           data_prova?: string | null
           display_name?: string | null
           friend_id?: string
           id?: string
+          last_seen?: string | null
           plano_atual?: string
           telefone?: string | null
           updated_at?: string
