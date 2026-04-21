@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
+import { maskPhoneBR } from "@/lib/phone-mask";
+import { supabase as supabaseClient } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Lei.co" }] }),
@@ -20,6 +22,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -31,7 +34,7 @@ function AuthPage() {
     setSubmitting(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -40,6 +43,13 @@ function AuthPage() {
           },
         });
         if (error) throw error;
+        // Salva telefone (opcional) no profile criado pelo trigger
+        if (telefone.trim() && signUpData.user?.id) {
+          await supabaseClient
+            .from("profiles")
+            .update({ telefone: telefone.trim() })
+            .eq("id", signUpData.user.id);
+        }
         toast.success("Cadastro realizado! Verifique seu email para confirmar.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -91,6 +101,20 @@ function AuthPage() {
                 className="mt-1"
               />
             </div>
+            {mode === "signup" && (
+              <div>
+                <Label className="text-[12px] text-text-muted">Telefone (opcional)</Label>
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  value={telefone}
+                  onChange={(e) => setTelefone(maskPhoneBR(e.target.value))}
+                  placeholder="(11) 99999-9999"
+                  maxLength={15}
+                  className="mt-1"
+                />
+              </div>
+            )}
             <div>
               <Label className="text-[12px] text-text-muted">Senha</Label>
               <Input
