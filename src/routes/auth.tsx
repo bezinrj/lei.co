@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 import { maskPhoneBR } from "@/lib/phone-mask";
-import { supabase as supabaseClient } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Lei.co" }] }),
@@ -45,7 +44,7 @@ function AuthPage() {
         if (error) throw error;
         // Salva telefone (opcional) no profile criado pelo trigger
         if (telefone.trim() && signUpData.user?.id) {
-          await supabaseClient
+          await supabase
             .from("profiles")
             .update({ telefone: telefone.trim() })
             .eq("id", signUpData.user.id);
