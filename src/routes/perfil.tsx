@@ -494,6 +494,71 @@ function PerfilPage() {
               Estudando desde <strong className="text-text-main">{desdeFmt}</strong>
             </div>
 
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-text-muted">
+                Email
+              </label>
+              <div className="mt-1 text-[13px] text-text-main truncate">
+                {user?.email ?? "—"}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-text-muted">
+                Telefone
+              </label>
+              {editingPhone ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <Input
+                    type="tel"
+                    inputMode="numeric"
+                    value={phoneValue}
+                    onChange={(e) => setPhoneValue(maskPhoneBR(e.target.value))}
+                    placeholder="(11) 99999-9999"
+                    maxLength={15}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSavePhone();
+                      if (e.key === "Escape") {
+                        setPhoneValue(profile.telefone ?? "");
+                        setEditingPhone(false);
+                      }
+                    }}
+                  />
+                  <Button size="sm" onClick={handleSavePhone}>
+                    Salvar
+                  </Button>
+                  <button
+                    onClick={() => {
+                      setPhoneValue(profile.telefone ?? "");
+                      setEditingPhone(false);
+                    }}
+                    aria-label="Cancelar"
+                    className="text-text-muted hover:text-text-main p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <span
+                    className={`text-[13px] ${
+                      profile.telefone ? "text-text-main" : "text-text-muted"
+                    }`}
+                  >
+                    {profile.telefone || "Adicionar telefone"}
+                  </span>
+                  <button
+                    onClick={() => setEditingPhone(true)}
+                    aria-label="Editar telefone"
+                    className="text-text-muted hover:text-text-main transition"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="rounded-[12px] bg-lilac-light border border-border px-3 py-3">
               <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
                 Seu Friend ID (privado)
