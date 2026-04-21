@@ -63,12 +63,15 @@ type Props = {
   onChanged?: () => void;
 };
 
+type PlanoTipo = "diamante" | "anual" | "trimestral" | "mensal";
+
 export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Props) {
   const [profile, setProfile] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [reportLoading, setReportLoading] = useState<null | "pdf" | "csv">(null);
+  const [planoCortesia, setPlanoCortesia] = useState<PlanoTipo>("diamante");
 
   async function load() {
     if (!userId) return;
@@ -102,8 +105,15 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
     if (!profile) return;
     await withBusy(async () => {
       try {
-        await concederCortesia({ data: { userId: profile.id, dias, tipo } });
-        toast.success(tipo === "teste" ? "Teste de 3 dias concedido!" : "Cortesia concedida!");
+        await concederCortesia({
+          data: { userId: profile.id, dias, tipo, planoTipo: planoCortesia },
+        });
+        const planoLabel = PLANO_LABEL[planoCortesia];
+        toast.success(
+          tipo === "teste"
+            ? `Teste de 3 dias (${planoLabel}) concedido!`
+            : `Cortesia de ${dias} dias (${planoLabel}) concedida!`,
+        );
         await load();
         onChanged?.();
       } catch (e: any) {
@@ -323,19 +333,37 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
                 <div className="text-[12px] text-text-muted">Sem assinatura ativa</div>
               )}
 
-              <div className="flex flex-wrap gap-1.5">
-                <PillButton onClick={() => handleCortesia(30)} disabled={busy} icon={<Gift size={11} />}>
-                  30 dias
-                </PillButton>
-                <PillButton onClick={() => handleCortesia(90)} disabled={busy}>
-                  90 dias
-                </PillButton>
-                <PillButton onClick={() => handleCortesia(365)} disabled={busy}>
-                  365 dias
-                </PillButton>
-                <PillButton onClick={() => handleCortesia(3, "teste")} disabled={busy}>
-                  Teste 3 dias
-                </PillButton>
+              <div className="space-y-2 pt-1">
+                <label className="text-[11px] text-text-muted">Plano da cortesia</label>
+                <Select
+                  value={planoCortesia}
+                  onValueChange={(v) => setPlanoCortesia(v as PlanoTipo)}
+                  disabled={busy}
+                >
+                  <SelectTrigger className="bg-background h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="diamante">Diamante (todos cronogramas)</SelectItem>
+                    <SelectItem value="anual">Anual</SelectItem>
+                    <SelectItem value="trimestral">Trimestral</SelectItem>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <PillButton onClick={() => handleCortesia(30)} disabled={busy} icon={<Gift size={11} />}>
+                    30 dias
+                  </PillButton>
+                  <PillButton onClick={() => handleCortesia(90)} disabled={busy}>
+                    90 dias
+                  </PillButton>
+                  <PillButton onClick={() => handleCortesia(365)} disabled={busy}>
+                    365 dias
+                  </PillButton>
+                  <PillButton onClick={() => handleCortesia(3, "teste")} disabled={busy}>
+                    Teste 3 dias
+                  </PillButton>
+                </div>
               </div>
             </div>
 
