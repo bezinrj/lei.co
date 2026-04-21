@@ -8,7 +8,7 @@
 //    sistema (matriz, legenda do calendário, modal de detalhes, modal de
 //    sessão, painel de desempenho).
 
-export type MateriaPastel = { background: string; color: string };
+export type MateriaPastel = { background: string; color: string; border: string };
 
 function normalize(materia: string): string {
   return (materia || "")
