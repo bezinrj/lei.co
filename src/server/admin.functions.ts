@@ -52,15 +52,24 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await requireAdminAccess(supabase, userId);
 
-    const [{ data: profiles, error: profilesErr }, { data: roles, error: rolesErr }, { data: presence, error: presenceErr }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, friend_id, created_at"),
+    const [
+      { data: profiles, error: profilesErr },
+      { data: roles, error: rolesErr },
+      { data: presence, error: presenceErr },
+      { data: plans, error: plansErr },
+      authUsersRes,
+    ] = await Promise.all([
+      supabase.from("profiles").select("id, display_name, friend_id, telefone, created_at"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("presence").select("user_id, last_seen_at"),
+      supabase.from("user_plans").select("user_id, tipo, expira_em"),
+      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     ]);
 
     if (profilesErr) throw new Error(profilesErr.message);
     if (rolesErr) throw new Error(rolesErr.message);
     if (presenceErr) throw new Error(presenceErr.message);
+    if (plansErr) throw new Error(plansErr.message);
 
     const rolesMap = new Map<string, string[]>();
     (roles ?? []).forEach((r) => {
@@ -70,15 +79,25 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     });
 
     const presMap = new Map((presence ?? []).map((p) => [p.user_id, p.last_seen_at]));
+    const plansMap = new Map((plans ?? []).map((p) => [p.user_id, p.tipo as "free" | "premium"]));
+    const authMap = new Map(
+      (authUsersRes.data?.users ?? []).map((u) => [
+        u.id,
+        { email: u.email ?? null, last_sign_in_at: u.last_sign_in_at ?? null },
+      ]),
+    );
     const now = Date.now();
 
     const result: AdminUser[] = (profiles ?? []).map((profile) => {
       const lastSeen = presMap.get(profile.id) ?? null;
+      const auth = authMap.get(profile.id);
       return {
         id: profile.id,
-        email: null,
+        email: auth?.email ?? null,
+        telefone: profile.telefone ?? null,
+        plano: plansMap.get(profile.id) ?? "free",
         created_at: profile.created_at,
-        last_sign_in_at: null,
+        last_sign_in_at: auth?.last_sign_in_at ?? null,
         display_name: profile.display_name ?? null,
         friend_id: profile.friend_id ?? null,
         roles: rolesMap.get(profile.id) ?? [],
