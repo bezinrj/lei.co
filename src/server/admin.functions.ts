@@ -211,6 +211,8 @@ export const updateCronograma = createServerFn({ method: "POST" })
       categoria?: string | null;
       premium?: boolean;
       imagem_url?: string | null;
+      preco_centavos?: number | null;
+      stripe_price_id?: string | null;
     }) => input,
   )
   .handler(async ({ data, context }) => {
