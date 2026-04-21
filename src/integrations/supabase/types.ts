@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      assinaturas: {
+        Row: {
+          created_at: string
+          fim: string | null
+          id: string
+          inicio: string
+          plano_id: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fim?: string | null
+          id?: string
+          inicio?: string
+          plano_id?: string | null
+          status: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fim?: string | null
+          id?: string
+          inicio?: string
+          plano_id?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       badges: {
         Row: {
           cor: string
@@ -43,6 +94,48 @@ export type Database = {
           ordem?: number
         }
         Relationships: []
+      }
+      cronograma_compras: {
+        Row: {
+          created_at: string
+          cronograma_id: string | null
+          id: string
+          status: string
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cronograma_id?: string | null
+          id?: string
+          status: string
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cronograma_id?: string | null
+          id?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_compras_cronograma_id_fkey"
+            columns: ["cronograma_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_compras_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cronograma_materias: {
         Row: {
@@ -249,6 +342,36 @@ export type Database = {
         }
         Relationships: []
       }
+      planos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          preco_centavos: number | null
+          stripe_price_id: string | null
+          tipo: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          preco_centavos?: number | null
+          stripe_price_id?: string | null
+          tipo: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          preco_centavos?: number | null
+          stripe_price_id?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       presence: {
         Row: {
           last_seen_at: string
@@ -274,6 +397,7 @@ export type Database = {
           display_name: string | null
           friend_id: string
           id: string
+          plano_atual: string
           telefone: string | null
           updated_at: string
         }
@@ -286,6 +410,7 @@ export type Database = {
           display_name?: string | null
           friend_id: string
           id: string
+          plano_atual?: string
           telefone?: string | null
           updated_at?: string
         }
@@ -298,6 +423,7 @@ export type Database = {
           display_name?: string | null
           friend_id?: string
           id?: string
+          plano_atual?: string
           telefone?: string | null
           updated_at?: string
         }
@@ -690,6 +816,11 @@ export type Database = {
           read_ct: number
         }[]
       }
+      tem_acesso_cronograma: {
+        Args: { cid: string; uid: string }
+        Returns: boolean
+      }
+      tem_assinatura_ativa: { Args: { uid: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderador" | "user"
