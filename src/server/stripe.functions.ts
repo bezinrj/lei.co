@@ -77,6 +77,44 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     return { url: session.url };
   });
 
+/** Cancela a assinatura ativa do usuário ao final do período */
+export const cancelSubscription = createServerFn({ method: "POST" })
+  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .inputValidator((input: Record<string, never>) => input)
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const stripe = getStripe();
+
+    const { data: assinatura, error } = await supabase
+      .from("assinaturas")
+      .select("id, stripe_subscription_id, status, fim")
+      .eq("user_id", userId)
+      .in("status", ["ativa", "teste"])
+      .order("inicio", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error("Erro ao buscar assinatura");
+    if (!assinatura) throw new Error("Nenhuma assinatura ativa encontrada");
+    if (!assinatura.stripe_subscription_id)
+      throw new Error("Assinatura sem ID Stripe — contate o suporte");
+
+    const updated = await stripe.subscriptions.update(assinatura.stripe_subscription_id, {
+      cancel_at_period_end: true,
+    });
+
+    const fim = updated.current_period_end
+      ? new Date(updated.current_period_end * 1000).toISOString()
+      : assinatura.fim;
+
+    await supabase
+      .from("assinaturas")
+      .update({ status: "cancelando", fim })
+      .eq("id", assinatura.id);
+
+    return { fim, message: "Assinatura cancelada — acesso mantido até o fim do período" };
+  });
+
 /** Inicia checkout de compra avulsa de cronograma */
 export const createCheckoutAvulso = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
