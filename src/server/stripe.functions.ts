@@ -103,9 +103,8 @@ export const cancelSubscription = createServerFn({ method: "POST" })
       cancel_at_period_end: true,
     });
 
-    const fim = updated.current_period_end
-      ? new Date(updated.current_period_end * 1000).toISOString()
-      : assinatura.fim;
+    const periodEnd = (updated as unknown as { current_period_end?: number }).current_period_end;
+    const fim = periodEnd ? new Date(periodEnd * 1000).toISOString() : assinatura.fim;
 
     await supabase
       .from("assinaturas")
