@@ -12,10 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, Camera, Copy, Check, Lock, Star, Loader2 } from "lucide-react";
+import { Pencil, Camera, Copy, Check, Lock, Star, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { maskPhoneBR } from "@/lib/phone-mask";
 
 type Profile = {
   id: string;
@@ -25,6 +26,7 @@ type Profile = {
   bio: string | null;
   concurso_alvo: string | null;
   data_prova: string | null;
+  telefone: string | null;
   created_at: string;
 };
 
@@ -90,6 +92,8 @@ function PerfilPage() {
   const [bioValue, setBioValue] = useState("");
   const [concursoValue, setConcursoValue] = useState("");
   const [dataProvaValue, setDataProvaValue] = useState("");
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneValue, setPhoneValue] = useState("");
   const [copied, setCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -127,6 +131,7 @@ function PerfilPage() {
         setBioValue(p.bio ?? "");
         setConcursoValue(p.concurso_alvo ?? "");
         setDataProvaValue(p.data_prova ?? "");
+        setPhoneValue(p.telefone ?? "");
       }
 
       setBadges((badgesRes.data ?? []) as Badge[]);
