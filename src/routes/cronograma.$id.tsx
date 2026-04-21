@@ -10,7 +10,7 @@ import { useAcesso } from "@/hooks/useAcesso";
 import { MatrizTab, type MatrizTopico } from "@/components/cronogramas/MatrizTab";
 import { CalendarioTab } from "@/components/cronogramas/CalendarioTab";
 import { DesempenhoTab } from "@/components/cronogramas/DesempenhoTab";
-import { AtivarDialog } from "@/components/cronogramas/AtivarDialog";
+
 import type { Fonte } from "@/components/cronogramas/NovoTopicoForm";
 
 export const Route = createFileRoute("/cronograma/$id")({
@@ -65,7 +65,6 @@ function CronogramaDetail() {
   const [fonteProgresso, setFonteProgresso] = useState<Record<string, boolean>>({});
   const [ativacao, setAtivacao] = useState<{ data_inicio: string; data_prova: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ativarOpen, setAtivarOpen] = useState(false);
   const [tab, setTab] = useState<string>("matriz");
 
   const loadAll = useCallback(async () => {
@@ -231,16 +230,6 @@ function CronogramaDetail() {
                   Ativo até {new Date(ativacao.data_prova + "T00:00").toLocaleDateString("pt-BR")}
                 </span>
               )}
-              <div className="mt-4 flex gap-2">
-                {temAcesso && podeCalendario && user && allTopicos.length > 0 && !ativacao && (
-                  <Button
-                    onClick={() => setAtivarOpen(true)}
-                    className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] gap-2"
-                  >
-                    <Play size={14} /> Ativar cronograma
-                  </Button>
-                )}
-              </div>
             </div>
           </div>
 
@@ -386,23 +375,6 @@ function CronogramaDetail() {
             </Tabs>
           )}
 
-          {user && (
-            <AtivarDialog
-              open={ativarOpen}
-              onOpenChange={setAtivarOpen}
-              cronogramaId={id}
-              userId={user.id}
-              topicos={materias.flatMap((m) =>
-                m.topicos.map((t) => ({
-                  id: t.id,
-                  titulo: t.titulo,
-                  materia_id: m.id,
-                  cor: m.cor,
-                })),
-              )}
-              onActivated={loadAll}
-            />
-          )}
         </>
       )}
     </AppShell>
