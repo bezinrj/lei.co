@@ -490,44 +490,76 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                   <th className="font-normal pb-2 px-3">Tentativas</th>
                   <th className="font-normal pb-2 px-3">Pior</th>
                   <th className="font-normal pb-2 px-3">Melhor</th>
-                  <th className="font-normal pb-2 pl-3">Última</th>
+                  <th className="font-normal pb-2 px-3">Última</th>
+                  <th className="font-normal pb-2 pl-3">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {historicoRevisoes.map((h) => (
-                  <tr key={h.topicoId} className="border-t border-border">
-                    <td className="py-2 pr-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ background: colorForMateria(h.materia, h.cor) }}
-                        />
-                        <div className="min-w-0">
-                          <div className="text-text-main truncate">{h.titulo}</div>
-                          <div className="text-[11px] text-text-muted truncate">{h.materia}</div>
+                {historicoRevisoes
+                  .filter((h) => !h.aguardando) /* esconde temporariamente enquanto há revisão pendente */
+                  .map((h) => (
+                    <tr key={h.topicoId} className="border-t border-border">
+                      <td className="py-2 pr-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: colorForMateria(h.materia, h.cor) }}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-text-main truncate">{h.titulo}</div>
+                            <div className="text-[11px] text-text-muted truncate">{h.materia}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-2 px-3 tabular-nums text-text-main">{h.tentativas}</td>
-                    <td className="py-2 px-3">
-                      <span
-                        className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
-                        style={{ background: "rgba(216,90,48,0.12)", color: "#D85A30" }}
-                      >
-                        <TrendingDown size={10} /> {h.pior}%
-                      </span>
-                    </td>
-                    <td className="py-2 px-3">
-                      <span
-                        className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
-                        style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
-                      >
-                        <TrendingUp size={10} /> {h.melhor}%
-                      </span>
-                    </td>
-                    <td className="py-2 pl-3 tabular-nums text-text-main">{h.ultima}%</td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-2 px-3 tabular-nums text-text-main">{h.tentativas}</td>
+                      <td className="py-2 px-3">
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
+                          style={{ background: "rgba(216,90,48,0.12)", color: "#D85A30" }}
+                        >
+                          <TrendingDown size={10} /> {h.pior}%
+                        </span>
+                      </td>
+                      <td className="py-2 px-3">
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full font-medium"
+                          style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
+                        >
+                          <TrendingUp size={10} /> {h.melhor}%
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 tabular-nums text-text-main">{h.ultima}%</td>
+                      <td className="py-2 pl-3">
+                        {h.superado ? (
+                          <span
+                            className="inline-block text-[11px] font-medium px-2 py-[2px] rounded-full"
+                            style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
+                          >
+                            🎉 Superado
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              criarRevisaoTopico(
+                                h.topicoId,
+                                h.materiaId,
+                                h.titulo,
+                                h.materia,
+                                h.materiaCor,
+                              )
+                            }
+                            disabled={creatingRevisao === h.topicoId}
+                            className="gap-1 text-[11px] h-7"
+                          >
+                            <RefreshCw size={11} />
+                            {creatingRevisao === h.topicoId ? "Agendando..." : "Revisar novamente"}
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
