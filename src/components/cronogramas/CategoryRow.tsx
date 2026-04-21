@@ -8,6 +8,7 @@ type Cronograma = {
   categoria: string | null;
   imagem_url: string | null;
   premium: boolean;
+  is_proprio?: boolean;
 };
 
 type Props = {
@@ -15,9 +16,22 @@ type Props = {
   items: Cronograma[];
   onSelect: (id: string) => void;
   isLocked?: (c: Cronograma) => boolean;
+  showActions?: boolean;
+  onEdit?: (c: Cronograma) => void;
+  onDuplicate?: (c: Cronograma) => void;
+  onDelete?: (c: Cronograma) => void;
 };
 
-export function CategoryRow({ title, items, onSelect, isLocked }: Props) {
+export function CategoryRow({
+  title,
+  items,
+  onSelect,
+  isLocked,
+  showActions,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scroll(dir: "left" | "right") {
@@ -58,8 +72,13 @@ export function CategoryRow({ title, items, onSelect, isLocked }: Props) {
             nome={c.nome}
             imagem_url={c.imagem_url}
             premium={c.premium}
+            isProprio={c.is_proprio}
             locked={isLocked?.(c) ?? false}
+            showActions={showActions}
             onClick={() => onSelect(c.id)}
+            onEdit={onEdit ? () => onEdit(c) : undefined}
+            onDuplicate={onDuplicate ? () => onDuplicate(c) : undefined}
+            onDelete={onDelete ? () => onDelete(c) : undefined}
           />
         ))}
       </div>
