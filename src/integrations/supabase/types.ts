@@ -177,6 +177,7 @@ export type Database = {
       }
       cronograma_topicos: {
         Row: {
+          assunto: string | null
           created_at: string
           descricao: string | null
           duracao_minutos: number
@@ -189,6 +190,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assunto?: string | null
           created_at?: string
           descricao?: string | null
           duracao_minutos?: number
@@ -201,6 +203,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assunto?: string | null
           created_at?: string
           descricao?: string | null
           duracao_minutos?: number
@@ -662,6 +665,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_fonte_progress_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_topicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notas: {
+        Row: {
+          created_at: string
+          id: string
+          nota: string
+          topico_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nota?: string
+          topico_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nota?: string
+          topico_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notas_topico_id_fkey"
             columns: ["topico_id"]
             isOneToOne: false
             referencedRelation: "cronograma_topicos"
