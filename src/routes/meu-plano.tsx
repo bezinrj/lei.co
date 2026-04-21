@@ -5,9 +5,19 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { createCheckoutSession, createCheckoutAvulso } from "@/server/stripe.functions";
+import { createCheckoutSession, createCheckoutAvulso, cancelSubscription } from "@/server/stripe.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/meu-plano")({
   component: MeuPlanoPage,
