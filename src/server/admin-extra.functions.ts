@@ -226,17 +226,23 @@ export const toggleUserBloqueado = createServerFn({ method: "POST" })
 export const concederCortesia = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator(
-    (input: { userId: string; dias: number; tipo?: "cortesia" | "teste" }) => input,
+    (input: {
+      userId: string;
+      dias: number;
+      tipo?: "cortesia" | "teste";
+      planoTipo?: "diamante" | "anual" | "trimestral" | "mensal";
+    }) => input,
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await requireAdmin(supabase, userId);
 
-    // Usar plano "diamante" para cortesia (acesso total)
+    const planoTipo = data.planoTipo ?? "diamante";
+
     const { data: plano } = await supabaseAdmin
       .from("planos")
       .select("id")
-      .eq("tipo", "diamante")
+      .eq("tipo", planoTipo)
       .eq("ativo", true)
       .limit(1)
       .maybeSingle();
