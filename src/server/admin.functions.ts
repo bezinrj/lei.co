@@ -442,10 +442,12 @@ export const getAlunoDetalhes = createServerFn({ method: "POST" })
       { data: sess },
       { data: mats },
       { data: tops },
+      { data: planRow },
+      authUserRes,
     ] = await Promise.all([
       supabase
         .from("profiles")
-        .select("id, display_name, friend_id")
+        .select("id, display_name, friend_id, telefone")
         .eq("id", aId)
         .maybeSingle(),
       supabase
@@ -473,6 +475,8 @@ export const getAlunoDetalhes = createServerFn({ method: "POST" })
         .limit(200),
       supabase.from("cronograma_materias").select("id, nome, cronograma_id"),
       supabase.from("cronograma_topicos").select("id, titulo, materia_id"),
+      supabase.from("user_plans").select("tipo").eq("user_id", aId).maybeSingle(),
+      supabaseAdmin.auth.admin.getUserById(aId),
     ]);
 
     if (!prof) throw new Error("Aluno não encontrado");
@@ -485,7 +489,14 @@ export const getAlunoDetalhes = createServerFn({ method: "POST" })
     }));
 
     return {
-      profile: prof,
+      profile: {
+        id: prof.id,
+        display_name: prof.display_name,
+        friend_id: prof.friend_id,
+        telefone: prof.telefone ?? null,
+        email: authUserRes.data?.user?.email ?? null,
+        plano: (planRow?.tipo as "free" | "premium" | undefined) ?? "free",
+      },
       cronogramas,
       eventos: evs ?? [],
       progresso: progs ?? [],
