@@ -144,6 +144,8 @@ export type AdminCronograma = {
   categoria: string | null;
   premium: boolean;
   imagem_url: string | null;
+  preco_centavos: number | null;
+  stripe_price_id: string | null;
   total_materias: number;
   total_topicos: number;
   total_alunos_ativos: number;
