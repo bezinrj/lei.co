@@ -161,7 +161,7 @@ export const listAdminCronogramas = createServerFn({ method: "POST" })
     const [{ data: crons }, { data: mats }, { data: tops }, { data: ativ }] = await Promise.all([
       supabase
         .from("cronogramas")
-        .select("id, nome, categoria, premium, imagem_url, created_at")
+        .select("id, nome, categoria, premium, imagem_url, preco_centavos, stripe_price_id, created_at")
         .order("created_at", { ascending: false }),
       supabase.from("cronograma_materias").select("id, cronograma_id"),
       supabase.from("cronograma_topicos").select("id, materia_id"),
@@ -194,6 +194,8 @@ export const listAdminCronogramas = createServerFn({ method: "POST" })
         categoria: c.categoria,
         premium: c.premium,
         imagem_url: c.imagem_url,
+        preco_centavos: c.preco_centavos ?? null,
+        stripe_price_id: c.stripe_price_id ?? null,
         total_materias: mIds.length,
         total_topicos: totalTopicos,
         total_alunos_ativos: ativByCron.get(c.id) ?? 0,
