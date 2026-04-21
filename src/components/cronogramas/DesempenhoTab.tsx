@@ -117,10 +117,55 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
     };
   }, [materias, eventos, mySessions, allSessions]);
 
-  const abaixoDe60 = useMemo(
-    () => stats.porMateria.filter((m) => m.myAvg !== null && m.myAvg < 60),
-    [stats.porMateria],
-  );
+  // Tópicos aguardando revisão (evento is_revisao=true ainda não concluído neste cronograma)
+  const aguardandoRevisao = useMemo(() => {
+    const set = new Set<string>();
+    eventos.forEach((e) => {
+      if (e.is_revisao && !e.concluido && e.topico_id) set.add(e.topico_id);
+    });
+    return set;
+  }, [eventos]);
+
+  // Painel por TÓPICO: média < 60%, excluindo os que já têm revisão pendente
+  type TopicoBaixo = {
+    topicoId: string;
+    titulo: string;
+    materiaId: string;
+    materiaNome: string;
+    materiaCor: string;
+    media: number;
+    tentativas: number;
+  };
+  const topicosBaixos = useMemo<TopicoBaixo[]>(() => {
+    const byTopico = new Map<string, SessionRow[]>();
+    mySessions.forEach((s) => {
+      const arr = byTopico.get(s.topico_id) ?? [];
+      arr.push(s);
+      byTopico.set(s.topico_id, arr);
+    });
+    const out: TopicoBaixo[] = [];
+    for (const m of materias) {
+      for (const t of m.topicos) {
+        const arr = byTopico.get(t.id);
+        if (!arr || arr.length === 0) continue;
+        const media = Math.round(
+          arr.reduce((acc, s) => acc + s.percentual_acerto, 0) / arr.length,
+        );
+        if (media >= 60) continue;
+        if (aguardandoRevisao.has(t.id)) continue; // já tem revisão pendente
+        out.push({
+          topicoId: t.id,
+          titulo: t.titulo,
+          materiaId: m.id,
+          materiaNome: m.nome,
+          materiaCor: m.cor,
+          media,
+          tentativas: arr.length,
+        });
+      }
+    }
+    return out.sort((a, b) => a.media - b.media);
+  }, [mySessions, materias, aguardandoRevisao]);
 
   // Histórico de revisões: agrupar sessões por tópico, pegando pior e melhor %
   const historicoRevisoes = useMemo(() => {
@@ -134,11 +179,15 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
       topicoId: string;
       titulo: string;
       materia: string;
+      materiaId: string;
+      materiaCor: string;
       cor: string;
       tentativas: number;
       pior: number;
       melhor: number;
       ultima: number;
+      superado: boolean;
+      aguardando: boolean;
     }[] = [];
     for (const m of materias) {
       for (const t of m.topicos) {
@@ -146,30 +195,42 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
         if (!arr || arr.length < 2) continue; // só mostra com 2+ tentativas
         const sorted = [...arr].sort((a, b) => a.data.localeCompare(b.data));
         const percs = arr.map((s) => s.percentual_acerto);
+        const melhor = Math.max(...percs);
         result.push({
           topicoId: t.id,
           titulo: t.titulo,
           materia: m.nome,
+          materiaId: m.id,
+          materiaCor: m.cor,
           cor: m.cor,
           tentativas: arr.length,
           pior: Math.min(...percs),
-          melhor: Math.max(...percs),
+          melhor,
           ultima: sorted[sorted.length - 1].percentual_acerto,
+          superado: melhor >= 60,
+          aguardando: aguardandoRevisao.has(t.id),
         });
       }
     }
     return result.sort((a, b) => a.pior - b.pior);
-  }, [mySessions, materias]);
+  }, [mySessions, materias, aguardandoRevisao]);
 
-  async function criarRevisao(materiaId: string, materiaNome: string, cor: string) {
+  async function criarRevisaoTopico(
+    topicoId: string,
+    materiaId: string,
+    titulo: string,
+    materiaNome: string,
+    cor: string,
+  ) {
     if (!userId) return;
-    setCreatingRevisao(materiaId);
+    setCreatingRevisao(topicoId);
     const data = nextWeekday(new Date());
     const { error } = await supabase.from("user_calendar_events").insert({
       user_id: userId,
       cronograma_id: cronogramaId,
       materia_id: materiaId,
-      titulo: `Revisão: ${materiaNome}`,
+      topico_id: topicoId,
+      titulo: `Revisão: ${titulo}`,
       data,
       is_revisao: true,
       cor: colorForMateria(materiaNome, cor),
