@@ -642,7 +642,10 @@ function CardCiclo({
           </span>
         </label>
         {canEdit && (
-          <div className="flex gap-1">
+          <div
+            className="flex gap-1"
+            style={{ opacity: concluido ? 0.4 : 1, transition: "opacity 0.25s ease" }}
+          >
             <button
               onClick={onStartEdit}
               className="text-text-muted hover:text-text-main p-0.5"
