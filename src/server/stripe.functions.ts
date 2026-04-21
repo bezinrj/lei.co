@@ -51,7 +51,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     const rec = recurring[plano.tipo];
     if (!rec) throw new Error(`Tipo de plano não suporta assinatura: ${plano.tipo}`);
 
-    const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = plano.stripe_price_id
+    const lineItem = plano.stripe_price_id
       ? { price: plano.stripe_price_id, quantity: 1 }
       : {
           quantity: 1,
@@ -97,7 +97,7 @@ export const createCheckoutAvulso = createServerFn({ method: "POST" })
     if (!cron.preco_centavos || cron.preco_centavos <= 0)
       throw new Error("Cronograma sem preço configurado");
 
-    const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = cron.stripe_price_id
+    const lineItem = cron.stripe_price_id
       ? { price: cron.stripe_price_id, quantity: 1 }
       : {
           quantity: 1,
