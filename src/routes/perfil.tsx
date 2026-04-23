@@ -1,11 +1,6 @@
 import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
-import { MetricCard } from "@/components/dashboard/MetricCard";
-import { WeeklyPerformance } from "@/components/dashboard/WeeklyPerformance";
-import { TodaySchedule } from "@/components/dashboard/TodaySchedule";
-import { GroupRanking } from "@/components/dashboard/GroupRanking";
-import { SubjectPerformance } from "@/components/dashboard/SubjectPerformance";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -369,44 +364,6 @@ function PerfilPage() {
 
   return (
     <AppShell title="Meu Perfil">
-      {/* Resumo / Dashboard */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MetricCard
-          label="Horas estudadas"
-          value={`${stats.horasTotais}h`}
-          hint="total registrado"
-          tone="sage"
-        />
-        <MetricCard
-          label="Questões feitas"
-          value={`${stats.totalQuestoes}`}
-          hint={stats.totalQuestoes > 0 ? `${stats.mediaAcerto}% de acerto` : "sem dados ainda"}
-          tone="blush"
-        />
-        <MetricCard
-          label="🔥 Sequência"
-          value={`${stats.sequenciaAtual} dias`}
-          hint={stats.maiorSequencia > 0 ? `seu recorde: ${stats.maiorSequencia}` : "comece hoje"}
-          tone="lilac"
-        />
-        <MetricCard
-          label="Medalhas"
-          value={`${userBadges.length} / ${badges.length}`}
-          hint={`${badges.length - userBadges.length} para desbloquear`}
-          tone="sky"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <WeeklyPerformance />
-        <TodaySchedule />
-        <GroupRanking />
-      </div>
-
-      <div className="grid grid-cols-1 mb-8">
-        <SubjectPerformance />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 mb-6">
         {/* Coluna esquerda */}
         <div className="lei-card">
