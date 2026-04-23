@@ -1,11 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { User, CalendarDays, Award, Users } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Award, User } from "lucide-react";
 
 const items = [
-  { to: "/perfil", label: "Meu Perfil", icon: User },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/cronogramas", label: "Cronograma", icon: CalendarDays },
   { to: "/medalhas", label: "Medalhas", icon: Award },
-  { to: "/grupos", label: "Grupos", icon: Users },
+  { to: "/perfil", label: "Perfil", icon: User },
 ];
 
 export function BottomTabBar() {
