@@ -19,7 +19,7 @@ export default defineConfig({
       alias: {
         "entities/lib/decode.js": path.resolve(__dirname, "node_modules/entities/lib/decode.js"),
         "entities/lib/encode.js": path.resolve(__dirname, "node_modules/entities/lib/encode.js"),
-        entities: path.resolve(__dirname, "node_modules/entities"),
+        entities: path.resolve(__dirname, "node_modules/entities/lib/index.js"),
         "htmlparser2/dist/esm/index.js": path.resolve(__dirname, "node_modules/htmlparser2/lib/esm/index.js"),
         htmlparser2: path.resolve(__dirname, "node_modules/htmlparser2/lib/esm/index.js"),
       },
