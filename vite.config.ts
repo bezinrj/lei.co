@@ -24,6 +24,9 @@ export default defineConfig({
         htmlparser2: path.resolve(__dirname, "node_modules/htmlparser2/lib/esm/index.js"),
       },
     },
+    optimizeDeps: {
+      exclude: ["htmlparser2", "dom-serializer", "entities"],
+    },
     plugins: [
       VitePWA({
         registerType: "autoUpdate",
