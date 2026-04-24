@@ -13,6 +13,7 @@ import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MeuPlanoRouteImport } from './routes/meu-plano'
 import { Route as MedalhasRouteImport } from './routes/medalhas'
+import { Route as LojaRouteImport } from './routes/loja'
 import { Route as GruposRouteImport } from './routes/grupos'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CronogramasRouteImport } from './routes/cronogramas'
@@ -43,6 +44,11 @@ const MeuPlanoRoute = MeuPlanoRouteImport.update({
 const MedalhasRoute = MedalhasRouteImport.update({
   id: '/medalhas',
   path: '/medalhas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LojaRoute = LojaRouteImport.update({
+  id: '/loja',
+  path: '/loja',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GruposRoute = GruposRouteImport.update({
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
+  '/loja': typeof LojaRoute
   '/medalhas': typeof MedalhasRoute
   '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
+  '/loja': typeof LojaRoute
   '/medalhas': typeof MedalhasRoute
   '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
   '/grupos': typeof GruposRoute
+  '/loja': typeof LojaRoute
   '/medalhas': typeof MedalhasRoute
   '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/cronogramas'
     | '/dashboard'
     | '/grupos'
+    | '/loja'
     | '/medalhas'
     | '/meu-plano'
     | '/perfil'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/cronogramas'
     | '/dashboard'
     | '/grupos'
+    | '/loja'
     | '/medalhas'
     | '/meu-plano'
     | '/perfil'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/cronogramas'
     | '/dashboard'
     | '/grupos'
+    | '/loja'
     | '/medalhas'
     | '/meu-plano'
     | '/perfil'
@@ -215,6 +227,7 @@ export interface RootRouteChildren {
   CronogramasRoute: typeof CronogramasRoute
   DashboardRoute: typeof DashboardRoute
   GruposRoute: typeof GruposRoute
+  LojaRoute: typeof LojaRoute
   MedalhasRoute: typeof MedalhasRoute
   MeuPlanoRoute: typeof MeuPlanoRoute
   PerfilRoute: typeof PerfilRoute
@@ -254,6 +267,13 @@ declare module '@tanstack/react-router' {
       path: '/medalhas'
       fullPath: '/medalhas'
       preLoaderRoute: typeof MedalhasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loja': {
+      id: '/loja'
+      path: '/loja'
+      fullPath: '/loja'
+      preLoaderRoute: typeof LojaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/grupos': {
@@ -343,6 +363,7 @@ const rootRouteChildren: RootRouteChildren = {
   CronogramasRoute: CronogramasRoute,
   DashboardRoute: DashboardRoute,
   GruposRoute: GruposRoute,
+  LojaRoute: LojaRoute,
   MedalhasRoute: MedalhasRoute,
   MeuPlanoRoute: MeuPlanoRoute,
   PerfilRoute: PerfilRoute,
