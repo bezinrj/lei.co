@@ -366,13 +366,13 @@ export function CalendarioTab({
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 max-md:gap-1 mb-4 max-md:mb-2">
         {materiasNoMes.map((m) => {
           const p = getCorMateriaPastel(m.nome);
           return (
             <span
               key={m.id}
-              className="text-[11px] px-2 py-[2px] rounded-[99px] font-medium"
+              className="text-[11px] max-md:text-[10px] px-2 max-md:px-[6px] py-[2px] rounded-[99px] font-medium"
               style={{ background: p.background, color: p.color }}
             >
               {m.nome}
@@ -380,33 +380,33 @@ export function CalendarioTab({
           );
         })}
         {temRevisaoNoMes && (
-          <span className="text-[11px] px-2 py-[2px] rounded-[99px] text-white" style={{ background: "#6B7280" }}>
+          <span className="text-[11px] max-md:text-[10px] px-2 max-md:px-[6px] py-[2px] rounded-[99px] text-white" style={{ background: "#6B7280" }}>
             Revisão
           </span>
         )}
         {temAtraso1d && (
-          <span className="text-[11px] px-2 py-[2px] rounded-[99px]" style={{ background: "#FFFBEA", color: "#B86E07", border: "1px solid #EF9F27" }}>
+          <span className="text-[11px] max-md:text-[10px] px-2 max-md:px-[6px] py-[2px] rounded-[99px]" style={{ background: "#FFFBEA", color: "#B86E07", border: "1px solid #EF9F27" }}>
             Atrasado +1d
           </span>
         )}
         {temAtraso4d && (
-          <span className="text-[11px] px-2 py-[2px] rounded-[99px]" style={{ background: "#FFF0F0", color: "#E24B4A", border: "1px solid #E24B4A" }}>
+          <span className="text-[11px] max-md:text-[10px] px-2 max-md:px-[6px] py-[2px] rounded-[99px]" style={{ background: "#FFF0F0", color: "#E24B4A", border: "1px solid #E24B4A" }}>
             Atrasado +4d
           </span>
         )}
       </div>
 
       {/* Cabeçalho de dias da semana */}
-      <div className="grid grid-cols-7 gap-2 mb-1">
-        {weekdays.map((w) => (
-          <div key={w} className="text-[10px] uppercase tracking-wider text-text-muted text-center">
+      <div className="grid grid-cols-7 gap-2 max-md:gap-[3px] mb-1">
+        {weekdays.map((w, i) => (
+          <div key={`${w}-${i}`} className="text-[10px] uppercase tracking-wider text-text-muted text-center">
             {w}
           </div>
         ))}
       </div>
 
       {/* Grade */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-2 max-md:gap-[3px]">
         {dias.map((d) => {
           const key = isoDate(d);
           const list = eventosPorDia.get(key) ?? [];
