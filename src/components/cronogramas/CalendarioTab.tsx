@@ -508,7 +508,7 @@ export function CalendarioTab({
                       onClick={() => {
                         if (isMobile) setDetailDay(key);
                       }}
-                      className={`text-[11px] max-md:text-[9px] px-2 max-md:px-[4px] py-[2px] max-md:py-[1px] rounded-[99px] truncate font-medium ${
+                      className={`text-[11px] px-2 py-[2px] rounded-[99px] truncate font-medium ${
                         ev.concluido ? "line-through cursor-default" : "cursor-grab active:cursor-grabbing"
                       } ${draggingId === ev.id ? "opacity-50" : ""}`}
                       style={{ background: bg, color: fg }}
