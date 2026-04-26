@@ -409,7 +409,7 @@ export function CalendarioTab({
           </div>
 
       {/* Grade */}
-      <div className="grid grid-cols-7 gap-2 max-md:gap-[3px]">
+      <div className="grid grid-cols-7 gap-2">
         {dias.map((d) => {
           const key = isoDate(d);
           const list = eventosPorDia.get(key) ?? [];
