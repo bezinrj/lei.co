@@ -74,6 +74,7 @@ export function CalendarioTab({
   materias,
   onChange,
 }: Props) {
+  const isMobile = useIsMobile();
   const [refDate, setRefDate] = useState<Date>(new Date());
   const [horasDia, setHorasDia] = useState("3");
   const [draggingId, setDraggingId] = useState<string | null>(null);
