@@ -365,6 +365,57 @@ export type Database = {
         }
         Relationships: []
       }
+      loja_produtos: {
+        Row: {
+          ativo: boolean
+          badges: string[]
+          categoria: string | null
+          created_at: string
+          desconto_pct: number | null
+          descricao: string | null
+          destaque: boolean
+          id: string
+          imagem_url: string | null
+          link_externo: string
+          nome: string
+          ordem: number
+          preco_centavos: number | null
+          preco_original_centavos: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          badges?: string[]
+          categoria?: string | null
+          created_at?: string
+          desconto_pct?: number | null
+          descricao?: string | null
+          destaque?: boolean
+          id?: string
+          imagem_url?: string | null
+          link_externo: string
+          nome: string
+          ordem?: number
+          preco_centavos?: number | null
+          preco_original_centavos?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          badges?: string[]
+          categoria?: string | null
+          created_at?: string
+          desconto_pct?: number | null
+          descricao?: string | null
+          destaque?: boolean
+          id?: string
+          imagem_url?: string | null
+          link_externo?: string
+          nome?: string
+          ordem?: number
+          preco_centavos?: number | null
+          preco_original_centavos?: number | null
+        }
+        Relationships: []
+      }
       planos: {
         Row: {
           ativo: boolean
