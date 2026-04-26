@@ -478,7 +478,7 @@ export function CalendarioTab({
                 )}
               </div>
 
-              <div className="flex flex-col gap-1 max-md:gap-[2px]">
+              <div className="flex flex-col gap-1">
                 {visiveis.map((ev) => {
                   const pastel = getCorMateriaPastel(ev.materia_nome);
                   const bg = ev.concluido
