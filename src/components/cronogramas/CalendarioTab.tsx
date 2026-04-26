@@ -282,9 +282,7 @@ export function CalendarioTab({
     );
   }
 
-  const weekdays = isMobile
-    ? ["D", "S", "T", "Q", "Q", "S", "S"]
-    : ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  const weekdays = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
   const headerLabel = format(refDate, "MMMM 'de' yyyy", { locale: ptBR });
 
   const detailEvs = detailDay ? eventosPorDia.get(detailDay) ?? [] : [];
@@ -396,17 +394,22 @@ export function CalendarioTab({
         )}
       </div>
 
-      {/* Cabeçalho de dias da semana */}
-      <div className="grid grid-cols-7 gap-2 max-md:gap-[3px] mb-1">
-        {weekdays.map((w, i) => (
-          <div key={`${w}-${i}`} className="text-[10px] uppercase tracking-wider text-text-muted text-center">
-            {w}
+      {/* Wrapper com scroll horizontal em telas <1024px */}
+      <div
+        className="lg:overflow-visible overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="lg:min-w-0 min-w-[700px]">
+          {/* Cabeçalho de dias da semana */}
+          <div className="grid grid-cols-7 gap-2 mb-1">
+            {weekdays.map((w, i) => (
+              <div key={`${w}-${i}`} className="text-[10px] uppercase tracking-wider text-text-muted text-center">
+                {w}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
       {/* Grade */}
-      <div className="grid grid-cols-7 gap-2 max-md:gap-[3px]">
+      <div className="grid grid-cols-7 gap-2">
         {dias.map((d) => {
           const key = isoDate(d);
           const list = eventosPorDia.get(key) ?? [];
@@ -435,7 +438,7 @@ export function CalendarioTab({
                 setDraggingId(null);
                 if (id) moveEvento(id, key);
               }}
-              className={`relative rounded-[10px] max-md:rounded-[8px] p-2 max-md:p-[4px] max-md:px-[3px] min-h-[110px] max-md:min-h-[54px] transition-colors ${
+              className={`relative rounded-[10px] p-2 min-h-[110px] transition-colors ${
                 outOfMonth ? "opacity-50" : ""
               }`}
               style={{
@@ -450,17 +453,17 @@ export function CalendarioTab({
                     style={{
                       background: "#1D9E75",
                       color: "white",
-                      width: isMobile ? 18 : 24,
-                      height: isMobile ? 18 : 24,
+                      width: 24,
+                      height: 24,
                       borderRadius: "50%",
                       fontWeight: 600,
-                      fontSize: isMobile ? 11 : 12,
+                      fontSize: 12,
                     }}
                   >
                     {format(d, "dd")}
                   </div>
                 ) : (
-                  <div className="text-[13px] max-md:text-[11px] font-medium" style={{ color: "#374151" }}>
+                  <div className="text-[13px] font-medium" style={{ color: "#374151" }}>
                     {format(d, "dd")}
                   </div>
                 )}
@@ -475,7 +478,7 @@ export function CalendarioTab({
                 )}
               </div>
 
-              <div className="flex flex-col gap-1 max-md:gap-[2px]">
+              <div className="flex flex-col gap-1">
                 {visiveis.map((ev) => {
                   const pastel = getCorMateriaPastel(ev.materia_nome);
                   const bg = ev.concluido
@@ -505,7 +508,7 @@ export function CalendarioTab({
                       onClick={() => {
                         if (isMobile) setDetailDay(key);
                       }}
-                      className={`text-[11px] max-md:text-[9px] px-2 max-md:px-[4px] py-[2px] max-md:py-[1px] rounded-[99px] truncate font-medium ${
+                      className={`text-[11px] px-2 py-[2px] rounded-[99px] truncate font-medium ${
                         ev.concluido ? "line-through cursor-default" : "cursor-grab active:cursor-grabbing"
                       } ${draggingId === ev.id ? "opacity-50" : ""}`}
                       style={{ background: bg, color: fg }}
@@ -527,6 +530,8 @@ export function CalendarioTab({
             </div>
           );
         })}
+      </div>
+        </div>
       </div>
 
       {/* Modal detalhes do dia */}
