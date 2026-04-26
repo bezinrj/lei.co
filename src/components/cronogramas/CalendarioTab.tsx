@@ -453,17 +453,17 @@ export function CalendarioTab({
                     style={{
                       background: "#1D9E75",
                       color: "white",
-                      width: isMobile ? 18 : 24,
-                      height: isMobile ? 18 : 24,
+                      width: 24,
+                      height: 24,
                       borderRadius: "50%",
                       fontWeight: 600,
-                      fontSize: isMobile ? 11 : 12,
+                      fontSize: 12,
                     }}
                   >
                     {format(d, "dd")}
                   </div>
                 ) : (
-                  <div className="text-[13px] max-md:text-[11px] font-medium" style={{ color: "#374151" }}>
+                  <div className="text-[13px] font-medium" style={{ color: "#374151" }}>
                     {format(d, "dd")}
                   </div>
                 )}
