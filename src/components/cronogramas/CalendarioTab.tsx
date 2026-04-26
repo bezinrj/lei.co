@@ -25,6 +25,7 @@ import type { Fonte } from "./NovoTopicoForm";
 import { CronometroBloco } from "./CronometroBloco";
 import { RegistrarSessaoModal } from "./RegistrarSessaoModal";
 import { LimparEventosModal } from "./LimparEventosModal";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type CalendarioEvento = {
   id: string;
