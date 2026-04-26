@@ -394,14 +394,19 @@ export function CalendarioTab({
         )}
       </div>
 
-      {/* Cabeçalho de dias da semana */}
-      <div className="grid grid-cols-7 gap-2 max-md:gap-[3px] mb-1">
-        {weekdays.map((w, i) => (
-          <div key={`${w}-${i}`} className="text-[10px] uppercase tracking-wider text-text-muted text-center">
-            {w}
+      {/* Wrapper com scroll horizontal em telas <1024px */}
+      <div
+        className="lg:overflow-visible overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="lg:min-w-0 min-w-[700px]">
+          {/* Cabeçalho de dias da semana */}
+          <div className="grid grid-cols-7 gap-2 mb-1">
+            {weekdays.map((w, i) => (
+              <div key={`${w}-${i}`} className="text-[10px] uppercase tracking-wider text-text-muted text-center">
+                {w}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
       {/* Grade */}
       <div className="grid grid-cols-7 gap-2 max-md:gap-[3px]">
