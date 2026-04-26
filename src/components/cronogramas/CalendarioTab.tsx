@@ -531,6 +531,8 @@ export function CalendarioTab({
           );
         })}
       </div>
+        </div>
+      </div>
 
       {/* Modal detalhes do dia */}
       <Dialog open={detailDay !== null} onOpenChange={(v) => !v && setDetailDay(null)}>
