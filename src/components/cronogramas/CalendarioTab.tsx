@@ -282,7 +282,9 @@ export function CalendarioTab({
     );
   }
 
-  const weekdays = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  const weekdays = isMobile
+    ? ["D", "S", "T", "Q", "Q", "S", "S"]
+    : ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
   const headerLabel = format(refDate, "MMMM 'de' yyyy", { locale: ptBR });
 
   const detailEvs = detailDay ? eventosPorDia.get(detailDay) ?? [] : [];
