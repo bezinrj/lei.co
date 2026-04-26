@@ -294,9 +294,10 @@ export function CalendarioTab({
       <CronometroBloco hoje={today} eventosHoje={eventosHoje} onStop={onCronStop} />
 
       {/* Controles */}
-      <div className="lei-card mb-3 !p-3">
+      <div className="lei-card mb-3 !p-3 md:!p-3" style={isMobile ? { padding: 10 } : undefined}>
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
+          {/* Navegação do mês */}
+          <div className="flex items-center gap-2 max-md:w-full max-md:justify-center">
             <Button
               variant="outline"
               size="sm"
@@ -328,32 +329,34 @@ export function CalendarioTab({
             </Button>
           </div>
 
-          <div className="flex items-center gap-1 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => shiftEventos(-7)} className="h-8 rounded-[8px] text-[12px]">−7d</Button>
-            <Button variant="outline" size="sm" onClick={() => shiftEventos(-1)} className="h-8 rounded-[8px] text-[12px]">−1d</Button>
-            <Button variant="outline" size="sm" onClick={() => shiftEventos(1)} className="h-8 rounded-[8px] text-[12px]">+1d</Button>
-            <Button variant="outline" size="sm" onClick={() => shiftEventos(7)} className="h-8 rounded-[8px] text-[12px]">+7d</Button>
+          {/* Botões de deslocamento */}
+          <div className="flex items-center gap-1 flex-wrap max-md:w-full">
+            <Button variant="outline" size="sm" onClick={() => shiftEventos(-7)} className="h-8 rounded-[8px] text-[12px] max-md:flex-1 max-md:px-1">−7d</Button>
+            <Button variant="outline" size="sm" onClick={() => shiftEventos(-1)} className="h-8 rounded-[8px] text-[12px] max-md:flex-1 max-md:px-1">−1d</Button>
+            <Button variant="outline" size="sm" onClick={() => shiftEventos(1)} className="h-8 rounded-[8px] text-[12px] max-md:flex-1 max-md:px-1">+1d</Button>
+            <Button variant="outline" size="sm" onClick={() => shiftEventos(7)} className="h-8 rounded-[8px] text-[12px] max-md:flex-1 max-md:px-1">+7d</Button>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Ações: h/dia + Calcular + Limpar */}
+          <div className="flex items-center gap-2 max-md:w-full">
             <Input
               value={horasDia}
               onChange={(e) => setHorasDia(e.target.value)}
               type="number"
               min={1}
-              className="h-8 w-[70px] text-[12px]"
+              className="h-8 w-[70px] max-md:w-[52px] text-[12px]"
               placeholder="h/dia"
             />
             <Button
               size="sm"
               onClick={distribuir}
-              className="h-8 rounded-[8px] text-[12px] bg-sage-dark hover:bg-sage-dark/90 text-white"
+              className="h-8 rounded-[8px] text-[12px] bg-sage-dark hover:bg-sage-dark/90 text-white max-md:flex-1"
             >
               Calcular
             </Button>
             <button
               onClick={() => setLimparOpen(true)}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-[8px] text-[12px] transition-colors hover:bg-[#FFF0F0]"
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-[8px] text-[12px] transition-colors hover:bg-[#FFF0F0] flex-shrink-0"
               style={{ border: "1px solid #E24B4A", color: "#E24B4A", background: "transparent" }}
             >
               <Trash2 size={12} /> Limpar
