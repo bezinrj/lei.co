@@ -438,7 +438,7 @@ export function CalendarioTab({
                 setDraggingId(null);
                 if (id) moveEvento(id, key);
               }}
-              className={`relative rounded-[10px] max-md:rounded-[8px] p-2 max-md:p-[4px] max-md:px-[3px] min-h-[110px] max-md:min-h-[54px] transition-colors ${
+              className={`relative rounded-[10px] p-2 min-h-[110px] transition-colors ${
                 outOfMonth ? "opacity-50" : ""
               }`}
               style={{
