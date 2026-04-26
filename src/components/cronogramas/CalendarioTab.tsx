@@ -25,6 +25,7 @@ import type { Fonte } from "./NovoTopicoForm";
 import { CronometroBloco } from "./CronometroBloco";
 import { RegistrarSessaoModal } from "./RegistrarSessaoModal";
 import { LimparEventosModal } from "./LimparEventosModal";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type CalendarioEvento = {
   id: string;
@@ -73,6 +74,7 @@ export function CalendarioTab({
   materias,
   onChange,
 }: Props) {
+  const isMobile = useIsMobile();
   const [refDate, setRefDate] = useState<Date>(new Date());
   const [horasDia, setHorasDia] = useState("3");
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -280,7 +282,9 @@ export function CalendarioTab({
     );
   }
 
-  const weekdays = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  const weekdays = isMobile
+    ? ["D", "S", "T", "Q", "Q", "S", "S"]
+    : ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
   const headerLabel = format(refDate, "MMMM 'de' yyyy", { locale: ptBR });
 
   const detailEvs = detailDay ? eventosPorDia.get(detailDay) ?? [] : [];
@@ -290,9 +294,10 @@ export function CalendarioTab({
       <CronometroBloco hoje={today} eventosHoje={eventosHoje} onStop={onCronStop} />
 
       {/* Controles */}
-      <div className="lei-card mb-3 !p-3">
+      <div className="lei-card mb-3 !p-3 md:!p-3" style={isMobile ? { padding: 10 } : undefined}>
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
+          {/* Navegação do mês */}
+          <div className="flex items-center gap-2 max-md:w-full max-md:justify-center">
             <Button
               variant="outline"
               size="sm"
@@ -324,32 +329,34 @@ export function CalendarioTab({
             </Button>
           </div>
 
-          <div className="flex items-center gap-1 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => shiftEventos(-7)} className="h-8 rounded-[8px] text-[12px]">−7d</Button>
-            <Button variant="outline" size="sm" onClick={() => shiftEventos(-1)} className="h-8 rounded-[8px] text-[12px]">−1d</Button>
-            <Button variant="outline" size="sm" onClick={() => shiftEventos(1)} className="h-8 rounded-[8px] text-[12px]">+1d</Button>
-            <Button variant="outline" size="sm" onClick={() => shiftEventos(7)} className="h-8 rounded-[8px] text-[12px]">+7d</Button>
+          {/* Botões de deslocamento */}
+          <div className="flex items-center gap-1 flex-wrap max-md:w-full">
+            <Button variant="outline" size="sm" onClick={() => shiftEventos(-7)} className="h-8 rounded-[8px] text-[12px] max-md:flex-1 max-md:px-1">−7d</Button>
+            <Button variant="outline" size="sm" onClick={() => shiftEventos(-1)} className="h-8 rounded-[8px] text-[12px] max-md:flex-1 max-md:px-1">−1d</Button>
+            <Button variant="outline" size="sm" onClick={() => shiftEventos(1)} className="h-8 rounded-[8px] text-[12px] max-md:flex-1 max-md:px-1">+1d</Button>
+            <Button variant="outline" size="sm" onClick={() => shiftEventos(7)} className="h-8 rounded-[8px] text-[12px] max-md:flex-1 max-md:px-1">+7d</Button>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Ações: h/dia + Calcular + Limpar */}
+          <div className="flex items-center gap-2 max-md:w-full">
             <Input
               value={horasDia}
               onChange={(e) => setHorasDia(e.target.value)}
               type="number"
               min={1}
-              className="h-8 w-[70px] text-[12px]"
+              className="h-8 w-[70px] max-md:w-[52px] text-[12px]"
               placeholder="h/dia"
             />
             <Button
               size="sm"
               onClick={distribuir}
-              className="h-8 rounded-[8px] text-[12px] bg-sage-dark hover:bg-sage-dark/90 text-white"
+              className="h-8 rounded-[8px] text-[12px] bg-sage-dark hover:bg-sage-dark/90 text-white max-md:flex-1"
             >
               Calcular
             </Button>
             <button
               onClick={() => setLimparOpen(true)}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-[8px] text-[12px] transition-colors hover:bg-[#FFF0F0]"
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-[8px] text-[12px] transition-colors hover:bg-[#FFF0F0] flex-shrink-0"
               style={{ border: "1px solid #E24B4A", color: "#E24B4A", background: "transparent" }}
             >
               <Trash2 size={12} /> Limpar
@@ -359,13 +366,13 @@ export function CalendarioTab({
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 max-md:gap-1 mb-4 max-md:mb-2">
         {materiasNoMes.map((m) => {
           const p = getCorMateriaPastel(m.nome);
           return (
             <span
               key={m.id}
-              className="text-[11px] px-2 py-[2px] rounded-[99px] font-medium"
+              className="text-[11px] max-md:text-[10px] px-2 max-md:px-[6px] py-[2px] rounded-[99px] font-medium"
               style={{ background: p.background, color: p.color }}
             >
               {m.nome}
@@ -373,33 +380,33 @@ export function CalendarioTab({
           );
         })}
         {temRevisaoNoMes && (
-          <span className="text-[11px] px-2 py-[2px] rounded-[99px] text-white" style={{ background: "#6B7280" }}>
+          <span className="text-[11px] max-md:text-[10px] px-2 max-md:px-[6px] py-[2px] rounded-[99px] text-white" style={{ background: "#6B7280" }}>
             Revisão
           </span>
         )}
         {temAtraso1d && (
-          <span className="text-[11px] px-2 py-[2px] rounded-[99px]" style={{ background: "#FFFBEA", color: "#B86E07", border: "1px solid #EF9F27" }}>
+          <span className="text-[11px] max-md:text-[10px] px-2 max-md:px-[6px] py-[2px] rounded-[99px]" style={{ background: "#FFFBEA", color: "#B86E07", border: "1px solid #EF9F27" }}>
             Atrasado +1d
           </span>
         )}
         {temAtraso4d && (
-          <span className="text-[11px] px-2 py-[2px] rounded-[99px]" style={{ background: "#FFF0F0", color: "#E24B4A", border: "1px solid #E24B4A" }}>
+          <span className="text-[11px] max-md:text-[10px] px-2 max-md:px-[6px] py-[2px] rounded-[99px]" style={{ background: "#FFF0F0", color: "#E24B4A", border: "1px solid #E24B4A" }}>
             Atrasado +4d
           </span>
         )}
       </div>
 
       {/* Cabeçalho de dias da semana */}
-      <div className="grid grid-cols-7 gap-2 mb-1">
-        {weekdays.map((w) => (
-          <div key={w} className="text-[10px] uppercase tracking-wider text-text-muted text-center">
+      <div className="grid grid-cols-7 gap-2 max-md:gap-[3px] mb-1">
+        {weekdays.map((w, i) => (
+          <div key={`${w}-${i}`} className="text-[10px] uppercase tracking-wider text-text-muted text-center">
             {w}
           </div>
         ))}
       </div>
 
       {/* Grade */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-2 max-md:gap-[3px]">
         {dias.map((d) => {
           const key = isoDate(d);
           const list = eventosPorDia.get(key) ?? [];
@@ -428,7 +435,7 @@ export function CalendarioTab({
                 setDraggingId(null);
                 if (id) moveEvento(id, key);
               }}
-              className={`relative rounded-[10px] p-2 min-h-[110px] transition-colors ${
+              className={`relative rounded-[10px] max-md:rounded-[8px] p-2 max-md:p-[4px] max-md:px-[3px] min-h-[110px] max-md:min-h-[54px] transition-colors ${
                 outOfMonth ? "opacity-50" : ""
               }`}
               style={{
@@ -443,17 +450,17 @@ export function CalendarioTab({
                     style={{
                       background: "#1D9E75",
                       color: "white",
-                      width: 24,
-                      height: 24,
+                      width: isMobile ? 18 : 24,
+                      height: isMobile ? 18 : 24,
                       borderRadius: "50%",
                       fontWeight: 600,
-                      fontSize: 12,
+                      fontSize: isMobile ? 11 : 12,
                     }}
                   >
                     {format(d, "dd")}
                   </div>
                 ) : (
-                  <div className="text-[13px] font-medium" style={{ color: "#374151" }}>
+                  <div className="text-[13px] max-md:text-[11px] font-medium" style={{ color: "#374151" }}>
                     {format(d, "dd")}
                   </div>
                 )}
@@ -468,7 +475,7 @@ export function CalendarioTab({
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 max-md:gap-[2px]">
                 {visiveis.map((ev) => {
                   const pastel = getCorMateriaPastel(ev.materia_nome);
                   const bg = ev.concluido
@@ -495,7 +502,10 @@ export function CalendarioTab({
                         setDraggingId(null);
                         setDragOverDay(null);
                       }}
-                      className={`text-[11px] px-2 py-[2px] rounded-[99px] truncate font-medium ${
+                      onClick={() => {
+                        if (isMobile) setDetailDay(key);
+                      }}
+                      className={`text-[11px] max-md:text-[9px] px-2 max-md:px-[4px] py-[2px] max-md:py-[1px] rounded-[99px] truncate font-medium ${
                         ev.concluido ? "line-through cursor-default" : "cursor-grab active:cursor-grabbing"
                       } ${draggingId === ev.id ? "opacity-50" : ""}`}
                       style={{ background: bg, color: fg }}
