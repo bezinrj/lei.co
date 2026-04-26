@@ -435,7 +435,7 @@ export function CalendarioTab({
                 setDraggingId(null);
                 if (id) moveEvento(id, key);
               }}
-              className={`relative rounded-[10px] p-2 min-h-[110px] transition-colors ${
+              className={`relative rounded-[10px] max-md:rounded-[8px] p-2 max-md:p-[4px] max-md:px-[3px] min-h-[110px] max-md:min-h-[54px] transition-colors ${
                 outOfMonth ? "opacity-50" : ""
               }`}
               style={{
@@ -450,17 +450,17 @@ export function CalendarioTab({
                     style={{
                       background: "#1D9E75",
                       color: "white",
-                      width: 24,
-                      height: 24,
+                      width: isMobile ? 18 : 24,
+                      height: isMobile ? 18 : 24,
                       borderRadius: "50%",
                       fontWeight: 600,
-                      fontSize: 12,
+                      fontSize: isMobile ? 11 : 12,
                     }}
                   >
                     {format(d, "dd")}
                   </div>
                 ) : (
-                  <div className="text-[13px] font-medium" style={{ color: "#374151" }}>
+                  <div className="text-[13px] max-md:text-[11px] font-medium" style={{ color: "#374151" }}>
                     {format(d, "dd")}
                   </div>
                 )}
@@ -475,7 +475,7 @@ export function CalendarioTab({
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 max-md:gap-[2px]">
                 {visiveis.map((ev) => {
                   const pastel = getCorMateriaPastel(ev.materia_nome);
                   const bg = ev.concluido
@@ -502,7 +502,10 @@ export function CalendarioTab({
                         setDraggingId(null);
                         setDragOverDay(null);
                       }}
-                      className={`text-[11px] px-2 py-[2px] rounded-[99px] truncate font-medium ${
+                      onClick={() => {
+                        if (isMobile) setDetailDay(key);
+                      }}
+                      className={`text-[11px] max-md:text-[9px] px-2 max-md:px-[4px] py-[2px] max-md:py-[1px] rounded-[99px] truncate font-medium ${
                         ev.concluido ? "line-through cursor-default" : "cursor-grab active:cursor-grabbing"
                       } ${draggingId === ev.id ? "opacity-50" : ""}`}
                       style={{ background: bg, color: fg }}
