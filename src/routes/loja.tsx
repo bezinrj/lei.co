@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2, Plus, Star, Flame, ExternalLink } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,32 +102,28 @@ function corFundoCategoria(cat: Categoria | null): string {
 function LojaPage() {
   const { roles } = useAuth();
   const isAdmin = roles.includes("admin");
+  const queryClient = useQueryClient();
 
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<"todos" | Categoria>("todos");
   const [editing, setEditing] = useState<Produto | null>(null);
   const [openForm, setOpenForm] = useState(false);
 
-  async function carregar() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("loja_produtos")
-      .select("*")
-      .order("destaque", { ascending: false })
-      .order("ordem", { ascending: true })
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast.error("Erro ao carregar produtos");
-    } else {
-      setProdutos((data ?? []) as Produto[]);
-    }
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    carregar();
-  }, []);
+  const { data: produtos = [], isLoading: loading } = useQuery({
+    queryKey: ["loja"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("loja_produtos")
+        .select("*")
+        .order("destaque", { ascending: false })
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) {
+        toast.error("Erro ao carregar produtos");
+        throw error;
+      }
+      return (data ?? []) as Produto[];
+    },
+  });
 
   const destaque = useMemo(
     () => produtos.find((p) => p.destaque && p.ativo) ?? null,
@@ -150,15 +147,21 @@ function LojaPage() {
     setOpenForm(true);
   }
 
-  async function excluir(id: string) {
+  const excluirMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("loja_produtos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loja"] });
+      toast.success("Produto excluído");
+    },
+    onError: () => toast.error("Erro ao excluir"),
+  });
+
+  function excluir(id: string) {
     if (!confirm("Excluir este produto?")) return;
-    const { error } = await supabase.from("loja_produtos").delete().eq("id", id);
-    if (error) {
-      toast.error("Erro ao excluir");
-      return;
-    }
-    toast.success("Produto excluído");
-    carregar();
+    excluirMutation.mutate(id);
   }
 
   return (
@@ -271,7 +274,7 @@ function LojaPage() {
           produto={editing}
           onSaved={() => {
             setOpenForm(false);
-            carregar();
+            queryClient.invalidateQueries({ queryKey: ["loja"] });
           }}
         />
       )}
@@ -612,7 +615,7 @@ function ProdutoForm({
   const [destaque, setDestaque] = useState(false);
   const [ativo, setAtivo] = useState(true);
   const [ordem, setOrdem] = useState("0");
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!open) return;
@@ -657,41 +660,45 @@ function ProdutoForm({
     );
   }
 
-  async function salvar() {
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        nome: nome.trim(),
+        descricao: descricao.trim() || null,
+        categoria,
+        link_externo: linkExterno.trim(),
+        imagem_url: imagemUrl.trim() || null,
+        preco_centavos: precoReais
+          ? Math.round(parseFloat(precoReais.replace(",", ".")) * 100)
+          : null,
+        preco_original_centavos: precoOriginalReais
+          ? Math.round(parseFloat(precoOriginalReais.replace(",", ".")) * 100)
+          : null,
+        desconto_pct: descontoPct ? parseInt(descontoPct, 10) : null,
+        badges,
+        destaque,
+        ativo,
+        ordem: parseInt(ordem, 10) || 0,
+      };
+      const { error } = produto
+        ? await supabase.from("loja_produtos").update(payload).eq("id", produto.id)
+        : await supabase.from("loja_produtos").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loja"] });
+      toast.success(produto ? "Produto atualizado" : "Produto criado");
+      onSaved();
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao salvar produto"),
+  });
+
+  function salvar() {
     if (!nome.trim() || !linkExterno.trim()) {
       toast.error("Nome e link são obrigatórios");
       return;
     }
-    setSaving(true);
-
-    const payload = {
-      nome: nome.trim(),
-      descricao: descricao.trim() || null,
-      categoria,
-      link_externo: linkExterno.trim(),
-      imagem_url: imagemUrl.trim() || null,
-      preco_centavos: precoReais ? Math.round(parseFloat(precoReais) * 100) : null,
-      preco_original_centavos: precoOriginalReais
-        ? Math.round(parseFloat(precoOriginalReais) * 100)
-        : null,
-      desconto_pct: descontoPct ? parseInt(descontoPct, 10) : null,
-      badges,
-      destaque,
-      ativo,
-      ordem: parseInt(ordem, 10) || 0,
-    };
-
-    const { error } = produto
-      ? await supabase.from("loja_produtos").update(payload).eq("id", produto.id)
-      : await supabase.from("loja_produtos").insert(payload);
-
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success(produto ? "Produto atualizado" : "Produto criado");
-    onSaved();
+    saveMutation.mutate();
   }
 
   return (
@@ -844,11 +851,11 @@ function ProdutoForm({
           </Button>
           <Button
             onClick={salvar}
-            disabled={saving}
+            disabled={saveMutation.isPending}
             style={{ background: "#1D9E75" }}
             className="text-white hover:opacity-90"
           >
-            {saving ? "Salvando..." : "Salvar"}
+            {saveMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>
