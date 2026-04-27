@@ -615,7 +615,7 @@ function ProdutoForm({
   const [destaque, setDestaque] = useState(false);
   const [ativo, setAtivo] = useState(true);
   const [ordem, setOrdem] = useState("0");
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!open) return;
