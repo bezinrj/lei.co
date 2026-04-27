@@ -274,7 +274,7 @@ function LojaPage() {
           produto={editing}
           onSaved={() => {
             setOpenForm(false);
-            carregar();
+            queryClient.invalidateQueries({ queryKey: ["loja"] });
           }}
         />
       )}
