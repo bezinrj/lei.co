@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2, Plus, Star, Flame, ExternalLink } from "lucide-react";
+import { Pencil, Trash2, Plus, Star, Flame, ExternalLink, ImageIcon, Loader2, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -763,14 +763,7 @@ function ProdutoForm({
             />
           </div>
 
-          <div>
-            <Label className="text-[12px]">Imagem (URL)</Label>
-            <Input
-              placeholder="https://..."
-              value={imagemUrl}
-              onChange={(e) => setImagemUrl(e.target.value)}
-            />
-          </div>
+          <ImagemUploader value={imagemUrl} onChange={setImagemUrl} />
 
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -860,5 +853,113 @@ function ProdutoForm({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ImagemUploader({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File | undefined | null) {
+    if (!file) return;
+    const tiposPermitidos = ["image/jpeg", "image/png", "image/webp"];
+    if (!tiposPermitidos.includes(file.type)) {
+      toast.error("Formato inválido. Use JPG, PNG ou WebP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande. Máximo 5MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const fileName = `produto-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage
+        .from("loja-imagens")
+        .upload(fileName, file, { upsert: false, contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("loja-imagens").getPublicUrl(fileName);
+      onChange(data.publicUrl);
+      toast.success("Imagem enviada!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar imagem.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div>
+      <Label className="text-[12px] mb-1.5 block">Imagem de capa</Label>
+      <div
+        onClick={() => !uploading && inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.currentTarget.style.borderColor = "#B8C9B0";
+        }}
+        onDragLeave={(e) => {
+          e.currentTarget.style.borderColor = "#e5e7eb";
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.currentTarget.style.borderColor = "#e5e7eb";
+          handleFile(e.dataTransfer.files?.[0]);
+        }}
+        className="group relative flex h-[140px] cursor-pointer items-center justify-center overflow-hidden rounded-[10px] border-2 border-dashed transition-colors"
+        style={{
+          borderColor: "#e5e7eb",
+          background: value ? `url(${value}) center/cover` : "#fafafa",
+        }}
+      >
+        {!value && !uploading && (
+          <div className="text-center text-[#8A8478]">
+            <ImageIcon className="mx-auto mb-1.5 h-6 w-6" />
+            <div className="text-[11px] font-medium">
+              Clique ou arraste a imagem aqui
+            </div>
+            <div className="mt-0.5 text-[10px] text-muted-foreground">
+              JPG, PNG ou WebP · Máx 5MB
+            </div>
+          </div>
+        )}
+        {uploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <span className="text-[11px]">Enviando...</span>
+          </div>
+        )}
+        {value && !uploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="text-[11px] font-medium text-white">
+              Clique para trocar
+            </span>
+          </div>
+        )}
+      </div>
+      {value && !uploading && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="mt-2 inline-flex items-center gap-1 text-[11px] text-[#E24B4A] hover:underline"
+        >
+          <X className="h-3 w-3" /> Remover imagem
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
+    </div>
   );
 }
