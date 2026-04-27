@@ -242,8 +242,8 @@ function LojaPage() {
       )}
 
       {/* Grid */}
-      {!loading && lista.length > 0 && (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {!loading && (lista.length > 0 || isAdmin) && (
+        <div className="grid gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {lista.map((p) => (
             <ProdutoCard
               key={p.id}
@@ -253,10 +253,11 @@ function LojaPage() {
               onDelete={() => excluir(p.id)}
             />
           ))}
+          {isAdmin && <AdicionarProdutoCard onClick={abrirNovo} />}
         </div>
       )}
 
-      {!loading && lista.length === 0 && produtos.length > 0 && !destaque && (
+      {!loading && lista.length === 0 && produtos.length > 0 && !destaque && !isAdmin && (
         <div className="lei-card text-center py-12 text-text-muted text-[13px]">
           Nenhum produto nesta categoria.
         </div>
