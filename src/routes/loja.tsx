@@ -64,24 +64,38 @@ const CAT_LABEL: Record<Categoria, string> = {
   outro: "Outro",
 };
 
+const BADGES_DISPONIVEIS: { key: string; label: string }[] = [
+  { key: "destaque", label: "⭐ Destaque" },
+  { key: "mais_vendido", label: "🔥 Mais vendido" },
+  { key: "novo", label: "🆕 Novo" },
+  { key: "em_breve", label: "📌 Em breve" },
+];
+
 function formatBRL(centavos: number | null | undefined) {
   if (centavos == null) return "";
   return `R$ ${(centavos / 100).toFixed(2).replace(".", ",")}`;
 }
 
-function emojiCategoria(cat: Categoria | null) {
-  switch (cat) {
-    case "cronograma":
-      return "📅";
-    case "ebook":
-      return "📖";
-    case "material":
-      return "📚";
-    case "mentoria":
-      return "🎓";
-    default:
-      return "🛍️";
-  }
+function emojiCategoria(cat: Categoria | null): string {
+  const map: Record<string, string> = {
+    cronograma: "📚",
+    ebook: "📖",
+    material: "📝",
+    mentoria: "🎯",
+    outro: "📋",
+  };
+  return (cat && map[cat]) || "📦";
+}
+
+function corFundoCategoria(cat: Categoria | null): string {
+  const map: Record<string, string> = {
+    cronograma: "#E1F5EE",
+    ebook: "#EDE9F5",
+    material: "#E6F1FB",
+    mentoria: "#FAEEDA",
+    outro: "#F1EFE8",
+  };
+  return (cat && map[cat]) || "#F1EFE8";
 }
 
 function LojaPage() {
