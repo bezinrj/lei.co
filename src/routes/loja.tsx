@@ -64,24 +64,38 @@ const CAT_LABEL: Record<Categoria, string> = {
   outro: "Outro",
 };
 
+const BADGES_DISPONIVEIS: { key: string; label: string }[] = [
+  { key: "destaque", label: "⭐ Destaque" },
+  { key: "mais_vendido", label: "🔥 Mais vendido" },
+  { key: "novo", label: "🆕 Novo" },
+  { key: "em_breve", label: "📌 Em breve" },
+];
+
 function formatBRL(centavos: number | null | undefined) {
   if (centavos == null) return "";
   return `R$ ${(centavos / 100).toFixed(2).replace(".", ",")}`;
 }
 
-function emojiCategoria(cat: Categoria | null) {
-  switch (cat) {
-    case "cronograma":
-      return "📅";
-    case "ebook":
-      return "📖";
-    case "material":
-      return "📚";
-    case "mentoria":
-      return "🎓";
-    default:
-      return "🛍️";
-  }
+function emojiCategoria(cat: Categoria | null): string {
+  const map: Record<string, string> = {
+    cronograma: "📚",
+    ebook: "📖",
+    material: "📝",
+    mentoria: "🎯",
+    outro: "📋",
+  };
+  return (cat && map[cat]) || "📦";
+}
+
+function corFundoCategoria(cat: Categoria | null): string {
+  const map: Record<string, string> = {
+    cronograma: "#E1F5EE",
+    ebook: "#EDE9F5",
+    material: "#E6F1FB",
+    mentoria: "#FAEEDA",
+    outro: "#F1EFE8",
+  };
+  return (cat && map[cat]) || "#F1EFE8";
 }
 
 function LojaPage() {
@@ -228,8 +242,8 @@ function LojaPage() {
       )}
 
       {/* Grid */}
-      {!loading && lista.length > 0 && (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {!loading && (lista.length > 0 || isAdmin) && (
+        <div className="grid gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {lista.map((p) => (
             <ProdutoCard
               key={p.id}
@@ -239,10 +253,11 @@ function LojaPage() {
               onDelete={() => excluir(p.id)}
             />
           ))}
+          {isAdmin && <AdicionarProdutoCard onClick={abrirNovo} />}
         </div>
       )}
 
-      {!loading && lista.length === 0 && produtos.length > 0 && !destaque && (
+      {!loading && lista.length === 0 && produtos.length > 0 && !destaque && !isAdmin && (
         <div className="lei-card text-center py-12 text-text-muted text-[13px]">
           Nenhum produto nesta categoria.
         </div>
@@ -430,65 +445,145 @@ function ProdutoCard({
 }) {
   return (
     <div
-      className="relative bg-card flex flex-col overflow-hidden"
+      className="relative bg-card flex flex-col overflow-hidden transition-transform hover:-translate-y-0.5"
       style={{ borderRadius: 14, border: "1px solid rgba(61,56,48,0.1)" }}
     >
+      {/* Imagem com badges sobrepostos */}
       <div
-        className="h-[140px] flex items-center justify-center text-4xl"
+        className="relative h-[140px] flex items-center justify-center text-[36px]"
         style={{
           background: produto.imagem_url
             ? `url(${produto.imagem_url}) center/cover`
-            : "linear-gradient(135deg, #B8C9B0, #7A9A70)",
-          color: "#fff",
+            : corFundoCategoria(produto.categoria),
         }}
       >
-        {!produto.imagem_url && emojiCategoria(produto.categoria)}
+        {!produto.imagem_url && <span>{emojiCategoria(produto.categoria)}</span>}
+
+        {/* Badges overlay */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {produto.badges?.includes("novo") && (
+            <span
+              className="rounded-full px-1.5 py-[2px] text-[9px] font-semibold"
+              style={{ background: "#EDE9F5", color: "#26215C" }}
+            >
+              🆕 Novo
+            </span>
+          )}
+          {produto.badges?.includes("mais_vendido") && (
+            <span
+              className="rounded-full px-1.5 py-[2px] text-[9px] font-semibold"
+              style={{ background: "#FAECE7", color: "#4A1B0C" }}
+            >
+              🔥 Top
+            </span>
+          )}
+          {produto.badges?.includes("em_breve") && (
+            <span
+              className="rounded-full px-1.5 py-[2px] text-[9px] font-semibold"
+              style={{ background: "#E6F1FB", color: "#042C53" }}
+            >
+              📌 Em breve
+            </span>
+          )}
+          {produto.badges?.includes("destaque") && (
+            <span
+              className="rounded-full px-1.5 py-[2px] text-[9px] font-semibold"
+              style={{ background: "#FAEEDA", color: "#412402" }}
+            >
+              ⭐ Destaque
+            </span>
+          )}
+          {produto.desconto_pct ? (
+            <span
+              className="rounded-full px-1.5 py-[2px] text-[9px] font-semibold"
+              style={{ background: "#E24B4A", color: "#fff" }}
+            >
+              -{produto.desconto_pct}%
+            </span>
+          ) : null}
+          {!produto.ativo && (
+            <span className="rounded-full px-1.5 py-[2px] text-[9px] font-semibold bg-muted text-text-muted">
+              Inativo
+            </span>
+          )}
+        </div>
+
+        {isAdmin && <AdminButtons onEdit={onEdit} onDelete={onDelete} />}
       </div>
 
-      {isAdmin && <AdminButtons onEdit={onEdit} onDelete={onDelete} />}
-
-      <div className="p-4 flex flex-col flex-1">
-        <div className="mb-2">
-          <BadgesRow produto={produto} />
-        </div>
-        <div className="font-serif text-[15px] font-medium text-text-main mb-1 line-clamp-2">
+      {/* Corpo */}
+      <div className="p-3 flex flex-col flex-1">
+        {produto.categoria && (
+          <div
+            className="text-[10px] uppercase tracking-wider mb-1"
+            style={{ color: "#8A8478" }}
+          >
+            {CAT_LABEL[produto.categoria]}
+          </div>
+        )}
+        <div className="text-[13px] font-medium text-text-main mb-1 leading-snug line-clamp-2">
           {produto.nome}
         </div>
         {produto.descricao && (
-          <div className="text-[11px] text-text-muted leading-relaxed mb-3 line-clamp-2">
+          <div className="text-[11px] text-text-muted leading-relaxed mb-2.5 line-clamp-2">
             {produto.descricao}
           </div>
         )}
 
-        <div className="mt-auto">
-          {produto.preco_centavos != null && (
-            <div className="flex items-center gap-2 mb-3">
-              {produto.preco_original_centavos ? (
-                <span className="text-[11px] text-gray-400 line-through">
-                  {formatBRL(produto.preco_original_centavos)}
-                </span>
-              ) : null}
+        <div className="mt-auto flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-1">
+            {produto.preco_original_centavos ? (
+              <span className="text-[10px] text-gray-400 line-through">
+                {formatBRL(produto.preco_original_centavos)}
+              </span>
+            ) : null}
+            {produto.preco_centavos != null && (
               <span
-                className="font-serif text-[18px] font-medium"
-                style={{ color: "#1D9E75" }}
+                className="font-serif text-[16px] font-medium"
+                style={{ color: produto.desconto_pct ? "#1D9E75" : "#111827" }}
               >
                 {formatBRL(produto.preco_centavos)}
               </span>
-            </div>
-          )}
-
+            )}
+          </div>
           <a
             href={produto.link_externo}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center gap-1.5 text-white text-[12px] font-medium rounded-full px-4 py-2 hover:opacity-90 transition"
-            style={{ background: "#1D9E75" }}
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-full px-3 py-[5px] text-[11px] hover:opacity-90 transition"
+            style={{
+              background: "#F7F4EE",
+              color: "#374151",
+              border: "1px solid #e5e7eb",
+            }}
           >
-            Comprar <ExternalLink size={11} />
+            Ver →
           </a>
         </div>
       </div>
     </div>
+  );
+}
+
+function AdicionarProdutoCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center gap-1.5 min-h-[220px] rounded-[14px] border-2 border-dashed transition-colors"
+      style={{ borderColor: "#e5e7eb", color: "#8A8478", background: "transparent" }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = "#B8C9B0";
+        e.currentTarget.style.color = "#7A9A70";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "#e5e7eb";
+        e.currentTarget.style.color = "#8A8478";
+      }}
+    >
+      <Plus size={24} />
+      <div className="text-[12px] font-medium">Adicionar produto</div>
+    </button>
   );
 }
 
@@ -513,8 +608,7 @@ function ProdutoForm({
   const [precoReais, setPrecoReais] = useState("");
   const [precoOriginalReais, setPrecoOriginalReais] = useState("");
   const [descontoPct, setDescontoPct] = useState("");
-  const [badgeDestaque, setBadgeDestaque] = useState(false);
-  const [badgeMaisVendido, setBadgeMaisVendido] = useState(false);
+  const [badges, setBadges] = useState<string[]>([]);
   const [destaque, setDestaque] = useState(false);
   const [ativo, setAtivo] = useState(true);
   const [ordem, setOrdem] = useState("0");
@@ -537,8 +631,7 @@ function ProdutoForm({
           : "",
       );
       setDescontoPct(produto.desconto_pct?.toString() ?? "");
-      setBadgeDestaque(produto.badges?.includes("destaque") ?? false);
-      setBadgeMaisVendido(produto.badges?.includes("mais_vendido") ?? false);
+      setBadges(produto.badges ?? []);
       setDestaque(produto.destaque);
       setAtivo(produto.ativo);
       setOrdem(produto.ordem?.toString() ?? "0");
@@ -551,13 +644,18 @@ function ProdutoForm({
       setPrecoReais("");
       setPrecoOriginalReais("");
       setDescontoPct("");
-      setBadgeDestaque(false);
-      setBadgeMaisVendido(false);
+      setBadges([]);
       setDestaque(false);
       setAtivo(true);
       setOrdem("0");
     }
   }, [open, produto]);
+
+  function toggleBadge(key: string) {
+    setBadges((prev) =>
+      prev.includes(key) ? prev.filter((b) => b !== key) : [...prev, key],
+    );
+  }
 
   async function salvar() {
     if (!nome.trim() || !linkExterno.trim()) {
@@ -565,9 +663,6 @@ function ProdutoForm({
       return;
     }
     setSaving(true);
-    const badges: string[] = [];
-    if (badgeDestaque) badges.push("destaque");
-    if (badgeMaisVendido) badges.push("mais_vendido");
 
     const payload = {
       nome: nome.trim(),
@@ -699,23 +794,31 @@ function ProdutoForm({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 pt-2">
-            <label className="flex items-center gap-2 text-[12px]">
-              <input
-                type="checkbox"
-                checked={badgeDestaque}
-                onChange={(e) => setBadgeDestaque(e.target.checked)}
-              />
-              Badge ⭐ Destaque
-            </label>
-            <label className="flex items-center gap-2 text-[12px]">
-              <input
-                type="checkbox"
-                checked={badgeMaisVendido}
-                onChange={(e) => setBadgeMaisVendido(e.target.checked)}
-              />
-              Badge 🔥 Mais vendido
-            </label>
+          <div className="pt-2">
+            <Label className="text-[12px] mb-1.5 block">Badges</Label>
+            <div className="flex gap-1.5 flex-wrap">
+              {BADGES_DISPONIVEIS.map((b) => {
+                const ativa = badges.includes(b.key);
+                return (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => toggleBadge(b.key)}
+                    className="rounded-full px-2.5 py-1 text-[10px] transition-colors"
+                    style={{
+                      border: ativa ? "1px solid #B8C9B0" : "1px solid #e5e7eb",
+                      background: ativa ? "#E8F0E5" : "#fff",
+                      color: ativa ? "#7A9A70" : "#6b7280",
+                    }}
+                  >
+                    {b.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4 pt-1">
             <label className="flex items-center gap-2 text-[12px]">
               <input
                 type="checkbox"
