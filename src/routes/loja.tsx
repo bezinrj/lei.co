@@ -763,14 +763,7 @@ function ProdutoForm({
             />
           </div>
 
-          <div>
-            <Label className="text-[12px]">Imagem (URL)</Label>
-            <Input
-              placeholder="https://..."
-              value={imagemUrl}
-              onChange={(e) => setImagemUrl(e.target.value)}
-            />
-          </div>
+          <ImagemUploader value={imagemUrl} onChange={setImagemUrl} />
 
           <div className="grid grid-cols-3 gap-3">
             <div>
