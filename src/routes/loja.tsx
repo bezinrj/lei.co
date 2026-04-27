@@ -794,23 +794,31 @@ function ProdutoForm({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 pt-2">
-            <label className="flex items-center gap-2 text-[12px]">
-              <input
-                type="checkbox"
-                checked={badgeDestaque}
-                onChange={(e) => setBadgeDestaque(e.target.checked)}
-              />
-              Badge ⭐ Destaque
-            </label>
-            <label className="flex items-center gap-2 text-[12px]">
-              <input
-                type="checkbox"
-                checked={badgeMaisVendido}
-                onChange={(e) => setBadgeMaisVendido(e.target.checked)}
-              />
-              Badge 🔥 Mais vendido
-            </label>
+          <div className="pt-2">
+            <Label className="text-[12px] mb-1.5 block">Badges</Label>
+            <div className="flex gap-1.5 flex-wrap">
+              {BADGES_DISPONIVEIS.map((b) => {
+                const ativa = badges.includes(b.key);
+                return (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => toggleBadge(b.key)}
+                    className="rounded-full px-2.5 py-1 text-[10px] transition-colors"
+                    style={{
+                      border: ativa ? "1px solid #B8C9B0" : "1px solid #e5e7eb",
+                      background: ativa ? "#E8F0E5" : "#fff",
+                      color: ativa ? "#7A9A70" : "#6b7280",
+                    }}
+                  >
+                    {b.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4 pt-1">
             <label className="flex items-center gap-2 text-[12px]">
               <input
                 type="checkbox"
