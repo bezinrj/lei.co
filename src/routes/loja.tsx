@@ -631,8 +631,7 @@ function ProdutoForm({
           : "",
       );
       setDescontoPct(produto.desconto_pct?.toString() ?? "");
-      setBadgeDestaque(produto.badges?.includes("destaque") ?? false);
-      setBadgeMaisVendido(produto.badges?.includes("mais_vendido") ?? false);
+      setBadges(produto.badges ?? []);
       setDestaque(produto.destaque);
       setAtivo(produto.ativo);
       setOrdem(produto.ordem?.toString() ?? "0");
@@ -645,13 +644,18 @@ function ProdutoForm({
       setPrecoReais("");
       setPrecoOriginalReais("");
       setDescontoPct("");
-      setBadgeDestaque(false);
-      setBadgeMaisVendido(false);
+      setBadges([]);
       setDestaque(false);
       setAtivo(true);
       setOrdem("0");
     }
   }, [open, produto]);
+
+  function toggleBadge(key: string) {
+    setBadges((prev) =>
+      prev.includes(key) ? prev.filter((b) => b !== key) : [...prev, key],
+    );
+  }
 
   async function salvar() {
     if (!nome.trim() || !linkExterno.trim()) {
@@ -659,9 +663,6 @@ function ProdutoForm({
       return;
     }
     setSaving(true);
-    const badges: string[] = [];
-    if (badgeDestaque) badges.push("destaque");
-    if (badgeMaisVendido) badges.push("mais_vendido");
 
     const payload = {
       nome: nome.trim(),
