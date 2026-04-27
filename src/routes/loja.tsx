@@ -608,8 +608,7 @@ function ProdutoForm({
   const [precoReais, setPrecoReais] = useState("");
   const [precoOriginalReais, setPrecoOriginalReais] = useState("");
   const [descontoPct, setDescontoPct] = useState("");
-  const [badgeDestaque, setBadgeDestaque] = useState(false);
-  const [badgeMaisVendido, setBadgeMaisVendido] = useState(false);
+  const [badges, setBadges] = useState<string[]>([]);
   const [destaque, setDestaque] = useState(false);
   const [ativo, setAtivo] = useState(true);
   const [ordem, setOrdem] = useState("0");
