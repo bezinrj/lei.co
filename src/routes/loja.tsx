@@ -851,11 +851,11 @@ function ProdutoForm({
           </Button>
           <Button
             onClick={salvar}
-            disabled={saving}
+            disabled={saveMutation.isPending}
             style={{ background: "#1D9E75" }}
             className="text-white hover:opacity-90"
           >
-            {saving ? "Salvando..." : "Salvar"}
+            {saveMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>
