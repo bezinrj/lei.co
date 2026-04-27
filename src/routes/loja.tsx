@@ -102,32 +102,28 @@ function corFundoCategoria(cat: Categoria | null): string {
 function LojaPage() {
   const { roles } = useAuth();
   const isAdmin = roles.includes("admin");
+  const queryClient = useQueryClient();
 
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<"todos" | Categoria>("todos");
   const [editing, setEditing] = useState<Produto | null>(null);
   const [openForm, setOpenForm] = useState(false);
 
-  async function carregar() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("loja_produtos")
-      .select("*")
-      .order("destaque", { ascending: false })
-      .order("ordem", { ascending: true })
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast.error("Erro ao carregar produtos");
-    } else {
-      setProdutos((data ?? []) as Produto[]);
-    }
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    carregar();
-  }, []);
+  const { data: produtos = [], isLoading: loading } = useQuery({
+    queryKey: ["loja"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("loja_produtos")
+        .select("*")
+        .order("destaque", { ascending: false })
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) {
+        toast.error("Erro ao carregar produtos");
+        throw error;
+      }
+      return (data ?? []) as Produto[];
+    },
+  });
 
   const destaque = useMemo(
     () => produtos.find((p) => p.destaque && p.ativo) ?? null,
@@ -151,15 +147,21 @@ function LojaPage() {
     setOpenForm(true);
   }
 
-  async function excluir(id: string) {
+  const excluirMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("loja_produtos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loja"] });
+      toast.success("Produto excluído");
+    },
+    onError: () => toast.error("Erro ao excluir"),
+  });
+
+  function excluir(id: string) {
     if (!confirm("Excluir este produto?")) return;
-    const { error } = await supabase.from("loja_produtos").delete().eq("id", id);
-    if (error) {
-      toast.error("Erro ao excluir");
-      return;
-    }
-    toast.success("Produto excluído");
-    carregar();
+    excluirMutation.mutate(id);
   }
 
   return (
