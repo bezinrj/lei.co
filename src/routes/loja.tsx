@@ -660,41 +660,45 @@ function ProdutoForm({
     );
   }
 
-  async function salvar() {
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        nome: nome.trim(),
+        descricao: descricao.trim() || null,
+        categoria,
+        link_externo: linkExterno.trim(),
+        imagem_url: imagemUrl.trim() || null,
+        preco_centavos: precoReais
+          ? Math.round(parseFloat(precoReais.replace(",", ".")) * 100)
+          : null,
+        preco_original_centavos: precoOriginalReais
+          ? Math.round(parseFloat(precoOriginalReais.replace(",", ".")) * 100)
+          : null,
+        desconto_pct: descontoPct ? parseInt(descontoPct, 10) : null,
+        badges,
+        destaque,
+        ativo,
+        ordem: parseInt(ordem, 10) || 0,
+      };
+      const { error } = produto
+        ? await supabase.from("loja_produtos").update(payload).eq("id", produto.id)
+        : await supabase.from("loja_produtos").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loja"] });
+      toast.success(produto ? "Produto atualizado" : "Produto criado");
+      onSaved();
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao salvar produto"),
+  });
+
+  function salvar() {
     if (!nome.trim() || !linkExterno.trim()) {
       toast.error("Nome e link são obrigatórios");
       return;
     }
-    setSaving(true);
-
-    const payload = {
-      nome: nome.trim(),
-      descricao: descricao.trim() || null,
-      categoria,
-      link_externo: linkExterno.trim(),
-      imagem_url: imagemUrl.trim() || null,
-      preco_centavos: precoReais ? Math.round(parseFloat(precoReais) * 100) : null,
-      preco_original_centavos: precoOriginalReais
-        ? Math.round(parseFloat(precoOriginalReais) * 100)
-        : null,
-      desconto_pct: descontoPct ? parseInt(descontoPct, 10) : null,
-      badges,
-      destaque,
-      ativo,
-      ordem: parseInt(ordem, 10) || 0,
-    };
-
-    const { error } = produto
-      ? await supabase.from("loja_produtos").update(payload).eq("id", produto.id)
-      : await supabase.from("loja_produtos").insert(payload);
-
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success(produto ? "Produto atualizado" : "Produto criado");
-    onSaved();
+    saveMutation.mutate();
   }
 
   return (
