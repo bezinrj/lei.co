@@ -453,8 +453,9 @@ function ProdutoCard({
     >
       {/* Imagem com badges sobrepostos */}
       <div
-        className="relative h-[140px] flex items-center justify-center text-[36px]"
+        className="relative flex w-full items-center justify-center overflow-hidden text-[36px]"
         style={{
+          aspectRatio: "1 / 1",
           background: produto.imagem_url
             ? `url(${produto.imagem_url}) center/cover`
             : corFundoCategoria(produto.categoria),
