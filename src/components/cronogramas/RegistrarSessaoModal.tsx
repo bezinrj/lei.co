@@ -129,15 +129,15 @@ export function RegistrarSessaoModal({
         if (!l) continue;
         const q = parseInt(l.questoes, 10) || 0;
         const a = parseInt(l.acertos, 10) || 0;
-        const pct = q > 0 ? Math.round((Math.min(a, q) / q) * 100) : 0;
+        const pct = q > 0 ? Math.round((Math.min(a, q) / q) * 100) : null;
 
         if (ev.topico_id) {
           await supabase.from("user_sessions").insert({
             user_id: userId,
             topico_id: ev.topico_id,
             tempo_estudado: l.tempo,
-            questoes: q,
-            acertos: a,
+            questoes: q > 0 ? q : null,
+            acertos: q > 0 ? a : null,
             percentual_acerto: pct,
           });
         }
