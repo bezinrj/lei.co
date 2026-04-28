@@ -61,7 +61,8 @@ export function SubjectPerformance() {
            cronograma_topicos!inner(titulo, assunto,
              cronograma_materias!inner(nome, cor))`,
         )
-        .eq("user_id", user!.id);
+        .eq("user_id", user!.id)
+        .not("percentual_acerto", "is", null);
 
       const hoje = new Date();
       if (periodo === "semana") {
