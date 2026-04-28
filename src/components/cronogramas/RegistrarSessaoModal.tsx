@@ -333,6 +333,11 @@ export function RegistrarSessaoModal({
                     </span>
                   </div>
                 )}
+                {pct === null && (
+                  <div style={{ fontSize: 10, color: "#9ca3af", fontStyle: "italic" }}>
+                    Sem questões registradas — desempenho não será calculado
+                  </div>
+                )}
 
                 {linksSug.length > 0 && (
                   <div>
