@@ -415,9 +415,9 @@ export const getAdminUserReport = createServerFn({ method: "POST" })
         materia: m?.nome ?? "—",
         topico: t?.titulo ?? "—",
         tempo: s.tempo_estudado ?? "—",
-        questoes: s.questoes,
-        acertos: s.acertos,
-        pct: s.percentual_acerto,
+        questoes: s.questoes ?? 0,
+        acertos: s.acertos ?? 0,
+        pct: s.percentual_acerto ?? 0,
       };
     });
 
