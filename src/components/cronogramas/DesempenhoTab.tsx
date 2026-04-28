@@ -58,7 +58,8 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
       const { data: all } = await supabase
         .from("user_sessions")
         .select("id, topico_id, percentual_acerto, questoes, acertos, data, user_id")
-        .in("topico_id", allTopicoIds);
+        .in("topico_id", allTopicoIds)
+        .not("percentual_acerto", "is", null);
       if (cancelled) return;
       const rows = (all ?? []) as SessionRow[];
       setAllSessions(rows);
