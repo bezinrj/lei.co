@@ -811,34 +811,34 @@ export type Database = {
       }
       user_sessions: {
         Row: {
-          acertos: number
+          acertos: number | null
           created_at: string
           data: string
           id: string
-          percentual_acerto: number
-          questoes: number
+          percentual_acerto: number | null
+          questoes: number | null
           tempo_estudado: string | null
           topico_id: string
           user_id: string
         }
         Insert: {
-          acertos?: number
+          acertos?: number | null
           created_at?: string
           data?: string
           id?: string
-          percentual_acerto?: number
-          questoes?: number
+          percentual_acerto?: number | null
+          questoes?: number | null
           tempo_estudado?: string | null
           topico_id: string
           user_id: string
         }
         Update: {
-          acertos?: number
+          acertos?: number | null
           created_at?: string
           data?: string
           id?: string
-          percentual_acerto?: number
-          questoes?: number
+          percentual_acerto?: number | null
+          questoes?: number | null
           tempo_estudado?: string | null
           topico_id?: string
           user_id?: string
