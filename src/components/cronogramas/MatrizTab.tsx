@@ -151,6 +151,12 @@ export function MatrizTab({
       .eq("user_id", userId)
       .eq("topico_id", topicoId);
 
+    if (novoValor) {
+      const r = await concederXP(userId, "topico_concluido");
+      if (r.xp_ganho > 0) toast.success(`+${r.xp_ganho} XP`);
+      if (r.levelUp) toast.success(`Subiu para o nível ${r.nivel_novo}!`);
+    }
+
     onChange();
   }
 
