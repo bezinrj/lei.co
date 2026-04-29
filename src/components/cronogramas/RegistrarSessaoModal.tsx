@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getCorMateriaPastel } from "@/lib/materia-color";
+import { concederXP } from "@/lib/xp";
 import type { Fonte } from "./NovoTopicoForm";
+
+function tempoParaHoras(hms: string): number {
+  const [h = "0", m = "0", s = "0"] = hms.split(":");
+  return (Number(h) || 0) + (Number(m) || 0) / 60 + (Number(s) || 0) / 3600;
+}
 
 export type SessaoEvento = {
   id: string;
