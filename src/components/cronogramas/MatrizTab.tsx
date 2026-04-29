@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getCorMateriaPastel, type MateriaPastel } from "@/lib/materia-color";
+import { concederXP } from "@/lib/xp";
 import { NovoTopicoForm, type Fonte, type TopicoEditavel } from "./NovoTopicoForm";
 
 export type MatrizTopico = {
