@@ -365,6 +365,235 @@ export type Database = {
         }
         Relationships: []
       }
+      grupo_atividades: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          grupo_id: string
+          id: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          grupo_id: string
+          id?: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          grupo_id?: string
+          id?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupo_atividades_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grupo_desafios: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          criado_por: string
+          descricao: string | null
+          grupo_id: string
+          id: string
+          prazo: string
+          titulo: string
+          xp_recompensa: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          criado_por: string
+          descricao?: string | null
+          grupo_id: string
+          id?: string
+          prazo: string
+          titulo: string
+          xp_recompensa?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          criado_por?: string
+          descricao?: string | null
+          grupo_id?: string
+          id?: string
+          prazo?: string
+          titulo?: string
+          xp_recompensa?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupo_desafios_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grupo_desafios_membros: {
+        Row: {
+          concluido_em: string
+          desafio_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          concluido_em?: string
+          desafio_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          concluido_em?: string
+          desafio_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupo_desafios_membros_desafio_id_fkey"
+            columns: ["desafio_id"]
+            isOneToOne: false
+            referencedRelation: "grupo_desafios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grupo_membros: {
+        Row: {
+          grupo_id: string
+          id: string
+          joined_at: string
+          privacidade_acerto: boolean
+          privacidade_horas: boolean
+          privacidade_questoes: boolean
+          role: string
+          user_id: string
+        }
+        Insert: {
+          grupo_id: string
+          id?: string
+          joined_at?: string
+          privacidade_acerto?: boolean
+          privacidade_horas?: boolean
+          privacidade_questoes?: boolean
+          role?: string
+          user_id: string
+        }
+        Update: {
+          grupo_id?: string
+          id?: string
+          joined_at?: string
+          privacidade_acerto?: boolean
+          privacidade_horas?: boolean
+          privacidade_questoes?: boolean
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupo_membros_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grupo_metas: {
+        Row: {
+          concluida: boolean
+          created_at: string
+          fim: string
+          grupo_id: string
+          id: string
+          inicio: string
+          tipo: string
+          valor_alvo: number
+          valor_atual: number
+        }
+        Insert: {
+          concluida?: boolean
+          created_at?: string
+          fim: string
+          grupo_id: string
+          id?: string
+          inicio?: string
+          tipo: string
+          valor_alvo: number
+          valor_atual?: number
+        }
+        Update: {
+          concluida?: boolean
+          created_at?: string
+          fim?: string
+          grupo_id?: string
+          id?: string
+          inicio?: string
+          tipo?: string
+          valor_alvo?: number
+          valor_atual?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupo_metas_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grupos: {
+        Row: {
+          codigo_convite: string
+          created_at: string
+          criado_por: string
+          descricao: string | null
+          foto_url: string | null
+          id: string
+          max_membros: number
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          codigo_convite: string
+          created_at?: string
+          criado_por: string
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string
+          max_membros?: number
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          codigo_convite?: string
+          created_at?: string
+          criado_por?: string
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string
+          max_membros?: number
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loja_produtos: {
         Row: {
           ativo: boolean
@@ -894,6 +1123,57 @@ export type Database = {
           },
         ]
       }
+      user_xp: {
+        Row: {
+          id: string
+          nivel: number
+          updated_at: string
+          user_id: string
+          xp_total: number
+        }
+        Insert: {
+          id?: string
+          nivel?: number
+          updated_at?: string
+          user_id: string
+          xp_total?: number
+        }
+        Update: {
+          id?: string
+          nivel?: number
+          updated_at?: string
+          user_id?: string
+          xp_total?: number
+        }
+        Relationships: []
+      }
+      user_xp_diario: {
+        Row: {
+          data: string
+          horas_computadas: number
+          id: string
+          questoes_computadas: number
+          user_id: string
+          xp_ganho: number
+        }
+        Insert: {
+          data?: string
+          horas_computadas?: number
+          id?: string
+          questoes_computadas?: number
+          user_id: string
+          xp_ganho?: number
+        }
+        Update: {
+          data?: string
+          horas_computadas?: number
+          id?: string
+          questoes_computadas?: number
+          user_id?: string
+          xp_ganho?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -912,6 +1192,14 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_grupo_fundador: {
+        Args: { _grupo_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_grupo_membro: {
+        Args: { _grupo_id: string; _user_id: string }
         Returns: boolean
       }
       move_to_dlq: {
