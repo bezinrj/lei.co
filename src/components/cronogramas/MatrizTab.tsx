@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getCorMateriaPastel, type MateriaPastel } from "@/lib/materia-color";
+import { concederXP } from "@/lib/xp";
 import { NovoTopicoForm, type Fonte, type TopicoEditavel } from "./NovoTopicoForm";
 
 export type MatrizTopico = {
@@ -149,6 +150,12 @@ export function MatrizTab({
       .update({ concluido: novoValor })
       .eq("user_id", userId)
       .eq("topico_id", topicoId);
+
+    if (novoValor) {
+      const r = await concederXP(userId, "topico_concluido");
+      if (r.xp_ganho > 0) toast.success(`+${r.xp_ganho} XP`);
+      if (r.levelUp) toast.success(`Subiu para o nível ${r.nivel_novo}!`);
+    }
 
     onChange();
   }

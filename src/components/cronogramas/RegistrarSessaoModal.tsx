@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getCorMateriaPastel } from "@/lib/materia-color";
+import { concederXP } from "@/lib/xp";
 import type { Fonte } from "./NovoTopicoForm";
+
+function tempoParaHoras(hms: string): number {
+  const [h = "0", m = "0", s = "0"] = hms.split(":");
+  return (Number(h) || 0) + (Number(m) || 0) / 60 + (Number(s) || 0) / 3600;
+}
 
 export type SessaoEvento = {
   id: string;
@@ -124,6 +130,9 @@ export function RegistrarSessaoModal({
   async function handleSave() {
     setSaving(true);
     try {
+      const xpToasts: string[] = [];
+      const ganhos: { tipo: string; xp: number }[] = [];
+
       for (const ev of eventosPendentes) {
         const l = linhas[ev.id];
         if (!l) continue;
@@ -142,6 +151,14 @@ export function RegistrarSessaoModal({
           });
         }
 
+        // Lookup do evento para saber se é revisão
+        const { data: evRow } = await supabase
+          .from("user_calendar_events")
+          .select("is_revisao")
+          .eq("id", ev.id)
+          .maybeSingle();
+        const isRevisao = !!evRow?.is_revisao;
+
         await supabase
           .from("user_calendar_events")
           .update({ concluido: l.concluido })
@@ -158,9 +175,48 @@ export function RegistrarSessaoModal({
             { onConflict: "user_id,topico_id" } as never,
           );
         }
+
+        // ===== XP =====
+        const horas = tempoParaHoras(l.tempo);
+        if (horas > 0) {
+          const r = await concederXP(userId, "horas", { horas });
+          if (r.xp_ganho > 0) ganhos.push({ tipo: "horas", xp: r.xp_ganho });
+          if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
+        }
+        if (q > 0) {
+          const r = await concederXP(userId, "questoes", { questoes: q });
+          if (r.xp_ganho > 0) ganhos.push({ tipo: "questões", xp: r.xp_ganho });
+          if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
+        }
+        if (pct !== null) {
+          if (pct >= 90) {
+            const r = await concederXP(userId, "bonus_acerto_90");
+            if (r.xp_ganho > 0) ganhos.push({ tipo: "acerto 90%+", xp: r.xp_ganho });
+            if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
+          } else if (pct >= 70) {
+            const r = await concederXP(userId, "bonus_acerto_70");
+            if (r.xp_ganho > 0) ganhos.push({ tipo: "acerto 70%+", xp: r.xp_ganho });
+            if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
+          }
+        }
+        if (isRevisao && l.concluido && pct !== null && pct >= 60) {
+          const r = await concederXP(userId, "revisao_60");
+          if (r.xp_ganho > 0) ganhos.push({ tipo: "revisão", xp: r.xp_ganho });
+          if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
+        }
+        if (ev.topico_id && l.concluido && !isRevisao) {
+          const r = await concederXP(userId, "topico_concluido");
+          if (r.xp_ganho > 0) ganhos.push({ tipo: "tópico", xp: r.xp_ganho });
+          if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
+        }
       }
+
       clearTimerLS();
-      toast.success("Sessão registrada");
+      const totalXP = ganhos.reduce((s, g) => s + g.xp, 0);
+      toast.success(
+        totalXP > 0 ? `Sessão registrada • +${totalXP} XP` : "Sessão registrada",
+      );
+      xpToasts.forEach((m) => toast.success(m));
       onOpenChange(false);
       onSaved();
     } catch (err) {
