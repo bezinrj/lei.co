@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { maskPhoneBR } from "@/lib/phone-mask";
+import { getNivelInfo, getXpProximoNivel } from "@/lib/xp";
 
 type Profile = {
   id: string;
@@ -85,6 +86,7 @@ function PerfilPage() {
     mediaAcerto: 0,
     cronogramasAtivos: 0,
   });
+  const [userXP, setUserXP] = useState<{ xp_total: number; nivel: number }>({ xp_total: 0, nivel: 0 });
   const [loading, setLoading] = useState(true);
 
   const [editingName, setEditingName] = useState(false);
@@ -110,6 +112,7 @@ function PerfilPage() {
         ativacaoRes,
         eventosRes,
         sessoesRes,
+        xpRes,
       ] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
         supabase.from("badges").select("*").order("ordem"),
@@ -129,9 +132,21 @@ function PerfilPage() {
           .from("user_sessions")
           .select("tempo_estudado, questoes, acertos")
           .eq("user_id", user.id),
+        supabase
+          .from("user_xp")
+          .select("xp_total, nivel")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
 
       if (!mounted) return;
+
+      if (xpRes.data) {
+        setUserXP({
+          xp_total: Number(xpRes.data.xp_total ?? 0),
+          nivel: Number(xpRes.data.nivel ?? 0),
+        });
+      }
 
       if (profileRes.data) {
         const p = profileRes.data as Profile;
@@ -449,6 +464,46 @@ function PerfilPage() {
                   </button>
                 </>
               )}
+            </div>
+
+            {/* Nível e XP */}
+            <div className="mt-2 w-full flex flex-col items-center">
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "6px" }}>
+                <span style={{ background: "#E8F0E5", color: "#7A9A70", borderRadius: "20px", padding: "3px 10px", fontSize: "11px", fontWeight: 500 }}>
+                  {getNivelInfo(userXP.nivel).nome}
+                </span>
+                <span style={{ fontSize: "11px", color: "#8A8478" }}>
+                  {userXP.xp_total.toLocaleString("pt-BR")} XP
+                </span>
+              </div>
+              {(() => {
+                const prog = getXpProximoNivel(userXP.xp_total, userXP.nivel);
+                if (!prog) {
+                  return (
+                    <div style={{ marginTop: "8px", fontSize: "10px", color: "#8A8478", fontStyle: "italic" }}>
+                      Nível máximo atingido
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ marginTop: "8px", width: "100%", maxWidth: "260px" }}>
+                    <div style={{ fontSize: "10px", color: "#8A8478", marginBottom: "4px", textAlign: "center" }}>
+                      {prog.xp_faltando.toLocaleString("pt-BR")} XP para {getNivelInfo(userXP.nivel + 1).nome}
+                    </div>
+                    <div style={{ background: "#F7F4EE", borderRadius: "20px", height: "6px", overflow: "hidden" }}>
+                      <div
+                        style={{
+                          width: `${prog.progresso}%`,
+                          height: "100%",
+                          borderRadius: "20px",
+                          background: "#B8C9B0",
+                          transition: "width 0.4s ease",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
