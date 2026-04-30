@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { maskPhoneBR } from "@/lib/phone-mask";
+import { getNivelInfo, getXpProximoNivel, NIVEL_MAX } from "@/lib/xp";
 
 type Profile = {
   id: string;
