@@ -112,6 +112,7 @@ function PerfilPage() {
         ativacaoRes,
         eventosRes,
         sessoesRes,
+        xpRes,
       ] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
         supabase.from("badges").select("*").order("ordem"),
@@ -131,9 +132,21 @@ function PerfilPage() {
           .from("user_sessions")
           .select("tempo_estudado, questoes, acertos")
           .eq("user_id", user.id),
+        supabase
+          .from("user_xp")
+          .select("xp_total, nivel")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
 
       if (!mounted) return;
+
+      if (xpRes.data) {
+        setUserXP({
+          xp_total: Number(xpRes.data.xp_total ?? 0),
+          nivel: Number(xpRes.data.nivel ?? 0),
+        });
+      }
 
       if (profileRes.data) {
         const p = profileRes.data as Profile;
