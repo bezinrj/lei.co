@@ -20,6 +20,7 @@ import { Route as CronogramasRouteImport } from './routes/cronogramas'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GruposIdRouteImport } from './routes/grupos.$id'
 import { Route as CronogramaIdRouteImport } from './routes/cronograma.$id'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe.webhook'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -81,6 +82,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GruposIdRoute = GruposIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => GruposRoute,
+} as any)
 const CronogramaIdRoute = CronogramaIdRouteImport.update({
   id: '/cronograma/$id',
   path: '/cronograma/$id',
@@ -114,13 +120,14 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
-  '/grupos': typeof GruposRoute
+  '/grupos': typeof GruposRouteWithChildren
   '/loja': typeof LojaRoute
   '/medalhas': typeof MedalhasRoute
   '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
+  '/grupos/$id': typeof GruposIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -132,13 +139,14 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
-  '/grupos': typeof GruposRoute
+  '/grupos': typeof GruposRouteWithChildren
   '/loja': typeof LojaRoute
   '/medalhas': typeof MedalhasRoute
   '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
+  '/grupos/$id': typeof GruposIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -151,13 +159,14 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
-  '/grupos': typeof GruposRoute
+  '/grupos': typeof GruposRouteWithChildren
   '/loja': typeof LojaRoute
   '/medalhas': typeof MedalhasRoute
   '/meu-plano': typeof MeuPlanoRoute
   '/perfil': typeof PerfilRoute
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
+  '/grupos/$id': typeof GruposIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/ranking'
     | '/cronograma/$id'
+    | '/grupos/$id'
     | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/ranking'
     | '/cronograma/$id'
+    | '/grupos/$id'
     | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/ranking'
     | '/cronograma/$id'
+    | '/grupos/$id'
     | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -226,7 +238,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CronogramasRoute: typeof CronogramasRoute
   DashboardRoute: typeof DashboardRoute
-  GruposRoute: typeof GruposRoute
+  GruposRoute: typeof GruposRouteWithChildren
   LojaRoute: typeof LojaRoute
   MedalhasRoute: typeof MedalhasRoute
   MeuPlanoRoute: typeof MeuPlanoRoute
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/grupos/$id': {
+      id: '/grupos/$id'
+      path: '/$id'
+      fullPath: '/grupos/$id'
+      preLoaderRoute: typeof GruposIdRouteImport
+      parentRoute: typeof GruposRoute
+    }
     '/cronograma/$id': {
       id: '/cronograma/$id'
       path: '/cronograma/$id'
@@ -356,13 +375,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface GruposRouteChildren {
+  GruposIdRoute: typeof GruposIdRoute
+}
+
+const GruposRouteChildren: GruposRouteChildren = {
+  GruposIdRoute: GruposIdRoute,
+}
+
+const GruposRouteWithChildren =
+  GruposRoute._addFileChildren(GruposRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CronogramasRoute: CronogramasRoute,
   DashboardRoute: DashboardRoute,
-  GruposRoute: GruposRoute,
+  GruposRoute: GruposRouteWithChildren,
   LojaRoute: LojaRoute,
   MedalhasRoute: MedalhasRoute,
   MeuPlanoRoute: MeuPlanoRoute,

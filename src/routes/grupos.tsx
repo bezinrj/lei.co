@@ -158,7 +158,8 @@ function GruposPage() {
             return (
               <Link
                 key={g.id}
-                to="/grupos"
+                to="/grupos/$id"
+                params={{ id: g.id }}
                 className="lei-card p-0 overflow-hidden hover:shadow-md transition-shadow flex flex-col"
               >
                 <div
