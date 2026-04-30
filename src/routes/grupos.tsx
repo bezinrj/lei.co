@@ -181,15 +181,17 @@ function GruposPage() {
                       {g.codigo_convite}
                     </span>
                   </div>
+                  {g.descricao && (
                     <p className="text-[12px] text-text-muted line-clamp-2">
                       {g.descricao}
                     </p>
                   )}
-                  <div className="mt-auto pt-2 flex items-center justify-between text-[11px] text-text-muted">
+                  <div className="mt-auto pt-2 flex items-center justify-center gap-3 text-[11px] text-text-muted">
                     <span className="flex items-center gap-1">
                       <Users size={12} />
                       {g.membros_count} membro{g.membros_count !== 1 ? "s" : ""}
                     </span>
+                    <span>·</span>
                     <span>{niv.nome}</span>
                   </div>
                   <div className="text-[10px] text-text-muted">
