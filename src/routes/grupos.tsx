@@ -173,15 +173,14 @@ function GruposPage() {
                   }}
                 />
                 <div className="pt-3 flex-1 flex flex-col gap-2 w-full items-center">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-serif text-[15px] text-text-main truncate">
+                  <div className="flex flex-col items-center gap-1 w-full">
+                    <h3 className="font-serif text-[15px] text-text-main truncate max-w-full">
                       {g.nome}
                     </h3>
-                    <span className="text-[10px] text-text-muted font-mono shrink-0">
+                    <span className="text-[10px] text-text-muted font-mono">
                       {g.codigo_convite}
                     </span>
                   </div>
-                  {g.descricao && (
                     <p className="text-[12px] text-text-muted line-clamp-2">
                       {g.descricao}
                     </p>
