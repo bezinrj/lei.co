@@ -160,23 +160,24 @@ function GruposPage() {
                 key={g.id}
                 to="/grupos/$id"
                 params={{ id: g.id }}
-                className="lei-card p-0 overflow-hidden hover:shadow-md transition-shadow flex flex-col"
+                className="lei-card hover:shadow-md transition-shadow flex flex-col items-center text-center"
               >
                 <div
                   style={{
-                    width: "100%",
-                    aspectRatio: "16 / 9",
+                    width: "96px",
+                    height: "96px",
+                    borderRadius: "50%",
                     background: g.foto_url
                       ? `url(${g.foto_url}) center/cover`
                       : "linear-gradient(135deg, var(--sage), var(--lilac))",
                   }}
                 />
-                <div className="p-4 flex-1 flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-serif text-[15px] text-text-main truncate">
+                <div className="pt-3 flex-1 flex flex-col gap-2 w-full items-center">
+                  <div className="flex flex-col items-center gap-1 w-full">
+                    <h3 className="font-serif text-[15px] text-text-main truncate max-w-full">
                       {g.nome}
                     </h3>
-                    <span className="text-[10px] text-text-muted font-mono shrink-0">
+                    <span className="text-[10px] text-text-muted font-mono">
                       {g.codigo_convite}
                     </span>
                   </div>
@@ -185,11 +186,12 @@ function GruposPage() {
                       {g.descricao}
                     </p>
                   )}
-                  <div className="mt-auto pt-2 flex items-center justify-between text-[11px] text-text-muted">
+                  <div className="mt-auto pt-2 flex items-center justify-center gap-3 text-[11px] text-text-muted">
                     <span className="flex items-center gap-1">
                       <Users size={12} />
                       {g.membros_count} membro{g.membros_count !== 1 ? "s" : ""}
                     </span>
+                    <span>·</span>
                     <span>{niv.nome}</span>
                   </div>
                   <div className="text-[10px] text-text-muted">

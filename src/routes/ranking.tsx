@@ -238,7 +238,7 @@ function RankingPage() {
                     style={{
                       width: "40px",
                       height: "40px",
-                      borderRadius: "10px",
+                      borderRadius: "50%",
                       background: g.foto_url
                         ? `url(${g.foto_url}) center/cover`
                         : "linear-gradient(135deg, #A6B89A, #C9B6D6)",
