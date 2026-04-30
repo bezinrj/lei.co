@@ -160,18 +160,19 @@ function GruposPage() {
                 key={g.id}
                 to="/grupos/$id"
                 params={{ id: g.id }}
-                className="lei-card p-0 overflow-hidden hover:shadow-md transition-shadow flex flex-col"
+                className="lei-card hover:shadow-md transition-shadow flex flex-col items-center text-center"
               >
                 <div
                   style={{
-                    width: "100%",
-                    aspectRatio: "16 / 9",
+                    width: "96px",
+                    height: "96px",
+                    borderRadius: "50%",
                     background: g.foto_url
                       ? `url(${g.foto_url}) center/cover`
                       : "linear-gradient(135deg, var(--sage), var(--lilac))",
                   }}
                 />
-                <div className="p-4 flex-1 flex flex-col gap-2">
+                <div className="pt-3 flex-1 flex flex-col gap-2 w-full items-center">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-serif text-[15px] text-text-main truncate">
                       {g.nome}
