@@ -86,6 +86,7 @@ function PerfilPage() {
     mediaAcerto: 0,
     cronogramasAtivos: 0,
   });
+  const [userXP, setUserXP] = useState<{ xp_total: number; nivel: number }>({ xp_total: 0, nivel: 0 });
   const [loading, setLoading] = useState(true);
 
   const [editingName, setEditingName] = useState(false);
