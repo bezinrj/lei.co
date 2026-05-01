@@ -523,8 +523,10 @@ export type Database = {
           id: string
           inicio: string
           tipo: string
+          titulo: string | null
           valor_alvo: number
           valor_atual: number
+          xp_distribuido: boolean
         }
         Insert: {
           concluida?: boolean
@@ -534,8 +536,10 @@ export type Database = {
           id?: string
           inicio?: string
           tipo: string
+          titulo?: string | null
           valor_alvo: number
           valor_atual?: number
+          xp_distribuido?: boolean
         }
         Update: {
           concluida?: boolean
@@ -545,8 +549,10 @@ export type Database = {
           id?: string
           inicio?: string
           tipo?: string
+          titulo?: string | null
           valor_alvo?: number
           valor_atual?: number
+          xp_distribuido?: boolean
         }
         Relationships: [
           {

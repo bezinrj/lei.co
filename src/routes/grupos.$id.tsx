@@ -31,8 +31,10 @@ import {
   Flame,
   Crown,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
+import { GrupoSettingsDialog } from "@/components/grupos/GrupoSettingsDialog";
 
 export const Route = createFileRoute("/grupos/$id")({
   head: () => ({ meta: [{ title: "Grupo — Lei.co" }] }),
@@ -201,6 +203,7 @@ function GrupoDetailPage() {
   });
   const [loading, setLoading] = useState(true);
   const [openDesafio, setOpenDesafio] = useState(false);
+  const [openSettings, setOpenSettings] = useState(false);
 
   const isFundador = !!grupo && !!user && grupo.criado_por === user.id;
 
@@ -475,7 +478,17 @@ function GrupoDetailPage() {
             <span className="font-mono">{grupo.codigo_convite}</span>
           </p>
         </div>
-        {!isFundador && (
+        {isFundador ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOpenSettings(true)}
+            className="rounded-[10px]"
+          >
+            <Settings size={14} className="mr-1.5" />
+            Configurações
+          </Button>
+        ) : (
           <Button
             variant="outline"
             size="sm"
@@ -821,6 +834,16 @@ function GrupoDetailPage() {
         userId={user?.id ?? ""}
         onCreated={carregar}
       />
+
+      {isFundador && (
+        <GrupoSettingsDialog
+          open={openSettings}
+          onOpenChange={setOpenSettings}
+          grupo={grupo}
+          agregados={agregados}
+          onChange={carregar}
+        />
+      )}
     </AppShell>
   );
 }
