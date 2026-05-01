@@ -427,7 +427,7 @@ function GrupoDetailPage() {
         (m) => agora - new Date(m.joined_at).getTime() >= trintaDiasMs,
       );
       if (tem30dias) await concederBadge(user.id, "companheiro");
-
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agregados, user?.id, grupo?.id, loading]);
 
