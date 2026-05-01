@@ -286,6 +286,9 @@ function CriarGrupoDialog({
       });
       if (error) throw error;
 
+      // Badge "Fundador" — primeiro grupo criado
+      await concederBadge(user.id, "fundador");
+
       toast.success(`Grupo criado! Código: ${codigo}`);
       reset();
       onOpenChange(false);
