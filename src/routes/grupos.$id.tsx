@@ -19,6 +19,7 @@ import {
   getNivelInfo,
   XP_CONFIG,
   concederXP,
+  concederBadge,
 } from "@/lib/xp";
 import {
   ArrowLeft,
