@@ -478,7 +478,17 @@ function GrupoDetailPage() {
             <span className="font-mono">{grupo.codigo_convite}</span>
           </p>
         </div>
-        {!isFundador && (
+        {isFundador ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOpenSettings(true)}
+            className="rounded-[10px]"
+          >
+            <Settings size={14} className="mr-1.5" />
+            Configurações
+          </Button>
+        ) : (
           <Button
             variant="outline"
             size="sm"
