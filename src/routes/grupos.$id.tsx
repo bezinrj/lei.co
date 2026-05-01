@@ -203,6 +203,7 @@ function GrupoDetailPage() {
   });
   const [loading, setLoading] = useState(true);
   const [openDesafio, setOpenDesafio] = useState(false);
+  const [openSettings, setOpenSettings] = useState(false);
 
   const isFundador = !!grupo && !!user && grupo.criado_por === user.id;
 
