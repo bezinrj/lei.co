@@ -392,6 +392,34 @@ function GrupoDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
 
+  // Concessão automática de badges de grupo conforme metas
+  useEffect(() => {
+    if (!user || !grupo || loading) return;
+    (async () => {
+      // Meta Batida: qualquer meta padrão concluída
+      const algumaConcluida = METAS_PADRAO.some((meta) => {
+        let atual = 0;
+        if (meta.tipo === "horas") atual = agregados.horas_mes;
+        if (meta.tipo === "questoes") atual = agregados.questoes_semana;
+        if (meta.tipo === "topicos") atual = agregados.topicos_semana;
+        if (meta.tipo === "streak") atual = agregados.streak_grupo;
+        return atual >= meta.alvo;
+      });
+      if (algumaConcluida) await concederBadge(user.id, "meta_batida");
+
+      // Chama Coletiva: streak do grupo ≥ 7
+      if (agregados.streak_grupo >= 7) {
+        await concederBadge(user.id, "chama_coletiva");
+      }
+      // Grupo de Elite: streak do grupo ≥ 30
+      if (agregados.streak_grupo >= 30) {
+        await concederBadge(user.id, "grupo_elite");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agregados, user?.id, grupo?.id, loading]);
+
+
   async function sairDoGrupo() {
     if (!user || !grupo) return;
     if (!confirm(`Sair do grupo "${grupo.nome}"?`)) return;
