@@ -31,8 +31,10 @@ import {
   Flame,
   Crown,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
+import { GrupoSettingsDialog } from "@/components/grupos/GrupoSettingsDialog";
 
 export const Route = createFileRoute("/grupos/$id")({
   head: () => ({ meta: [{ title: "Grupo — Lei.co" }] }),
