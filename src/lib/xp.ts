@@ -242,3 +242,49 @@ export async function concederXP(
     xp_total: xp_novo,
   };
 }
+
+// =====================================================
+// CONCESSÃO DE BADGES (idempotente)
+// =====================================================
+
+/**
+ * Concede uma badge ao usuário se ainda não tiver. Retorna true se foi nova.
+ * Mostra toast quando desbloqueia.
+ */
+export async function concederBadge(
+  user_id: string,
+  badge_id: string,
+): Promise<boolean> {
+  const { data: existente } = await supabase
+    .from("user_badges")
+    .select("id")
+    .eq("user_id", user_id)
+    .eq("badge_id", badge_id)
+    .maybeSingle();
+
+  if (existente) return false;
+
+  const { error } = await supabase.from("user_badges").insert({
+    user_id,
+    badge_id,
+  });
+  if (error) {
+    console.error("Erro ao conceder badge", badge_id, error);
+    return false;
+  }
+
+  // Buscar dados da badge para o toast
+  const { data: badge } = await supabase
+    .from("badges")
+    .select("nome, icone")
+    .eq("id", badge_id)
+    .maybeSingle();
+
+  if (badge) {
+    const { toast } = await import("sonner");
+    toast.success(`${badge.icone} Badge desbloqueada: ${badge.nome}!`);
+  }
+
+  return true;
+}
+

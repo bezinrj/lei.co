@@ -19,6 +19,7 @@ import {
   getNivelInfo,
   XP_CONFIG,
   concederXP,
+  concederBadge,
 } from "@/lib/xp";
 import {
   ArrowLeft,
@@ -390,6 +391,46 @@ function GrupoDetailPage() {
     carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
+
+  // Concessão automática de badges de grupo conforme metas
+  useEffect(() => {
+    if (!user || !grupo || loading) return;
+    (async () => {
+      // Meta Batida: qualquer meta padrão concluída
+      const algumaConcluida = METAS_PADRAO.some((meta) => {
+        let atual = 0;
+        if (meta.tipo === "horas") atual = agregados.horas_mes;
+        if (meta.tipo === "questoes") atual = agregados.questoes_semana;
+        if (meta.tipo === "topicos") atual = agregados.topicos_semana;
+        if (meta.tipo === "streak") atual = agregados.streak_grupo;
+        return atual >= meta.alvo;
+      });
+      if (algumaConcluida) await concederBadge(user.id, "meta_batida");
+
+      // Chama Coletiva: streak do grupo ≥ 7
+      if (agregados.streak_grupo >= 7) {
+        await concederBadge(user.id, "chama_coletiva");
+      }
+      // Grupo de Elite: streak do grupo ≥ 30
+      if (agregados.streak_grupo >= 30) {
+        await concederBadge(user.id, "grupo_elite");
+      }
+
+      // Companheiro: 30 dias como membro de algum grupo
+      const { data: meusMembros } = await supabase
+        .from("grupo_membros")
+        .select("joined_at")
+        .eq("user_id", user.id);
+      const trintaDiasMs = 30 * 24 * 60 * 60 * 1000;
+      const agora = Date.now();
+      const tem30dias = (meusMembros ?? []).some(
+        (m) => agora - new Date(m.joined_at).getTime() >= trintaDiasMs,
+      );
+      if (tem30dias) await concederBadge(user.id, "companheiro");
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agregados, user?.id, grupo?.id, loading]);
+
 
   async function sairDoGrupo() {
     if (!user || !grupo) return;

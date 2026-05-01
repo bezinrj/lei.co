@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { concederBadge } from "@/lib/xp";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { calcularNivel, getNivelInfo } from "@/lib/xp";
@@ -284,6 +285,9 @@ function CriarGrupoDialog({
         criado_por: user.id,
       });
       if (error) throw error;
+
+      // Badge "Fundador" — primeiro grupo criado
+      await concederBadge(user.id, "fundador");
 
       toast.success(`Grupo criado! Código: ${codigo}`);
       reset();
