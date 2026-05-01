@@ -834,6 +834,16 @@ function GrupoDetailPage() {
         userId={user?.id ?? ""}
         onCreated={carregar}
       />
+
+      {isFundador && (
+        <GrupoSettingsDialog
+          open={openSettings}
+          onOpenChange={setOpenSettings}
+          grupo={grupo}
+          agregados={agregados}
+          onChange={carregar}
+        />
+      )}
     </AppShell>
   );
 }
