@@ -526,18 +526,19 @@ function CardCiclo({
             transition: "opacity 0.25s ease",
           }}
         >
-          {fontesSemLink.map((fonte, i) => {
-            const key = `${topico.id}:${fonte.sigla}`;
+          {fontesSemLink.map((fonte) => {
+            const origIdx = fonte._origIndex;
+            const key = `${topico.id}:${origIdx}`;
             const done = !!fonteProgresso[key];
             return (
               <label
-                key={i}
+                key={origIdx}
                 className="flex items-start gap-1.5 cursor-pointer"
               >
                 <input
                   type="checkbox"
                   checked={done}
-                  onChange={(e) => onToggleFonte(fonte.sigla, e.target.checked)}
+                  onChange={(e) => onToggleFonte(origIdx, fonte.sigla, e.target.checked)}
                   style={{ accentColor: cor.border, marginTop: 2, flexShrink: 0 }}
                 />
                 <span
