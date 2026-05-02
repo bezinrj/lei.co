@@ -384,7 +384,7 @@ type CardProps = {
   nota: string;
   canEdit: boolean;
   onToggle: (v: boolean) => void;
-  onToggleFonte: (sigla: string, v: boolean) => void;
+  onToggleFonte: (fonteIndex: number, sigla: string, v: boolean) => void;
   onNotaChange: (v: string) => void;
   onStartEdit: () => void;
   onDelete: () => void;
