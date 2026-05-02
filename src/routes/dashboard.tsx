@@ -19,6 +19,14 @@ type Stats = {
   desempenhosConsiderados: number;
 };
 
+function formatarHoras(h: number): string {
+  const horas = Math.floor(h);
+  const minutos = Math.round((h - horas) * 60);
+  if (minutos === 0) return `${horas}h`;
+  if (minutos === 60) return `${horas + 1}h`;
+  return `${horas}h ${minutos}min`;
+}
+
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
@@ -75,8 +83,12 @@ function DashboardPage() {
 
       const sessoes = sessoesRes.data ?? [];
       const horasTotais = sessoes.reduce((acc, s) => {
-        const [h, m] = (s.tempo_estudado ?? "0:0").split(":");
-        return acc + (parseInt(h, 10) || 0) + (parseInt(m, 10) || 0) / 60;
+        if (!s.tempo_estudado) return acc;
+        const partes = s.tempo_estudado.split(":").map((p) => parseInt(p, 10) || 0);
+        const h = partes[0] || 0;
+        const m = partes[1] || 0;
+        const sec = partes[2] || 0;
+        return acc + h + m / 60 + sec / 3600;
       }, 0);
       const totalQuestoes = sessoes.reduce((acc, s) => acc + (s.questoes ?? 0), 0);
 
@@ -115,7 +127,7 @@ function DashboardPage() {
       }
 
       setStats({
-        horasTotais: Math.round(horasTotais * 10) / 10,
+        horasTotais,
         sequenciaAtual,
         maiorSequencia: maior,
         totalQuestoes,
@@ -149,7 +161,7 @@ function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <MetricCard
           label="Horas estudadas"
-          value={`${stats.horasTotais}h`}
+          value={formatarHoras(stats.horasTotais)}
           hint="total registrado"
           tone="sage"
         />

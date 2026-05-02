@@ -32,8 +32,19 @@ type SessaoRow = {
 
 function parseHoras(tempo: string | null): number {
   if (!tempo) return 0;
-  const [h, m] = tempo.split(":");
-  return (parseInt(h, 10) || 0) + (parseInt(m, 10) || 0) / 60;
+  const partes = tempo.split(":").map((p) => parseInt(p, 10) || 0);
+  const h = partes[0] || 0;
+  const m = partes[1] || 0;
+  const s = partes[2] || 0;
+  return h + m / 60 + s / 3600;
+}
+
+function formatarHoras(h: number): string {
+  const horas = Math.floor(h);
+  const minutos = Math.round((h - horas) * 60);
+  if (minutos === 0) return `${horas}h`;
+  if (minutos === 60) return `${horas + 1}h`;
+  return `${horas}h ${minutos}min`;
 }
 
 function periodoLabel(p: Periodo): string {
@@ -100,7 +111,7 @@ export function SubjectPerformance() {
     return Object.entries(acc)
       .map(([nome, v]) => ({
         nome,
-        horas: parseFloat(v.horas.toFixed(1)),
+        horas: v.horas,
         pct_horas:
           totalHoras > 0 ? parseFloat(((v.horas / totalHoras) * 100).toFixed(1)) : 0,
         pct_acerto:
@@ -143,7 +154,7 @@ export function SubjectPerformance() {
     return Object.entries(acc)
       .map(([nome, v]) => ({
         nome,
-        horas: parseFloat(v.horas.toFixed(1)),
+        horas: v.horas,
         pct_acerto:
           v.questoes > 0 ? Math.round((v.acertos / v.questoes) * 100) : null,
         questoes: v.questoes,
@@ -315,7 +326,7 @@ export function SubjectPerformance() {
             <div className="mb-2">
               <div className="font-serif text-[28px] font-medium text-text-main leading-none">
                 {modo === "horas"
-                  ? `${totalHoras.toFixed(0)}h`
+                  ? formatarHoras(totalHoras)
                   : `${mediaAcerto}%`}
               </div>
               <div className="text-[11px] text-text-muted mt-1">
@@ -343,8 +354,8 @@ export function SubjectPerformance() {
                     <div className="text-[11px] text-text-muted">
                       {modo === "horas"
                         ? visao === "disciplinas"
-                          ? `${item.horas.toFixed(1)}h (${(item as (typeof disciplinas)[number]).pct_horas}%)`
-                          : `${item.horas.toFixed(1)}h`
+                          ? `${formatarHoras(item.horas)} (${(item as (typeof disciplinas)[number]).pct_horas}%)`
+                          : formatarHoras(item.horas)
                         : item.pct_acerto !== null
                           ? `${item.pct_acerto}% de acerto`
                           : "Sem questões"}
