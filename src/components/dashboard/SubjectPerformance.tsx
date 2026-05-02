@@ -32,8 +32,19 @@ type SessaoRow = {
 
 function parseHoras(tempo: string | null): number {
   if (!tempo) return 0;
-  const [h, m] = tempo.split(":");
-  return (parseInt(h, 10) || 0) + (parseInt(m, 10) || 0) / 60;
+  const partes = tempo.split(":").map((p) => parseInt(p, 10) || 0);
+  const h = partes[0] || 0;
+  const m = partes[1] || 0;
+  const s = partes[2] || 0;
+  return h + m / 60 + s / 3600;
+}
+
+function formatarHoras(h: number): string {
+  const horas = Math.floor(h);
+  const minutos = Math.round((h - horas) * 60);
+  if (minutos === 0) return `${horas}h`;
+  if (minutos === 60) return `${horas + 1}h`;
+  return `${horas}h ${minutos}min`;
 }
 
 function periodoLabel(p: Periodo): string {
