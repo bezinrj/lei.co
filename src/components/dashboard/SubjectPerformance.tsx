@@ -354,8 +354,8 @@ export function SubjectPerformance() {
                     <div className="text-[11px] text-text-muted">
                       {modo === "horas"
                         ? visao === "disciplinas"
-                          ? `${item.horas.toFixed(1)}h (${(item as (typeof disciplinas)[number]).pct_horas}%)`
-                          : `${item.horas.toFixed(1)}h`
+                          ? `${formatarHoras(item.horas)} (${(item as (typeof disciplinas)[number]).pct_horas}%)`
+                          : formatarHoras(item.horas)
                         : item.pct_acerto !== null
                           ? `${item.pct_acerto}% de acerto`
                           : "Sem questões"}
