@@ -75,8 +75,12 @@ function DashboardPage() {
 
       const sessoes = sessoesRes.data ?? [];
       const horasTotais = sessoes.reduce((acc, s) => {
-        const [h, m] = (s.tempo_estudado ?? "0:0").split(":");
-        return acc + (parseInt(h, 10) || 0) + (parseInt(m, 10) || 0) / 60;
+        if (!s.tempo_estudado) return acc;
+        const partes = s.tempo_estudado.split(":").map((p) => parseInt(p, 10) || 0);
+        const h = partes[0] || 0;
+        const m = partes[1] || 0;
+        const sec = partes[2] || 0;
+        return acc + h + m / 60 + sec / 3600;
       }, 0);
       const totalQuestoes = sessoes.reduce((acc, s) => acc + (s.questoes ?? 0), 0);
 
