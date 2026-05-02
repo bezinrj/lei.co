@@ -274,7 +274,7 @@ export function MatrizTab({
                   nota={notas[t.id] ?? ""}
                   canEdit={canEdit}
                   onToggle={(v) => toggleTopico(t.id, v)}
-                  onToggleFonte={(sigla, v) => toggleFonte(t.id, sigla, v)}
+                  onToggleFonte={(idx, sigla, v) => toggleFonte(t.id, idx, sigla, v)}
                   onNotaChange={(v) => handleNotaChange(t.id, v)}
                   onStartEdit={() =>
                     setEditingTopico({
