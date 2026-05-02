@@ -111,7 +111,7 @@ export function SubjectPerformance() {
     return Object.entries(acc)
       .map(([nome, v]) => ({
         nome,
-        horas: parseFloat(v.horas.toFixed(1)),
+        horas: v.horas,
         pct_horas:
           totalHoras > 0 ? parseFloat(((v.horas / totalHoras) * 100).toFixed(1)) : 0,
         pct_acerto:
