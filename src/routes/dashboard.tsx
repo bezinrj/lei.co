@@ -153,7 +153,7 @@ function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <MetricCard
           label="Horas estudadas"
-          value={`${stats.horasTotais}h`}
+          value={formatarHoras(stats.horasTotais)}
           hint="total registrado"
           tone="sage"
         />
