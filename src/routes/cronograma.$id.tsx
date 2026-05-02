@@ -126,12 +126,14 @@ function CronogramaDetail() {
 
         const { data: fps } = await supabase
           .from("user_fonte_progress")
-          .select("topico_id, sigla, concluido")
+          .select("topico_id, fonte_index, concluido")
           .eq("user_id", user.id)
           .in("topico_id", allTopicoIds);
         const fm: Record<string, boolean> = {};
         (fps ?? []).forEach((f) => {
-          fm[`${f.topico_id}:${f.sigla}`] = f.concluido;
+          if (f.fonte_index !== null && f.fonte_index !== undefined) {
+            fm[`${f.topico_id}:${f.fonte_index}`] = f.concluido;
+          }
         });
         setFonteProgresso(fm);
       } else {
