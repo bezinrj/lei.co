@@ -38,7 +38,7 @@ type Props = {
   topicos: MatrizTopico[];
   materias: { id: string; nome: string }[];
   progresso: Record<string, boolean>;
-  fonteProgresso: Record<string, boolean>; // key = `${topicoId}:${sigla}`
+  fonteProgresso: Record<string, boolean>; // key = `${topicoId}:${index}`
   canEdit: boolean;
   userId: string | null;
   onChange: () => void;
@@ -160,11 +160,22 @@ export function MatrizTab({
     onChange();
   }
 
-  async function toggleFonte(topicoId: string, sigla: string, novoValor: boolean) {
+  async function toggleFonte(
+    topicoId: string,
+    fonteIndex: number,
+    sigla: string,
+    novoValor: boolean,
+  ) {
     if (!userId) return toast.error("Faça login para marcar progresso");
     const { error } = await supabase.from("user_fonte_progress").upsert(
-      { user_id: userId, topico_id: topicoId, sigla, concluido: novoValor },
-      { onConflict: "user_id,topico_id,sigla" },
+      {
+        user_id: userId,
+        topico_id: topicoId,
+        fonte_index: fonteIndex,
+        sigla,
+        concluido: novoValor,
+      },
+      { onConflict: "user_id,topico_id,fonte_index" },
     );
     if (error) return toast.error(error.message);
     onChange();
@@ -263,7 +274,7 @@ export function MatrizTab({
                   nota={notas[t.id] ?? ""}
                   canEdit={canEdit}
                   onToggle={(v) => toggleTopico(t.id, v)}
-                  onToggleFonte={(sigla, v) => toggleFonte(t.id, sigla, v)}
+                  onToggleFonte={(idx, sigla, v) => toggleFonte(t.id, idx, sigla, v)}
                   onNotaChange={(v) => handleNotaChange(t.id, v)}
                   onStartEdit={() =>
                     setEditingTopico({
@@ -373,7 +384,7 @@ type CardProps = {
   nota: string;
   canEdit: boolean;
   onToggle: (v: boolean) => void;
-  onToggleFonte: (sigla: string, v: boolean) => void;
+  onToggleFonte: (fonteIndex: number, sigla: string, v: boolean) => void;
   onNotaChange: (v: string) => void;
   onStartEdit: () => void;
   onDelete: () => void;
@@ -416,13 +427,15 @@ function CardCiclo({
     padding: 12,
   };
 
-  const fontesSemLink = topico.fontes.filter(
-    (f) =>
-      !(f.link_questoes ||
-        (f.links_questoes && f.links_questoes.some((l) => !!l)) ||
-        f.link_dod ||
-        (f.links_dod && f.links_dod.some((l) => !!l))),
-  );
+  const fontesSemLink = topico.fontes
+    .map((f, idx) => ({ ...f, _origIndex: idx }))
+    .filter(
+      (f) =>
+        !(f.link_questoes ||
+          (f.links_questoes && f.links_questoes.some((l) => !!l)) ||
+          f.link_dod ||
+          (f.links_dod && f.links_dod.some((l) => !!l))),
+    );
   const linksQuestoes = topico.fontes.flatMap((f) => {
     const arr =
       f.links_questoes && f.links_questoes.length > 0
@@ -513,18 +526,19 @@ function CardCiclo({
             transition: "opacity 0.25s ease",
           }}
         >
-          {fontesSemLink.map((fonte, i) => {
-            const key = `${topico.id}:${fonte.sigla}`;
+          {fontesSemLink.map((fonte) => {
+            const origIdx = fonte._origIndex;
+            const key = `${topico.id}:${origIdx}`;
             const done = !!fonteProgresso[key];
             return (
               <label
-                key={i}
+                key={origIdx}
                 className="flex items-start gap-1.5 cursor-pointer"
               >
                 <input
                   type="checkbox"
                   checked={done}
-                  onChange={(e) => onToggleFonte(fonte.sigla, e.target.checked)}
+                  onChange={(e) => onToggleFonte(origIdx, fonte.sigla, e.target.checked)}
                   style={{ accentColor: cor.border, marginTop: 2, flexShrink: 0 }}
                 />
                 <span
