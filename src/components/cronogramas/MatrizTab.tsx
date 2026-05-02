@@ -160,11 +160,11 @@ export function MatrizTab({
     onChange();
   }
 
-  async function toggleFonte(topicoId: string, sigla: string, novoValor: boolean) {
+  async function toggleFonte(topicoId: string, fonteIndex: number, novoValor: boolean) {
     if (!userId) return toast.error("Faça login para marcar progresso");
     const { error } = await supabase.from("user_fonte_progress").upsert(
-      { user_id: userId, topico_id: topicoId, sigla, concluido: novoValor },
-      { onConflict: "user_id,topico_id,sigla" },
+      { user_id: userId, topico_id: topicoId, fonte_index: fonteIndex, concluido: novoValor },
+      { onConflict: "user_id,topico_id,fonte_index" },
     );
     if (error) return toast.error(error.message);
     onChange();
