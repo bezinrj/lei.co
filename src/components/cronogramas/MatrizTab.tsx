@@ -427,13 +427,15 @@ function CardCiclo({
     padding: 12,
   };
 
-  const fontesSemLink = topico.fontes.filter(
-    (f) =>
-      !(f.link_questoes ||
-        (f.links_questoes && f.links_questoes.some((l) => !!l)) ||
-        f.link_dod ||
-        (f.links_dod && f.links_dod.some((l) => !!l))),
-  );
+  const fontesSemLink = topico.fontes
+    .map((f, idx) => ({ ...f, _origIndex: idx }))
+    .filter(
+      (f) =>
+        !(f.link_questoes ||
+          (f.links_questoes && f.links_questoes.some((l) => !!l)) ||
+          f.link_dod ||
+          (f.links_dod && f.links_dod.some((l) => !!l))),
+    );
   const linksQuestoes = topico.fontes.flatMap((f) => {
     const arr =
       f.links_questoes && f.links_questoes.length > 0
