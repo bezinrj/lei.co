@@ -19,6 +19,14 @@ type Stats = {
   desempenhosConsiderados: number;
 };
 
+function formatarHoras(h: number): string {
+  const horas = Math.floor(h);
+  const minutos = Math.round((h - horas) * 60);
+  if (minutos === 0) return `${horas}h`;
+  if (minutos === 60) return `${horas + 1}h`;
+  return `${horas}h ${minutos}min`;
+}
+
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
