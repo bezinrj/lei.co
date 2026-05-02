@@ -119,7 +119,8 @@ function DashboardPage() {
         sequenciaAtual,
         maiorSequencia: maior,
         totalQuestoes,
-        mediaAcerto,
+        desempenhoAtual,
+        desempenhosConsiderados: desempenhos.length,
       });
       setBadgesCount({
         owned: userBadgesRes.count ?? 0,
