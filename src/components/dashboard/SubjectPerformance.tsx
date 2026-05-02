@@ -154,7 +154,7 @@ export function SubjectPerformance() {
     return Object.entries(acc)
       .map(([nome, v]) => ({
         nome,
-        horas: parseFloat(v.horas.toFixed(1)),
+        horas: v.horas,
         pct_acerto:
           v.questoes > 0 ? Math.round((v.acertos / v.questoes) * 100) : null,
         questoes: v.questoes,
