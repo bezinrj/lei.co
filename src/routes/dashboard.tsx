@@ -15,7 +15,8 @@ type Stats = {
   sequenciaAtual: number;
   maiorSequencia: number;
   totalQuestoes: number;
-  mediaAcerto: number;
+  desempenhoAtual: number | null;
+  desempenhosConsiderados: number;
 };
 
 export const Route = createFileRoute("/dashboard")({
