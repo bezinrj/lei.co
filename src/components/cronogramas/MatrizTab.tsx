@@ -38,7 +38,7 @@ type Props = {
   topicos: MatrizTopico[];
   materias: { id: string; nome: string }[];
   progresso: Record<string, boolean>;
-  fonteProgresso: Record<string, boolean>; // key = `${topicoId}:${sigla}`
+  fonteProgresso: Record<string, boolean>; // key = `${topicoId}:${index}`
   canEdit: boolean;
   userId: string | null;
   onChange: () => void;
