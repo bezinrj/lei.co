@@ -119,7 +119,7 @@ function DashboardPage() {
       }
 
       setStats({
-        horasTotais: Math.round(horasTotais * 10) / 10,
+        horasTotais,
         sequenciaAtual,
         maiorSequencia: maior,
         totalQuestoes,
