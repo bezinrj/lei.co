@@ -326,7 +326,7 @@ export function SubjectPerformance() {
             <div className="mb-2">
               <div className="font-serif text-[28px] font-medium text-text-main leading-none">
                 {modo === "horas"
-                  ? `${totalHoras.toFixed(0)}h`
+                  ? formatarHoras(totalHoras)
                   : `${mediaAcerto}%`}
               </div>
               <div className="text-[11px] text-text-muted mt-1">
