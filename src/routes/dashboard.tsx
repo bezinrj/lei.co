@@ -40,7 +40,8 @@ function DashboardPage() {
     sequenciaAtual: 0,
     maiorSequencia: 0,
     totalQuestoes: 0,
-    mediaAcerto: 0,
+    desempenhoAtual: null,
+    desempenhosConsiderados: 0,
   });
   const [badgesCount, setBadgesCount] = useState({ owned: 0, total: 0 });
   const [loading, setLoading] = useState(true);
