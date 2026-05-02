@@ -154,17 +154,9 @@ function DashboardPage() {
           tone="sage"
         />
         <MetricCard
-          label="Desempenho Atual"
-          value={
-            stats.desempenhoAtual !== null ? `${stats.desempenhoAtual}%` : "—"
-          }
-          hint={
-            stats.desempenhosConsiderados === 0
-              ? "registre um desempenho para começar"
-              : stats.desempenhosConsiderados < 3
-                ? "Média provisória calculada com base nos desempenhos concluídos"
-                : "Média calculada com base nos seus últimos 3 desempenhos"
-          }
+          label="Questões feitas"
+          value={`${stats.totalQuestoes}`}
+          hint="total registrado"
           tone="blush"
         />
         <MetricCard
