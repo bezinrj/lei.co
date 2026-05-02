@@ -926,6 +926,7 @@ export type Database = {
       user_fonte_progress: {
         Row: {
           concluido: boolean
+          fonte_index: number | null
           id: string
           sigla: string
           topico_id: string
@@ -934,6 +935,7 @@ export type Database = {
         }
         Insert: {
           concluido?: boolean
+          fonte_index?: number | null
           id?: string
           sigla: string
           topico_id: string
@@ -942,6 +944,7 @@ export type Database = {
         }
         Update: {
           concluido?: boolean
+          fonte_index?: number | null
           id?: string
           sigla?: string
           topico_id?: string
