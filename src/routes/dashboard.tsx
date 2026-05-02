@@ -65,8 +65,10 @@ function DashboardPage() {
           .order("data", { ascending: true }),
         supabase
           .from("user_sessions")
-          .select("tempo_estudado, questoes, acertos")
-          .eq("user_id", user.id),
+          .select("tempo_estudado, questoes, acertos, data, created_at")
+          .eq("user_id", user.id)
+          .order("data", { ascending: false })
+          .order("created_at", { ascending: false }),
       ]);
 
       if (!mounted) return;
@@ -77,9 +79,13 @@ function DashboardPage() {
         return acc + (parseInt(h, 10) || 0) + (parseInt(m, 10) || 0) / 60;
       }, 0);
       const totalQuestoes = sessoes.reduce((acc, s) => acc + (s.questoes ?? 0), 0);
-      const totalAcertos = sessoes.reduce((acc, s) => acc + (s.acertos ?? 0), 0);
-      const mediaAcerto =
-        totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
+
+      // Desempenho Atual: média ponderada das últimas 3 sessões com questões > 0
+      const desempenhos = sessoes.filter((s) => (s.questoes ?? 0) > 0).slice(0, 3);
+      const somaQ = desempenhos.reduce((a, s) => a + (s.questoes ?? 0), 0);
+      const somaA = desempenhos.reduce((a, s) => a + (s.acertos ?? 0), 0);
+      const desempenhoAtual =
+        somaQ > 0 ? Math.round((somaA / somaQ) * 1000) / 10 : null;
 
       const datas = Array.from(
         new Set((eventosRes.data ?? []).map((e) => e.data)),
