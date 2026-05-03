@@ -172,6 +172,8 @@ function CronogramaDetail() {
         ordem: t.ordem,
         horas_estimadas: t.horas_estimadas ?? 3,
         fontes: t.fontes ?? [],
+        doutrina: t.doutrina ?? [],
+        atencao: t.atencao ?? null,
         materia_id: m.id,
         materia_nome: m.nome,
         materia_cor: m.cor,
