@@ -567,6 +567,41 @@ function CardCiclo({
         </div>
       )}
 
+      {/* DOUTRINA */}
+      {topico.doutrina && topico.doutrina.length > 0 && (
+        <div
+          style={{
+            background: "#F7F4EE",
+            borderRadius: 8,
+            padding: "8px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 5,
+            opacity: concluido ? 0.5 : 1,
+            transition: "opacity 0.25s ease",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: "#8A8478",
+              letterSpacing: "0.8px",
+              textTransform: "uppercase",
+              marginBottom: 3,
+            }}
+          >
+            📖 Doutrina
+          </div>
+          {topico.doutrina.map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 5 }}>
+              <span style={{ color: "#B8C9B0", fontSize: 10, marginTop: 1, flexShrink: 0 }}>•</span>
+              <span style={{ fontSize: 11, color: "#374151", lineHeight: 1.5 }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* QUESTÕES */}
       {linksQuestoes.length > 0 && (
         <div
