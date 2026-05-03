@@ -28,6 +28,8 @@ export type MatrizTopico = {
   ordem: number;
   horas_estimadas: number;
   fontes: Fonte[];
+  doutrina: string[];
+  atencao: string | null;
   materia_id: string;
   materia_nome: string;
   materia_cor: string | null;
