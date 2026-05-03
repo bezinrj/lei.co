@@ -286,6 +286,8 @@ export function MatrizTab({
                       titulo: t.titulo,
                       horas_estimadas: t.horas_estimadas,
                       fontes: t.fontes,
+                      doutrina: t.doutrina,
+                      atencao: t.atencao,
                       ordem: t.ordem,
                       totalNaMateria: items.filter((x) => x.materia_id === t.materia_id).length,
                     })
