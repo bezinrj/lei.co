@@ -41,6 +41,8 @@ export type TopicoEditavel = {
   titulo: string;
   horas_estimadas: number;
   fontes: Fonte[];
+  doutrina?: string[];
+  atencao?: string | null;
   ordem?: number;
   totalNaMateria?: number;
 };
