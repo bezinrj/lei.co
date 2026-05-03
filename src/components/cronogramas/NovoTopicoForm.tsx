@@ -290,6 +290,8 @@ export function NovoTopicoForm({
           ordem: count ?? 0,
           horas_estimadas: horas,
           fontes: fontesClean,
+          doutrina: doutrinaClean,
+          atencao: atencaoClean,
         });
         if (error) throw error;
         resetForm();
