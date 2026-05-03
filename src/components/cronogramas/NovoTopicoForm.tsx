@@ -117,6 +117,10 @@ export function NovoTopicoForm({
       ? editing.fontes.map(normalizeFonteIn)
       : [emptyRow()],
   );
+  const [doutrinaItems, setDoutrinaItems] = useState<string[]>(
+    editing?.doutrina && editing.doutrina.length > 0 ? [...editing.doutrina] : [],
+  );
+  const [atencao, setAtencao] = useState<string>(editing?.atencao ?? "");
   const [saving, setSaving] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
