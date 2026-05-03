@@ -400,6 +400,77 @@ export function NovoTopicoForm({
         </DndContext>
       </div>
 
+      <div className="border-t border-border pt-3 mt-3">
+        <label className="text-[12px] font-medium text-text-main mb-2 block">
+          📖 Indicação de Doutrina
+        </label>
+        <div className="flex flex-col gap-1.5 mb-2">
+          {doutrinaItems.map((item, i) => (
+            <div key={i} className="flex gap-1.5">
+              <Input
+                value={item}
+                onChange={(e) => {
+                  const novo = [...doutrinaItems];
+                  novo[i] = e.target.value;
+                  setDoutrinaItems(novo);
+                }}
+                placeholder="Ex: Direito Constitucional Esquematizado — Pedro Lenza"
+                className="bg-background h-8 text-[12px]"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setDoutrinaItems((prev) => prev.filter((_, idx) => idx !== i))
+                }
+                style={{ background: "transparent", border: "none", color: "#E24B4A", cursor: "pointer", fontSize: 14, padding: "0 8px" }}
+                aria-label="Remover doutrina"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setDoutrinaItems((prev) => [...prev, ""])}
+          style={{
+            background: "transparent",
+            border: "1px dashed #e5e7eb",
+            borderRadius: 8,
+            padding: "5px 12px",
+            fontSize: 11,
+            color: "#8A8478",
+            cursor: "pointer",
+            width: "100%",
+          }}
+        >
+          + Adicionar doutrina
+        </button>
+      </div>
+
+      <div className="border-t border-border pt-3 mt-3">
+        <label className="text-[12px] font-medium text-text-main mb-2 block">
+          ⚠️ Quadro de Atenção
+        </label>
+        <textarea
+          value={atencao}
+          onChange={(e) => setAtencao(e.target.value)}
+          placeholder="Ex: Importante ler doutrina nessa fase inicial..."
+          style={{
+            width: "100%",
+            minHeight: 72,
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            padding: 8,
+            fontSize: 12,
+            background: "var(--background, #fff)",
+            resize: "vertical",
+            fontFamily: "inherit",
+            outline: "none",
+          }}
+        />
+      </div>
+
       <div className="flex justify-end gap-2 mt-4">
         {isEdit && onCancelEdit && (
           <Button variant="outline" onClick={onCancelEdit} disabled={saving}>
