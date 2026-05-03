@@ -183,6 +183,8 @@ export function NovoTopicoForm({
     setAssunto("");
     setHoras(3);
     setFontes([emptyRow()]);
+    setDoutrinaItems([]);
+    setAtencao("");
   }
 
   async function save() {
