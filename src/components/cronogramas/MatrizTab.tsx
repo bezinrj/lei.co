@@ -655,6 +655,36 @@ function CardCiclo({
         </div>
       )}
 
+      {/* ATENÇÃO */}
+      {topico.atencao && (
+        <div
+          style={{
+            background: "#FAEEDA",
+            borderRadius: 8,
+            padding: 10,
+            border: "1px solid #F0D5A0",
+            opacity: concluido ? 0.5 : 1,
+            transition: "opacity 0.25s ease",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: "#8A8478",
+              letterSpacing: "0.8px",
+              textTransform: "uppercase",
+              marginBottom: 5,
+            }}
+          >
+            ⚠️ Atenção
+          </div>
+          <div style={{ fontSize: 11, color: "#412402", lineHeight: 1.6 }}>
+            {topico.atencao}
+          </div>
+        </div>
+      )}
+
       {/* NOTAS */}
       <div className="flex flex-col gap-1">
         <div className="text-[9px] uppercase tracking-wider text-text-muted font-semibold">
