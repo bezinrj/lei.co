@@ -240,6 +240,9 @@ export function NovoTopicoForm({
           };
         });
 
+      const doutrinaClean = doutrinaItems.map((s) => s.trim()).filter(Boolean);
+      const atencaoClean = atencao.trim() || null;
+
       if (isEdit && editing) {
         const materiaChanged = materiaId !== editing.materia_id;
         const oldOrdem = editing.ordem ?? 0;
