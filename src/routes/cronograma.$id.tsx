@@ -38,6 +38,8 @@ type Materia = {
     ordem: number;
     horas_estimadas: number;
     fontes: Fonte[];
+    doutrina: string[];
+    atencao: string | null;
   }[];
 };
 
