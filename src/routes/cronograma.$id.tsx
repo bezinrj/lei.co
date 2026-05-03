@@ -38,6 +38,8 @@ type Materia = {
     ordem: number;
     horas_estimadas: number;
     fontes: Fonte[];
+    doutrina: string[];
+    atencao: string | null;
   }[];
 };
 
@@ -78,7 +80,7 @@ function CronogramaDetail() {
     const { data: matData } = await supabase
       .from("cronograma_materias")
       .select(
-        "id, nome, cor, ordem, cronograma_topicos(id, titulo, duracao_minutos, materia_id, ordem, horas_estimadas, fontes)",
+        "id, nome, cor, ordem, cronograma_topicos(id, titulo, duracao_minutos, materia_id, ordem, horas_estimadas, fontes, doutrina, atencao)",
       )
       .eq("cronograma_id", id)
       .order("ordem", { ascending: true });
@@ -96,6 +98,10 @@ function CronogramaDetail() {
           ordem: t.ordem,
           horas_estimadas: t.horas_estimadas ?? 3,
           fontes: (Array.isArray(t.fontes) ? t.fontes : []) as unknown as Fonte[],
+          doutrina: Array.isArray((t as { doutrina?: unknown }).doutrina)
+            ? ((t as { doutrina: string[] }).doutrina)
+            : [],
+          atencao: (t as { atencao?: string | null }).atencao ?? null,
         }))
         .sort((a, b) => a.ordem - b.ordem),
     }));
@@ -166,6 +172,8 @@ function CronogramaDetail() {
         ordem: t.ordem,
         horas_estimadas: t.horas_estimadas ?? 3,
         fontes: t.fontes ?? [],
+        doutrina: t.doutrina ?? [],
+        atencao: t.atencao ?? null,
         materia_id: m.id,
         materia_nome: m.nome,
         materia_cor: m.cor,

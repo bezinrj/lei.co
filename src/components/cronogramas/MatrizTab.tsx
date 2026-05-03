@@ -28,6 +28,8 @@ export type MatrizTopico = {
   ordem: number;
   horas_estimadas: number;
   fontes: Fonte[];
+  doutrina: string[];
+  atencao: string | null;
   materia_id: string;
   materia_nome: string;
   materia_cor: string | null;
@@ -284,6 +286,8 @@ export function MatrizTab({
                       titulo: t.titulo,
                       horas_estimadas: t.horas_estimadas,
                       fontes: t.fontes,
+                      doutrina: t.doutrina,
+                      atencao: t.atencao,
                       ordem: t.ordem,
                       totalNaMateria: items.filter((x) => x.materia_id === t.materia_id).length,
                     })
@@ -563,6 +567,41 @@ function CardCiclo({
         </div>
       )}
 
+      {/* DOUTRINA */}
+      {topico.doutrina && topico.doutrina.length > 0 && (
+        <div
+          style={{
+            background: "#F7F4EE",
+            borderRadius: 8,
+            padding: "8px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 5,
+            opacity: concluido ? 0.5 : 1,
+            transition: "opacity 0.25s ease",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: "#8A8478",
+              letterSpacing: "0.8px",
+              textTransform: "uppercase",
+              marginBottom: 3,
+            }}
+          >
+            📖 Doutrina
+          </div>
+          {topico.doutrina.map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 5 }}>
+              <span style={{ color: "#B8C9B0", fontSize: 10, marginTop: 1, flexShrink: 0 }}>•</span>
+              <span style={{ fontSize: 11, color: "#374151", lineHeight: 1.5 }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* QUESTÕES */}
       {linksQuestoes.length > 0 && (
         <div
@@ -612,6 +651,36 @@ function CardCiclo({
                 📖 {l.descricao || l.sigla || `DOD ${i + 1}`}
               </a>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ATENÇÃO */}
+      {topico.atencao && (
+        <div
+          style={{
+            background: "#FAEEDA",
+            borderRadius: 8,
+            padding: 10,
+            border: "1px solid #F0D5A0",
+            opacity: concluido ? 0.5 : 1,
+            transition: "opacity 0.25s ease",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: "#8A8478",
+              letterSpacing: "0.8px",
+              textTransform: "uppercase",
+              marginBottom: 5,
+            }}
+          >
+            ⚠️ Atenção
+          </div>
+          <div style={{ fontSize: 11, color: "#412402", lineHeight: 1.6 }}>
+            {topico.atencao}
           </div>
         </div>
       )}

@@ -41,6 +41,8 @@ export type TopicoEditavel = {
   titulo: string;
   horas_estimadas: number;
   fontes: Fonte[];
+  doutrina?: string[];
+  atencao?: string | null;
   ordem?: number;
   totalNaMateria?: number;
 };
@@ -115,6 +117,10 @@ export function NovoTopicoForm({
       ? editing.fontes.map(normalizeFonteIn)
       : [emptyRow()],
   );
+  const [doutrinaItems, setDoutrinaItems] = useState<string[]>(
+    editing?.doutrina && editing.doutrina.length > 0 ? [...editing.doutrina] : [],
+  );
+  const [atencao, setAtencao] = useState<string>(editing?.atencao ?? "");
   const [saving, setSaving] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
@@ -177,6 +183,8 @@ export function NovoTopicoForm({
     setAssunto("");
     setHoras(3);
     setFontes([emptyRow()]);
+    setDoutrinaItems([]);
+    setAtencao("");
   }
 
   async function save() {
@@ -232,6 +240,9 @@ export function NovoTopicoForm({
           };
         });
 
+      const doutrinaClean = doutrinaItems.map((s) => s.trim()).filter(Boolean);
+      const atencaoClean = atencao.trim() || null;
+
       if (isEdit && editing) {
         const materiaChanged = materiaId !== editing.materia_id;
         const oldOrdem = editing.ordem ?? 0;
@@ -244,6 +255,8 @@ export function NovoTopicoForm({
             titulo: assunto.trim(),
             horas_estimadas: horas,
             fontes: fontesClean,
+            doutrina: doutrinaClean,
+            atencao: atencaoClean,
           })
           .eq("id", editing.id);
         if (error) throw error;
@@ -277,6 +290,8 @@ export function NovoTopicoForm({
           ordem: count ?? 0,
           horas_estimadas: horas,
           fontes: fontesClean,
+          doutrina: doutrinaClean,
+          atencao: atencaoClean,
         });
         if (error) throw error;
         resetForm();
@@ -383,6 +398,77 @@ export function NovoTopicoForm({
             </div>
           </SortableContext>
         </DndContext>
+      </div>
+
+      <div className="border-t border-border pt-3 mt-3">
+        <label className="text-[12px] font-medium text-text-main mb-2 block">
+          📖 Indicação de Doutrina
+        </label>
+        <div className="flex flex-col gap-1.5 mb-2">
+          {doutrinaItems.map((item, i) => (
+            <div key={i} className="flex gap-1.5">
+              <Input
+                value={item}
+                onChange={(e) => {
+                  const novo = [...doutrinaItems];
+                  novo[i] = e.target.value;
+                  setDoutrinaItems(novo);
+                }}
+                placeholder="Ex: Direito Constitucional Esquematizado — Pedro Lenza"
+                className="bg-background h-8 text-[12px]"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setDoutrinaItems((prev) => prev.filter((_, idx) => idx !== i))
+                }
+                style={{ background: "transparent", border: "none", color: "#E24B4A", cursor: "pointer", fontSize: 14, padding: "0 8px" }}
+                aria-label="Remover doutrina"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setDoutrinaItems((prev) => [...prev, ""])}
+          style={{
+            background: "transparent",
+            border: "1px dashed #e5e7eb",
+            borderRadius: 8,
+            padding: "5px 12px",
+            fontSize: 11,
+            color: "#8A8478",
+            cursor: "pointer",
+            width: "100%",
+          }}
+        >
+          + Adicionar doutrina
+        </button>
+      </div>
+
+      <div className="border-t border-border pt-3 mt-3">
+        <label className="text-[12px] font-medium text-text-main mb-2 block">
+          ⚠️ Quadro de Atenção
+        </label>
+        <textarea
+          value={atencao}
+          onChange={(e) => setAtencao(e.target.value)}
+          placeholder="Ex: Importante ler doutrina nessa fase inicial..."
+          style={{
+            width: "100%",
+            minHeight: 72,
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            padding: 8,
+            fontSize: 12,
+            background: "var(--background, #fff)",
+            resize: "vertical",
+            fontFamily: "inherit",
+            outline: "none",
+          }}
+        />
       </div>
 
       <div className="flex justify-end gap-2 mt-4">

@@ -178,8 +178,10 @@ export type Database = {
       cronograma_topicos: {
         Row: {
           assunto: string | null
+          atencao: string | null
           created_at: string
           descricao: string | null
+          doutrina: string[]
           duracao_minutos: number
           fontes: Json
           horas_estimadas: number
@@ -191,8 +193,10 @@ export type Database = {
         }
         Insert: {
           assunto?: string | null
+          atencao?: string | null
           created_at?: string
           descricao?: string | null
+          doutrina?: string[]
           duracao_minutos?: number
           fontes?: Json
           horas_estimadas?: number
@@ -204,8 +208,10 @@ export type Database = {
         }
         Update: {
           assunto?: string | null
+          atencao?: string | null
           created_at?: string
           descricao?: string | null
+          doutrina?: string[]
           duracao_minutos?: number
           fontes?: Json
           horas_estimadas?: number
