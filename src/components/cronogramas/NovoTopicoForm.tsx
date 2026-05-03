@@ -255,6 +255,8 @@ export function NovoTopicoForm({
             titulo: assunto.trim(),
             horas_estimadas: horas,
             fontes: fontesClean,
+            doutrina: doutrinaClean,
+            atencao: atencaoClean,
           })
           .eq("id", editing.id);
         if (error) throw error;
