@@ -55,7 +55,8 @@ function gerarCodigo(): string {
 }
 
 function GruposPage() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  const isAdmin = roles.includes("admin");
   const { isPremium } = usePlan();
   const [grupos, setGrupos] = useState<GrupoCard[]>([]);
   const [loading, setLoading] = useState(true);
