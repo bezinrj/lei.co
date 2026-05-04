@@ -62,6 +62,42 @@ function GruposPage() {
   const [loading, setLoading] = useState(true);
   const [openCriar, setOpenCriar] = useState(false);
   const [openEntrar, setOpenEntrar] = useState(false);
+  const [editTarget, setEditTarget] = useState<GrupoCard | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<GrupoCard | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const grupoId = deleteTarget.id;
+      await supabase.from("grupo_atividades").delete().eq("grupo_id", grupoId);
+      const { data: desafios } = await supabase
+        .from("grupo_desafios")
+        .select("id")
+        .eq("grupo_id", grupoId);
+      const desafiosIds = (desafios ?? []).map((d) => d.id);
+      if (desafiosIds.length > 0) {
+        await supabase
+          .from("grupo_desafios_membros")
+          .delete()
+          .in("desafio_id", desafiosIds);
+      }
+      await supabase.from("grupo_desafios").delete().eq("grupo_id", grupoId);
+      await supabase.from("grupo_metas").delete().eq("grupo_id", grupoId);
+      await supabase.from("grupo_membros").delete().eq("grupo_id", grupoId);
+      const { error } = await supabase.from("grupos").delete().eq("id", grupoId);
+      if (error) throw error;
+      toast.success("Grupo excluído!");
+      setDeleteTarget(null);
+      carregar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function carregar() {
     if (!user) return;
