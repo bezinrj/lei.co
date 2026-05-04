@@ -223,6 +223,9 @@ function RankingPage() {
             <Empty texto="Nenhum grupo ainda. Crie ou entre em um." />
           ) : (
             <div className="flex flex-col gap-2">
+              <p className="text-[11px] text-text-muted px-1">
+                Ordenado pela média de XP dos membros nos últimos 60 dias.
+              </p>
               {grupos.map((g, i) => (
                 <Link
                   key={g.id}
