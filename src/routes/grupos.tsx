@@ -40,9 +40,11 @@ type GrupoCard = {
   descricao: string | null;
   foto_url: string | null;
   codigo_convite: string;
+  criado_por: string;
   membros_count: number;
   xp_total: number;
   nivel_medio: number;
+  isFundador: boolean;
 };
 
 function gerarCodigo(): string {
