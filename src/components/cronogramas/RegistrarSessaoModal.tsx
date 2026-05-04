@@ -184,20 +184,12 @@ export function RegistrarSessaoModal({
           if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
         }
         if (q > 0) {
-          const r = await concederXP(userId, "questoes", { questoes: q });
+          const r = await concederXP(userId, "questoes", {
+            questoes: q,
+            percentual_acerto: pct ?? undefined,
+          });
           if (r.xp_ganho > 0) ganhos.push({ tipo: "questões", xp: r.xp_ganho });
           if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
-        }
-        if (pct !== null) {
-          if (pct >= 90) {
-            const r = await concederXP(userId, "bonus_acerto_90");
-            if (r.xp_ganho > 0) ganhos.push({ tipo: "acerto 90%+", xp: r.xp_ganho });
-            if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
-          } else if (pct >= 70) {
-            const r = await concederXP(userId, "bonus_acerto_70");
-            if (r.xp_ganho > 0) ganhos.push({ tipo: "acerto 70%+", xp: r.xp_ganho });
-            if (r.levelUp) xpToasts.push(`Subiu para o nível ${r.nivel_novo}!`);
-          }
         }
         if (isRevisao && l.concluido && pct !== null && pct >= 60) {
           const r = await concederXP(userId, "revisao_60");
