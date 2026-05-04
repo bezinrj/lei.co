@@ -17,8 +17,8 @@ type GrupoRow = {
   nome: string;
   foto_url: string | null;
   membros_count: number;
-  xp_total: number;
-  nivel_medio: number;
+  membros_ativos: number;
+  xp_medio_60d: number;
   contem_me: boolean;
 };
 
