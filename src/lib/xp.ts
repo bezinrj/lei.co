@@ -104,6 +104,7 @@ export type TipoXP =
 export type ConcederXPDados = {
   horas?: number;
   questoes?: number;
+  percentual_acerto?: number; // usado em "questoes" para conceder bônus dentro do limite
   valor_custom?: number; // para desafio_lider (com teto)
 };
 
@@ -165,6 +166,13 @@ export async function concederXP(
       if (q_validas <= 0) return { ...ZERO_RES };
       xp_final =
         Math.floor(q_validas / 10) * XP_CONFIG.XP_POR_10_QUESTOES;
+      // Bônus de acerto — apenas se a sessão coube inteira no limite diário
+      const dentroDoLimite = q_brutas <= disponivel;
+      const pct = dados?.percentual_acerto;
+      if (dentroDoLimite && typeof pct === "number") {
+        if (pct >= 90) xp_final += XP_CONFIG.XP_BONUS_90;
+        else if (pct >= 70) xp_final += XP_CONFIG.XP_BONUS_70;
+      }
       questoes_hoje += q_validas;
       break;
     }

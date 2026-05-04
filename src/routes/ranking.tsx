@@ -17,8 +17,8 @@ type GrupoRow = {
   nome: string;
   foto_url: string | null;
   membros_count: number;
-  xp_total: number;
-  nivel_medio: number;
+  membros_ativos: number;
+  xp_medio_60d: number;
   contem_me: boolean;
 };
 
@@ -123,10 +123,21 @@ function RankingPage() {
       .from("grupo_membros")
       .select("grupo_id, user_id");
 
-    const xpPorUser = new Map<string, number>();
-    (xps ?? []).forEach((x) =>
-      xpPorUser.set(x.user_id, Number(x.xp_total ?? 0)),
-    );
+    // XP dos últimos 60 dias por usuário
+    const dataLimite = new Date();
+    dataLimite.setDate(dataLimite.getDate() - 60);
+    const dataLimiteISO = dataLimite.toISOString().split("T")[0];
+
+    const { data: xpDiario } = await supabase
+      .from("user_xp_diario")
+      .select("user_id, xp_ganho, data")
+      .gte("data", dataLimiteISO);
+
+    const xp60dPorUser = new Map<string, number>();
+    (xpDiario ?? []).forEach((r) => {
+      const atual = xp60dPorUser.get(r.user_id) ?? 0;
+      xp60dPorUser.set(r.user_id, atual + Number(r.xp_ganho ?? 0));
+    });
 
     const meusGrupos = new Set(
       (todosMembros ?? [])
@@ -136,22 +147,27 @@ function RankingPage() {
 
     const gruposRows: GrupoRow[] = (todosGrupos ?? []).map((g) => {
       const membros = (todosMembros ?? []).filter((m) => m.grupo_id === g.id);
-      const xp_total = membros.reduce(
-        (a, m) => a + (xpPorUser.get(m.user_id) ?? 0),
+      const xp_total_60d = membros.reduce(
+        (a, m) => a + (xp60dPorUser.get(m.user_id) ?? 0),
         0,
       );
-      const xp_medio = membros.length ? Math.floor(xp_total / membros.length) : 0;
+      const ativos = membros.filter(
+        (m) => (xp60dPorUser.get(m.user_id) ?? 0) > 0,
+      ).length;
+      const xp_medio_60d = membros.length
+        ? Math.round(xp_total_60d / membros.length)
+        : 0;
       return {
         id: g.id,
         nome: g.nome,
         foto_url: g.foto_url,
         membros_count: membros.length,
-        xp_total,
-        nivel_medio: calcularNivel(xp_medio),
+        membros_ativos: ativos,
+        xp_medio_60d,
         contem_me: meusGrupos.has(g.id),
       };
     });
-    gruposRows.sort((a, b) => b.xp_total - a.xp_total);
+    gruposRows.sort((a, b) => b.xp_medio_60d - a.xp_medio_60d);
     setGrupos(gruposRows);
 
     // ============= AMIGOS =============
@@ -207,6 +223,9 @@ function RankingPage() {
             <Empty texto="Nenhum grupo ainda. Crie ou entre em um." />
           ) : (
             <div className="flex flex-col gap-2">
+              <p className="text-[11px] text-text-muted px-1">
+                Ordenado pela média de XP dos membros nos últimos 60 dias.
+              </p>
               {grupos.map((g, i) => (
                 <Link
                   key={g.id}
@@ -257,19 +276,24 @@ function RankingPage() {
                       {g.nome}
                     </div>
                     <div style={{ fontSize: "11px", color: "#8A8478" }}>
-                      {g.membros_count} membro
-                      {g.membros_count === 1 ? "" : "s"} ·{" "}
-                      {getNivelInfo(g.nivel_medio).nome}
+                      {g.membros_ativos} ativo
+                      {g.membros_ativos === 1 ? "" : "s"} · {g.membros_count} membro
+                      {g.membros_count === 1 ? "" : "s"}
                     </div>
                   </div>
                   <div
+                    title="Baseado na média de XP dos membros nos últimos 60 dias"
                     style={{
                       fontSize: "13px",
                       fontWeight: 600,
                       color: "#1D9E75",
+                      textAlign: "right",
                     }}
                   >
-                    {g.xp_total.toLocaleString("pt-BR")} XP
+                    {g.xp_medio_60d.toLocaleString("pt-BR")} XP
+                    <div style={{ fontSize: "9px", color: "#8A8478", fontWeight: 400 }}>
+                      média / 60d
+                    </div>
                   </div>
                 </Link>
               ))}
