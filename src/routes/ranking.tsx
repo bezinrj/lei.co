@@ -273,19 +273,24 @@ function RankingPage() {
                       {g.nome}
                     </div>
                     <div style={{ fontSize: "11px", color: "#8A8478" }}>
-                      {g.membros_count} membro
-                      {g.membros_count === 1 ? "" : "s"} ·{" "}
-                      {getNivelInfo(g.nivel_medio).nome}
+                      {g.membros_ativos} ativo
+                      {g.membros_ativos === 1 ? "" : "s"} · {g.membros_count} membro
+                      {g.membros_count === 1 ? "" : "s"}
                     </div>
                   </div>
                   <div
+                    title="Baseado na média de XP dos membros nos últimos 60 dias"
                     style={{
                       fontSize: "13px",
                       fontWeight: 600,
                       color: "#1D9E75",
+                      textAlign: "right",
                     }}
                   >
-                    {g.xp_total.toLocaleString("pt-BR")} XP
+                    {g.xp_medio_60d.toLocaleString("pt-BR")} XP
+                    <div style={{ fontSize: "9px", color: "#8A8478", fontWeight: 400 }}>
+                      média / 60d
+                    </div>
                   </div>
                 </Link>
               ))}
