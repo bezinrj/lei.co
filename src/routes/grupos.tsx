@@ -331,7 +331,223 @@ function GruposPage() {
         onOpenChange={setOpenEntrar}
         onJoined={carregar}
       />
+      <EditarGrupoDialog
+        grupo={editTarget}
+        onOpenChange={(v) => !v && setEditTarget(null)}
+        onSaved={carregar}
+      />
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ fontWeight: 500, color: "#111827" }}>
+              Excluir grupo
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteTarget?.nome}</strong>?
+              Todos os membros serão removidos e os dados do grupo serão apagados
+              permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleting}
+              style={{ background: "#E24B4A", color: "white" }}
+            >
+              {deleting ? "Excluindo..." : "Excluir grupo"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
+  );
+}
+
+function EditarGrupoDialog({
+  grupo,
+  onOpenChange,
+  onSaved,
+}: {
+  grupo: GrupoCard | null;
+  onOpenChange: (v: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (grupo) {
+      setNome(grupo.nome);
+      setDescricao(grupo.descricao ?? "");
+      setFile(null);
+      setPreview(grupo.foto_url);
+    }
+  }, [grupo]);
+
+  function handleFile(f: File | null) {
+    setFile(f);
+    if (f) setPreview(URL.createObjectURL(f));
+  }
+
+  async function copiar() {
+    if (!grupo) return;
+    try {
+      await navigator.clipboard.writeText(grupo.codigo_convite);
+      toast.success("Código copiado");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  }
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!grupo || !nome.trim()) return;
+    setSaving(true);
+    try {
+      let foto_url = grupo.foto_url;
+      if (file) {
+        const ext = file.name.split(".").pop();
+        const path = `${grupo.id}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("grupos-fotos")
+          .upload(path, file, { upsert: true });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage
+          .from("grupos-fotos")
+          .getPublicUrl(path);
+        foto_url = pub.publicUrl;
+      }
+      const { error } = await supabase
+        .from("grupos")
+        .update({
+          nome: nome.trim(),
+          descricao: descricao.trim() || null,
+          foto_url,
+        })
+        .eq("id", grupo.id);
+      if (error) throw error;
+      toast.success("Grupo atualizado!");
+      onOpenChange(false);
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={!!grupo} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-card sm:max-w-[440px] rounded-[14px]">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-[18px] text-text-main">
+            Editar grupo
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={salvar} className="flex flex-col gap-4 mt-2">
+          <div>
+            <Label className="text-[12px] text-text-muted">
+              Nome <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              maxLength={60}
+              className="mt-1 bg-background"
+            />
+          </div>
+          <div>
+            <Label className="text-[12px] text-text-muted">Descrição</Label>
+            <Textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              maxLength={200}
+              rows={3}
+              className="mt-1 bg-background"
+            />
+          </div>
+          <div>
+            <Label className="text-[12px] text-text-muted">Foto de capa</Label>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="mt-1 w-full border border-dashed border-border rounded-[12px] bg-background hover:bg-muted/50 transition-colors p-5 flex flex-col items-center justify-center gap-2"
+            >
+              {preview ? (
+                <img
+                  src={preview}
+                  alt="prévia"
+                  className="w-full h-28 object-cover rounded-[8px]"
+                />
+              ) : (
+                <>
+                  <Upload size={20} className="text-text-muted" />
+                  <span className="text-[12px] text-text-main">
+                    Clique para enviar imagem
+                  </span>
+                </>
+              )}
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          <div>
+            <Label className="text-[12px] text-text-muted">
+              Código de convite
+            </Label>
+            <div className="flex gap-2 mt-1">
+              <div className="flex-1 px-3 py-2 rounded-[10px] bg-muted font-mono text-[13px]">
+                {grupo?.codigo_convite}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={copiar}
+                className="rounded-[10px]"
+              >
+                <Copy size={14} />
+              </Button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1 rounded-[10px]"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving || !nome.trim()}
+              className="flex-1 rounded-[10px] text-white"
+              style={{ background: "#1D9E75" }}
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : "Salvar"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
