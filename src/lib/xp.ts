@@ -104,6 +104,7 @@ export type TipoXP =
 export type ConcederXPDados = {
   horas?: number;
   questoes?: number;
+  percentual_acerto?: number; // usado em "questoes" para conceder bônus dentro do limite
   valor_custom?: number; // para desafio_lider (com teto)
 };
 
