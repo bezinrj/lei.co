@@ -11,12 +11,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { concederBadge } from "@/lib/xp";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { calcularNivel, getNivelInfo } from "@/lib/xp";
-import { Users, Plus, KeyRound, Upload, Lock } from "lucide-react";
+import { Users, Plus, KeyRound, Upload, Lock, Pencil, Trash2, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/grupos")({
