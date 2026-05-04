@@ -207,49 +207,115 @@ function GruposPage() {
           {grupos.map((g) => {
             const niv = getNivelInfo(g.nivel_medio);
             return (
-              <Link
+              <div
                 key={g.id}
-                to="/grupos/$id"
-                params={{ id: g.id }}
-                className="lei-card hover:shadow-md transition-shadow flex flex-col items-center text-center"
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredId(g.id)}
+                onMouseLeave={() => setHoveredId(null)}
               >
-                <div
-                  style={{
-                    width: "96px",
-                    height: "96px",
-                    borderRadius: "50%",
-                    background: g.foto_url
-                      ? `url(${g.foto_url}) center/cover`
-                      : "linear-gradient(135deg, var(--sage), var(--lilac))",
-                  }}
-                />
-                <div className="pt-3 flex-1 flex flex-col gap-2 w-full items-center">
-                  <div className="flex flex-col items-center gap-1 w-full">
-                    <h3 className="font-serif text-[15px] text-text-main truncate max-w-full">
-                      {g.nome}
-                    </h3>
-                    <span className="text-[10px] text-text-muted font-mono">
-                      {g.codigo_convite}
-                    </span>
+                <Link
+                  to="/grupos/$id"
+                  params={{ id: g.id }}
+                  className="lei-card hover:shadow-md transition-shadow flex flex-col items-center text-center"
+                >
+                  <div
+                    style={{
+                      width: "96px",
+                      height: "96px",
+                      borderRadius: "50%",
+                      background: g.foto_url
+                        ? `url(${g.foto_url}) center/cover`
+                        : "linear-gradient(135deg, var(--sage), var(--lilac))",
+                    }}
+                  />
+                  <div className="pt-3 flex-1 flex flex-col gap-2 w-full items-center">
+                    <div className="flex flex-col items-center gap-1 w-full">
+                      <h3 className="font-serif text-[15px] text-text-main truncate max-w-full">
+                        {g.nome}
+                      </h3>
+                      <span className="text-[10px] text-text-muted font-mono">
+                        {g.codigo_convite}
+                      </span>
+                    </div>
+                    {g.descricao && (
+                      <p className="text-[12px] text-text-muted line-clamp-2">
+                        {g.descricao}
+                      </p>
+                    )}
+                    <div className="mt-auto pt-2 flex items-center justify-center gap-3 text-[11px] text-text-muted">
+                      <span className="flex items-center gap-1">
+                        <Users size={12} />
+                        {g.membros_count} membro{g.membros_count !== 1 ? "s" : ""}
+                      </span>
+                      <span>·</span>
+                      <span>{niv.nome}</span>
+                    </div>
+                    <div className="text-[10px] text-text-muted">
+                      {g.xp_total.toLocaleString("pt-BR")} XP total
+                    </div>
                   </div>
-                  {g.descricao && (
-                    <p className="text-[12px] text-text-muted line-clamp-2">
-                      {g.descricao}
-                    </p>
-                  )}
-                  <div className="mt-auto pt-2 flex items-center justify-center gap-3 text-[11px] text-text-muted">
-                    <span className="flex items-center gap-1">
-                      <Users size={12} />
-                      {g.membros_count} membro{g.membros_count !== 1 ? "s" : ""}
-                    </span>
-                    <span>·</span>
-                    <span>{niv.nome}</span>
+                </Link>
+                {g.isFundador && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      display: "flex",
+                      gap: "4px",
+                      opacity: hoveredId === g.id ? 1 : 0,
+                      transition: "opacity 0.15s ease",
+                      pointerEvents: hoveredId === g.id ? "auto" : "none",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-label="Editar grupo"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditTarget(g);
+                      }}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(61,56,48,0.1)",
+                        background: "rgba(255,255,255,0.95)",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Excluir grupo"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDeleteTarget(g);
+                      }}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "8px",
+                        border: "1px solid #fecaca",
+                        background: "rgba(255,255,255,0.95)",
+                        cursor: "pointer",
+                        color: "#E24B4A",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
-                  <div className="text-[10px] text-text-muted">
-                    {g.xp_total.toLocaleString("pt-BR")} XP total
-                  </div>
-                </div>
-              </Link>
+                )}
+              </div>
             );
           })}
         </div>
