@@ -11,12 +11,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { concederBadge } from "@/lib/xp";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { calcularNivel, getNivelInfo } from "@/lib/xp";
-import { Users, Plus, KeyRound, Upload, Lock } from "lucide-react";
+import { Users, Plus, KeyRound, Upload, Lock, Pencil, Trash2, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/grupos")({
@@ -30,9 +40,11 @@ type GrupoCard = {
   descricao: string | null;
   foto_url: string | null;
   codigo_convite: string;
+  criado_por: string;
   membros_count: number;
   xp_total: number;
   nivel_medio: number;
+  isFundador: boolean;
 };
 
 function gerarCodigo(): string {
@@ -43,12 +55,49 @@ function gerarCodigo(): string {
 }
 
 function GruposPage() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  const isAdmin = roles.includes("admin");
   const { isPremium } = usePlan();
   const [grupos, setGrupos] = useState<GrupoCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCriar, setOpenCriar] = useState(false);
   const [openEntrar, setOpenEntrar] = useState(false);
+  const [editTarget, setEditTarget] = useState<GrupoCard | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<GrupoCard | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const grupoId = deleteTarget.id;
+      await supabase.from("grupo_atividades").delete().eq("grupo_id", grupoId);
+      const { data: desafios } = await supabase
+        .from("grupo_desafios")
+        .select("id")
+        .eq("grupo_id", grupoId);
+      const desafiosIds = (desafios ?? []).map((d) => d.id);
+      if (desafiosIds.length > 0) {
+        await supabase
+          .from("grupo_desafios_membros")
+          .delete()
+          .in("desafio_id", desafiosIds);
+      }
+      await supabase.from("grupo_desafios").delete().eq("grupo_id", grupoId);
+      await supabase.from("grupo_metas").delete().eq("grupo_id", grupoId);
+      await supabase.from("grupo_membros").delete().eq("grupo_id", grupoId);
+      const { error } = await supabase.from("grupos").delete().eq("id", grupoId);
+      if (error) throw error;
+      toast.success("Grupo excluído!");
+      setDeleteTarget(null);
+      carregar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function carregar() {
     if (!user) return;
@@ -68,7 +117,7 @@ function GruposPage() {
 
     const { data: grps } = await supabase
       .from("grupos")
-      .select("id, nome, descricao, foto_url, codigo_convite")
+      .select("id, nome, descricao, foto_url, codigo_convite, criado_por")
       .in("id", ids);
 
     // Agregar membros + XP
@@ -93,6 +142,7 @@ function GruposPage() {
           membros_count: userIds.length,
           xp_total,
           nivel_medio: calcularNivel(xp_medio),
+          isFundador: g.criado_por === user.id || isAdmin,
         };
       }),
     );
@@ -157,49 +207,115 @@ function GruposPage() {
           {grupos.map((g) => {
             const niv = getNivelInfo(g.nivel_medio);
             return (
-              <Link
+              <div
                 key={g.id}
-                to="/grupos/$id"
-                params={{ id: g.id }}
-                className="lei-card hover:shadow-md transition-shadow flex flex-col items-center text-center"
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredId(g.id)}
+                onMouseLeave={() => setHoveredId(null)}
               >
-                <div
-                  style={{
-                    width: "96px",
-                    height: "96px",
-                    borderRadius: "50%",
-                    background: g.foto_url
-                      ? `url(${g.foto_url}) center/cover`
-                      : "linear-gradient(135deg, var(--sage), var(--lilac))",
-                  }}
-                />
-                <div className="pt-3 flex-1 flex flex-col gap-2 w-full items-center">
-                  <div className="flex flex-col items-center gap-1 w-full">
-                    <h3 className="font-serif text-[15px] text-text-main truncate max-w-full">
-                      {g.nome}
-                    </h3>
-                    <span className="text-[10px] text-text-muted font-mono">
-                      {g.codigo_convite}
-                    </span>
+                <Link
+                  to="/grupos/$id"
+                  params={{ id: g.id }}
+                  className="lei-card hover:shadow-md transition-shadow flex flex-col items-center text-center"
+                >
+                  <div
+                    style={{
+                      width: "96px",
+                      height: "96px",
+                      borderRadius: "50%",
+                      background: g.foto_url
+                        ? `url(${g.foto_url}) center/cover`
+                        : "linear-gradient(135deg, var(--sage), var(--lilac))",
+                    }}
+                  />
+                  <div className="pt-3 flex-1 flex flex-col gap-2 w-full items-center">
+                    <div className="flex flex-col items-center gap-1 w-full">
+                      <h3 className="font-serif text-[15px] text-text-main truncate max-w-full">
+                        {g.nome}
+                      </h3>
+                      <span className="text-[10px] text-text-muted font-mono">
+                        {g.codigo_convite}
+                      </span>
+                    </div>
+                    {g.descricao && (
+                      <p className="text-[12px] text-text-muted line-clamp-2">
+                        {g.descricao}
+                      </p>
+                    )}
+                    <div className="mt-auto pt-2 flex items-center justify-center gap-3 text-[11px] text-text-muted">
+                      <span className="flex items-center gap-1">
+                        <Users size={12} />
+                        {g.membros_count} membro{g.membros_count !== 1 ? "s" : ""}
+                      </span>
+                      <span>·</span>
+                      <span>{niv.nome}</span>
+                    </div>
+                    <div className="text-[10px] text-text-muted">
+                      {g.xp_total.toLocaleString("pt-BR")} XP total
+                    </div>
                   </div>
-                  {g.descricao && (
-                    <p className="text-[12px] text-text-muted line-clamp-2">
-                      {g.descricao}
-                    </p>
-                  )}
-                  <div className="mt-auto pt-2 flex items-center justify-center gap-3 text-[11px] text-text-muted">
-                    <span className="flex items-center gap-1">
-                      <Users size={12} />
-                      {g.membros_count} membro{g.membros_count !== 1 ? "s" : ""}
-                    </span>
-                    <span>·</span>
-                    <span>{niv.nome}</span>
+                </Link>
+                {g.isFundador && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      display: "flex",
+                      gap: "4px",
+                      opacity: hoveredId === g.id ? 1 : 0,
+                      transition: "opacity 0.15s ease",
+                      pointerEvents: hoveredId === g.id ? "auto" : "none",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-label="Editar grupo"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditTarget(g);
+                      }}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(61,56,48,0.1)",
+                        background: "rgba(255,255,255,0.95)",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Excluir grupo"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDeleteTarget(g);
+                      }}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "8px",
+                        border: "1px solid #fecaca",
+                        background: "rgba(255,255,255,0.95)",
+                        cursor: "pointer",
+                        color: "#E24B4A",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
-                  <div className="text-[10px] text-text-muted">
-                    {g.xp_total.toLocaleString("pt-BR")} XP total
-                  </div>
-                </div>
-              </Link>
+                )}
+              </div>
             );
           })}
         </div>
@@ -215,7 +331,223 @@ function GruposPage() {
         onOpenChange={setOpenEntrar}
         onJoined={carregar}
       />
+      <EditarGrupoDialog
+        grupo={editTarget}
+        onOpenChange={(v) => !v && setEditTarget(null)}
+        onSaved={carregar}
+      />
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ fontWeight: 500, color: "#111827" }}>
+              Excluir grupo
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteTarget?.nome}</strong>?
+              Todos os membros serão removidos e os dados do grupo serão apagados
+              permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleting}
+              style={{ background: "#E24B4A", color: "white" }}
+            >
+              {deleting ? "Excluindo..." : "Excluir grupo"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
+  );
+}
+
+function EditarGrupoDialog({
+  grupo,
+  onOpenChange,
+  onSaved,
+}: {
+  grupo: GrupoCard | null;
+  onOpenChange: (v: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (grupo) {
+      setNome(grupo.nome);
+      setDescricao(grupo.descricao ?? "");
+      setFile(null);
+      setPreview(grupo.foto_url);
+    }
+  }, [grupo]);
+
+  function handleFile(f: File | null) {
+    setFile(f);
+    if (f) setPreview(URL.createObjectURL(f));
+  }
+
+  async function copiar() {
+    if (!grupo) return;
+    try {
+      await navigator.clipboard.writeText(grupo.codigo_convite);
+      toast.success("Código copiado");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  }
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!grupo || !nome.trim()) return;
+    setSaving(true);
+    try {
+      let foto_url = grupo.foto_url;
+      if (file) {
+        const ext = file.name.split(".").pop();
+        const path = `${grupo.id}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("grupos-fotos")
+          .upload(path, file, { upsert: true });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage
+          .from("grupos-fotos")
+          .getPublicUrl(path);
+        foto_url = pub.publicUrl;
+      }
+      const { error } = await supabase
+        .from("grupos")
+        .update({
+          nome: nome.trim(),
+          descricao: descricao.trim() || null,
+          foto_url,
+        })
+        .eq("id", grupo.id);
+      if (error) throw error;
+      toast.success("Grupo atualizado!");
+      onOpenChange(false);
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={!!grupo} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-card sm:max-w-[440px] rounded-[14px]">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-[18px] text-text-main">
+            Editar grupo
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={salvar} className="flex flex-col gap-4 mt-2">
+          <div>
+            <Label className="text-[12px] text-text-muted">
+              Nome <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              maxLength={60}
+              className="mt-1 bg-background"
+            />
+          </div>
+          <div>
+            <Label className="text-[12px] text-text-muted">Descrição</Label>
+            <Textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              maxLength={200}
+              rows={3}
+              className="mt-1 bg-background"
+            />
+          </div>
+          <div>
+            <Label className="text-[12px] text-text-muted">Foto de capa</Label>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="mt-1 w-full border border-dashed border-border rounded-[12px] bg-background hover:bg-muted/50 transition-colors p-5 flex flex-col items-center justify-center gap-2"
+            >
+              {preview ? (
+                <img
+                  src={preview}
+                  alt="prévia"
+                  className="w-full h-28 object-cover rounded-[8px]"
+                />
+              ) : (
+                <>
+                  <Upload size={20} className="text-text-muted" />
+                  <span className="text-[12px] text-text-main">
+                    Clique para enviar imagem
+                  </span>
+                </>
+              )}
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          <div>
+            <Label className="text-[12px] text-text-muted">
+              Código de convite
+            </Label>
+            <div className="flex gap-2 mt-1">
+              <div className="flex-1 px-3 py-2 rounded-[10px] bg-muted font-mono text-[13px]">
+                {grupo?.codigo_convite}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={copiar}
+                className="rounded-[10px]"
+              >
+                <Copy size={14} />
+              </Button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1 rounded-[10px]"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving || !nome.trim()}
+              className="flex-1 rounded-[10px] text-white"
+              style={{ background: "#1D9E75" }}
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : "Salvar"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
