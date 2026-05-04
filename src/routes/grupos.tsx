@@ -80,7 +80,7 @@ function GruposPage() {
 
     const { data: grps } = await supabase
       .from("grupos")
-      .select("id, nome, descricao, foto_url, codigo_convite")
+      .select("id, nome, descricao, foto_url, codigo_convite, criado_por")
       .in("id", ids);
 
     // Agregar membros + XP
@@ -105,6 +105,7 @@ function GruposPage() {
           membros_count: userIds.length,
           xp_total,
           nivel_medio: calcularNivel(xp_medio),
+          isFundador: g.criado_por === user.id || isAdmin,
         };
       }),
     );
