@@ -231,13 +231,6 @@ export function RegistrarSessaoModal({
           >
             Registrar sessão de estudo
           </DialogTitle>
-          <button
-            onClick={handleDescartar}
-            className="text-[#9ca3af] hover:text-[#374151]"
-            aria-label="Fechar"
-          >
-            <X size={18} />
-          </button>
         </div>
 
         {/* Tempo total */}
