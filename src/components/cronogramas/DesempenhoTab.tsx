@@ -84,14 +84,19 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
       0,
     );
 
+    const topicoTitulo = new Map<string, string>();
+    materias.forEach((m) => m.topicos.forEach((t) => topicoTitulo.set(t.id, t.titulo)));
+
     const porMateria = materias.map((m) => {
       const tIds = new Set(m.topicos.map((t) => t.id));
-      const mine = mySessions.filter((s) => tIds.has(s.topico_id));
+      const mine = mySessions
+        .filter((s) => tIds.has(s.topico_id))
+        .slice()
+        .sort((a, b) => a.data.localeCompare(b.data));
       const others = allSessions.filter((s) => tIds.has(s.topico_id));
-      const myAvg =
-        mine.length === 0
-          ? null
-          : Math.round(mine.reduce((acc, s) => acc + s.percentual_acerto, 0) / mine.length);
+      const ultimaSessao = mine.length > 0 ? mine[mine.length - 1] : null;
+      const myLast = ultimaSessao ? ultimaSessao.percentual_acerto : null;
+      const ultimoAssunto = ultimaSessao ? topicoTitulo.get(ultimaSessao.topico_id) ?? null : null;
       const allAvg =
         others.length === 0
           ? null
@@ -104,10 +109,25 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
         total: m.topicos.length,
         ok: okTopicos,
         pctConclusao: m.topicos.length === 0 ? 0 : Math.round((okTopicos / m.topicos.length) * 100),
-        myAvg,
+        myLast,
+        ultimoAssunto,
+        ultimaData: ultimaSessao?.data ?? null,
         allAvg,
         sessions: mine.length,
       };
+    });
+
+    // Ordenação: matérias com sessões aparecem primeiro, ordenadas pelas
+    // últimas sessões com pior rendimento (mais recente + menor %).
+    porMateria.sort((a, b) => {
+      if (a.myLast === null && b.myLast === null) return 0;
+      if (a.myLast === null) return 1;
+      if (b.myLast === null) return -1;
+      // Mais recente primeiro
+      if (a.ultimaData && b.ultimaData && a.ultimaData !== b.ultimaData) {
+        return b.ultimaData.localeCompare(a.ultimaData);
+      }
+      return a.myLast - b.myLast;
     });
 
     return {
