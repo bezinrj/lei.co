@@ -179,8 +179,9 @@ function CronogramaDetail() {
         materia_cor: m.cor,
       })),
     );
-    // Stable order: by materia.ordem then topico.ordem (already sorted)
-    return flat;
+    // Ordenação global por `ordem` — assim novos cadastros (ordem = max+1)
+    // sempre aparecem no FINAL da fila da matriz.
+    return flat.sort((a, b) => a.ordem - b.ordem);
   }, [materias]);
 
   const previewTopicos: MatrizTopico[] = useMemo(
