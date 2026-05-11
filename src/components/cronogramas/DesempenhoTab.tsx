@@ -371,10 +371,10 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
           style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
         >
           {stats.porMateria.map((m) => {
-            const mine = m.myAvg ?? 0;
+            const mine = m.myLast ?? 0;
             const others = m.allAvg ?? 0;
             const myColor =
-              m.myAvg === null
+              m.myLast === null
                 ? "#d1d5db"
                 : mine < 50
                   ? "#E24B4A"
@@ -383,7 +383,7 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                     : mine < 80
                       ? "#1D9E75"
                       : "#16A085";
-            const diff = m.myAvg !== null && m.allAvg !== null ? mine - others : null;
+            const diff = m.myLast !== null && m.allAvg !== null ? mine - others : null;
             return (
               <div
                 key={m.id}
