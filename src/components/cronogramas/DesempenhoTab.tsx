@@ -364,7 +364,7 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
       <div className="lei-card">
         <h3 className="font-serif text-[16px] text-text-main mb-1">Meu desempenho vs média</h3>
         <p className="text-[12px] text-text-muted mb-4">
-          Percentual médio de acerto por matéria, comparado à média dos demais alunos.
+          Última pontuação por matéria, comparada à média dos demais alunos. Matérias com pior rendimento recente aparecem primeiro.
         </p>
         <div
           className="grid gap-[10px]"
