@@ -279,15 +279,29 @@ export function NovoTopicoForm({
         }
         toast.success("Tópico atualizado");
       } else {
-        const { count } = await supabase
-          .from("cronograma_topicos")
-          .select("*", { count: "exact", head: true })
-          .eq("materia_id", materiaId);
+        // Garante que o novo tópico vá para o FINAL da fila global da matriz
+        // (somando todos os tópicos do cronograma, não apenas da matéria).
+        const { data: matIds } = await supabase
+          .from("cronograma_materias")
+          .select("id")
+          .eq("cronograma_id", cronogramaId);
+        const ids = (matIds ?? []).map((m) => m.id);
+        let proxOrdem = 0;
+        if (ids.length > 0) {
+          const { data: maxRow } = await supabase
+            .from("cronograma_topicos")
+            .select("ordem")
+            .in("materia_id", ids)
+            .order("ordem", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          proxOrdem = (maxRow?.ordem ?? -1) + 1;
+        }
 
         const { error } = await supabase.from("cronograma_topicos").insert({
           materia_id: materiaId,
           titulo: assunto.trim(),
-          ordem: count ?? 0,
+          ordem: proxOrdem,
           horas_estimadas: horas,
           fontes: fontesClean,
           doutrina: doutrinaClean,
