@@ -51,8 +51,8 @@ export const Route = createRootRoute({
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Lei.co — Mantenha a constância" },
       { name: "twitter:description", content: "Cronograma para concurseiros das carreiras de alto nível. Acompanhe horas, questões, medalhas, grupos e ranking." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fe4c632c-5923-4167-8ebb-0c9789549835/id-preview-538827a8--e14d93ea-107e-4f17-925f-9e4674dc8195.lovable.app-1776527768331.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fe4c632c-5923-4167-8ebb-0c9789549835/id-preview-538827a8--e14d93ea-107e-4f17-925f-9e4674dc8195.lovable.app-1776527768331.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/3uYPLr1bzPXPp4gqHgJFkk354o02/social-images/social-1778537989640-1.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/3uYPLr1bzPXPp4gqHgJFkk354o02/social-images/social-1778537989640-1.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
