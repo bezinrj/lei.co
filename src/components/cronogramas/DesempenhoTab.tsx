@@ -420,6 +420,19 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                 >
                   {m.nome}
                 </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontStyle: "italic",
+                    color: "#6b7280",
+                    marginBottom: 8,
+                    minHeight: 14,
+                  }}
+                  className="truncate"
+                  title={m.ultimoAssunto ?? ""}
+                >
+                  {m.ultimoAssunto ?? "—"}
+                </div>
 
                 <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>
                   Meu desempenho
@@ -443,7 +456,7 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                   />
                 </div>
                 <div style={{ fontSize: 10, color: "#374151", textAlign: "right", marginBottom: 8 }}>
-                  {m.myAvg !== null ? `${mine}%` : "—"}
+                  {m.myLast !== null ? `${mine}%` : "—"}
                 </div>
 
                 <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>
