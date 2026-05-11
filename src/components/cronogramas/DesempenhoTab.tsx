@@ -84,14 +84,19 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
       0,
     );
 
+    const topicoTitulo = new Map<string, string>();
+    materias.forEach((m) => m.topicos.forEach((t) => topicoTitulo.set(t.id, t.titulo)));
+
     const porMateria = materias.map((m) => {
       const tIds = new Set(m.topicos.map((t) => t.id));
-      const mine = mySessions.filter((s) => tIds.has(s.topico_id));
+      const mine = mySessions
+        .filter((s) => tIds.has(s.topico_id))
+        .slice()
+        .sort((a, b) => a.data.localeCompare(b.data));
       const others = allSessions.filter((s) => tIds.has(s.topico_id));
-      const myAvg =
-        mine.length === 0
-          ? null
-          : Math.round(mine.reduce((acc, s) => acc + s.percentual_acerto, 0) / mine.length);
+      const ultimaSessao = mine.length > 0 ? mine[mine.length - 1] : null;
+      const myLast = ultimaSessao ? ultimaSessao.percentual_acerto : null;
+      const ultimoAssunto = ultimaSessao ? topicoTitulo.get(ultimaSessao.topico_id) ?? null : null;
       const allAvg =
         others.length === 0
           ? null
@@ -104,10 +109,25 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
         total: m.topicos.length,
         ok: okTopicos,
         pctConclusao: m.topicos.length === 0 ? 0 : Math.round((okTopicos / m.topicos.length) * 100),
-        myAvg,
+        myLast,
+        ultimoAssunto,
+        ultimaData: ultimaSessao?.data ?? null,
         allAvg,
         sessions: mine.length,
       };
+    });
+
+    // Ordenação: matérias com sessões aparecem primeiro, ordenadas pelas
+    // últimas sessões com pior rendimento (mais recente + menor %).
+    porMateria.sort((a, b) => {
+      if (a.myLast === null && b.myLast === null) return 0;
+      if (a.myLast === null) return 1;
+      if (b.myLast === null) return -1;
+      // Mais recente primeiro
+      if (a.ultimaData && b.ultimaData && a.ultimaData !== b.ultimaData) {
+        return b.ultimaData.localeCompare(a.ultimaData);
+      }
+      return a.myLast - b.myLast;
     });
 
     return {
@@ -344,17 +364,17 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
       <div className="lei-card">
         <h3 className="font-serif text-[16px] text-text-main mb-1">Meu desempenho vs média</h3>
         <p className="text-[12px] text-text-muted mb-4">
-          Percentual médio de acerto por matéria, comparado à média dos demais alunos.
+          Última pontuação por matéria, comparada à média dos demais alunos. Matérias com pior rendimento recente aparecem primeiro.
         </p>
         <div
           className="grid gap-[10px]"
           style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
         >
           {stats.porMateria.map((m) => {
-            const mine = m.myAvg ?? 0;
+            const mine = m.myLast ?? 0;
             const others = m.allAvg ?? 0;
             const myColor =
-              m.myAvg === null
+              m.myLast === null
                 ? "#d1d5db"
                 : mine < 50
                   ? "#E24B4A"
@@ -363,7 +383,7 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                     : mine < 80
                       ? "#1D9E75"
                       : "#16A085";
-            const diff = m.myAvg !== null && m.allAvg !== null ? mine - others : null;
+            const diff = m.myLast !== null && m.allAvg !== null ? mine - others : null;
             return (
               <div
                 key={m.id}
@@ -400,6 +420,19 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                 >
                   {m.nome}
                 </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontStyle: "italic",
+                    color: "#6b7280",
+                    marginBottom: 8,
+                    minHeight: 14,
+                  }}
+                  className="truncate"
+                  title={m.ultimoAssunto ?? ""}
+                >
+                  {m.ultimoAssunto ?? "—"}
+                </div>
 
                 <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>
                   Meu desempenho
@@ -423,7 +456,7 @@ export function DesempenhoTab({ cronogramaId, userId, materias, eventos, onChang
                   />
                 </div>
                 <div style={{ fontSize: 10, color: "#374151", textAlign: "right", marginBottom: 8 }}>
-                  {m.myAvg !== null ? `${mine}%` : "—"}
+                  {m.myLast !== null ? `${mine}%` : "—"}
                 </div>
 
                 <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>
