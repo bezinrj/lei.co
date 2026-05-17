@@ -32,5 +32,5 @@ export function usePresence() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [user]);
+  }, [user?.id]);
 }

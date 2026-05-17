@@ -31,5 +31,5 @@ export function useLastSeen() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [user]);
+  }, [user?.id]);
 }

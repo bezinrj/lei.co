@@ -50,11 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setSession(newSession);
-      setUser(newSession?.user ?? null);
+      const newUser = newSession?.user ?? null;
+      // Só troca a referência do user se o id realmente mudou — evita loops
+      // de refetch em componentes que dependem de `user` em useEffect.
+      setUser((prev) => (prev?.id === newUser?.id ? prev : newUser));
 
-      if (newSession?.user) {
+      if (newUser) {
         // Defer DB call to avoid deadlock no callback
-        setTimeout(() => loadRoles(newSession.user.id), 0);
+        setTimeout(() => loadRoles(newUser.id), 0);
       } else {
         loadedRolesForUserId.current = null;
         setRoles([]);
@@ -64,9 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       if (!mounted) return;
       setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        loadRoles(s.user.id).finally(() => mounted && setLoading(false));
+      const newUser = s?.user ?? null;
+      setUser((prev) => (prev?.id === newUser?.id ? prev : newUser));
+      if (newUser) {
+        loadRoles(newUser.id).finally(() => mounted && setLoading(false));
       } else {
         setLoading(false);
       }
