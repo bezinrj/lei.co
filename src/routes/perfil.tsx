@@ -216,7 +216,7 @@ function PerfilPage() {
     return () => {
       mounted = false;
     };
-  }, [user]);
+  }, [user?.id]);
 
   const userBadgeMap = useMemo(() => {
     const m = new Map<string, UserBadge>();
