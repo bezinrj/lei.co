@@ -82,7 +82,8 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
       let imagem_url: string | null = null;
       if (file) {
         const ext = file.name.split(".").pop();
-        const path = `${crypto.randomUUID()}.${ext}`;
+        const filename = `${crypto.randomUUID()}.${ext}`;
+        const path = isStaff || !user ? filename : `${user.id}/${filename}`;
         const { error: upErr } = await supabase.storage
           .from("cronogramas-covers")
           .upload(path, file, { cacheControl: "3600", upsert: false });
