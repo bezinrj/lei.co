@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Upload, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
+  const { isAdminOrMod } = useAuth();
   const [nome, setNome] = useState("");
   const [categoria, setCategoria] = useState("");
   const [premium, setPremium] = useState(false);
@@ -46,18 +48,6 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
     if (!nome.trim()) return;
     setSaving(true);
     try {
-      let imagem_url: string | null = null;
-      if (file) {
-        const ext = file.name.split(".").pop();
-        const path = `${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("cronogramas-covers")
-          .upload(path, file, { cacheControl: "3600", upsert: false });
-        if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("cronogramas-covers").getPublicUrl(path);
-        imagem_url = pub.publicUrl;
-      }
-
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -74,11 +64,42 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
         );
       }
 
+      // Alunos só podem criar 1 cronograma pessoal
+      if (!isStaff && user) {
+        const { data: existente } = await supabase
+          .from("cronogramas")
+          .select("id")
+          .eq("criado_por", user.id)
+          .eq("is_proprio", true)
+          .maybeSingle();
+        if (existente) {
+          toast.error("Você já possui um cronograma pessoal.");
+          setSaving(false);
+          return;
+        }
+      }
+
+      let imagem_url: string | null = null;
+      if (file) {
+        const ext = file.name.split(".").pop();
+        const path = `${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("cronogramas-covers")
+          .upload(path, file, { cacheControl: "3600", upsert: false });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("cronogramas-covers").getPublicUrl(path);
+        imagem_url = pub.publicUrl;
+      }
+
+      const categoriaFinal = isStaff
+        ? (categoria.trim() || null)
+        : "Cronograma Pessoal";
+
       const { error } = await supabase.from("cronogramas").insert({
         nome: nome.trim(),
-        categoria: categoria.trim() || null,
+        categoria: categoriaFinal,
         imagem_url,
-        premium,
+        premium: isStaff ? premium : false,
         created_by: user?.id ?? null,
         criado_por: !isStaff ? user?.id ?? null : null,
         is_proprio: !isStaff,
@@ -118,15 +139,22 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
               className="mt-1 bg-background"
             />
           </div>
-          <div>
-            <Label className="text-[12px] text-text-muted">Carreira / Categoria</Label>
-            <Input
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
-              placeholder="Ex: Delegado"
-              className="mt-1 bg-background"
-            />
-          </div>
+          {isAdminOrMod ? (
+            <div>
+              <Label className="text-[12px] text-text-muted">Carreira / Categoria</Label>
+              <Input
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                placeholder="Ex: Delegado"
+                className="mt-1 bg-background"
+              />
+            </div>
+          ) : (
+            <div className="rounded-[10px] bg-background border border-border px-3 py-2">
+              <div className="text-[11px] text-text-muted">Categoria</div>
+              <div className="text-[13px] text-text-main">Cronograma Pessoal</div>
+            </div>
+          )}
           <div>
             <Label className="text-[12px] text-text-muted">Imagem de capa</Label>
             <button
@@ -158,13 +186,15 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
               onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
             />
           </div>
-          <div className="flex items-center justify-between rounded-[10px] bg-background border border-border px-3 py-2">
-            <div>
-              <div className="text-[13px] text-text-main">Premium</div>
-              <div className="text-[11px] text-text-muted">Restrito a assinantes</div>
+          {isAdminOrMod && (
+            <div className="flex items-center justify-between rounded-[10px] bg-background border border-border px-3 py-2">
+              <div>
+                <div className="text-[13px] text-text-main">Premium</div>
+                <div className="text-[11px] text-text-muted">Restrito a assinantes</div>
+              </div>
+              <Switch checked={premium} onCheckedChange={setPremium} />
             </div>
-            <Switch checked={premium} onCheckedChange={setPremium} />
-          </div>
+          )}
           <Button
             type="submit"
             disabled={saving || !nome.trim()}
