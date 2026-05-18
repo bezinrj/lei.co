@@ -46,18 +46,6 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
     if (!nome.trim()) return;
     setSaving(true);
     try {
-      let imagem_url: string | null = null;
-      if (file) {
-        const ext = file.name.split(".").pop();
-        const path = `${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("cronogramas-covers")
-          .upload(path, file, { cacheControl: "3600", upsert: false });
-        if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("cronogramas-covers").getPublicUrl(path);
-        imagem_url = pub.publicUrl;
-      }
-
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -74,11 +62,42 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
         );
       }
 
+      // Alunos só podem criar 1 cronograma pessoal
+      if (!isStaff && user) {
+        const { data: existente } = await supabase
+          .from("cronogramas")
+          .select("id")
+          .eq("criado_por", user.id)
+          .eq("is_proprio", true)
+          .maybeSingle();
+        if (existente) {
+          toast.error("Você já possui um cronograma pessoal.");
+          setSaving(false);
+          return;
+        }
+      }
+
+      let imagem_url: string | null = null;
+      if (file) {
+        const ext = file.name.split(".").pop();
+        const path = `${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("cronogramas-covers")
+          .upload(path, file, { cacheControl: "3600", upsert: false });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("cronogramas-covers").getPublicUrl(path);
+        imagem_url = pub.publicUrl;
+      }
+
+      const categoriaFinal = isStaff
+        ? (categoria.trim() || null)
+        : "Cronograma Pessoal";
+
       const { error } = await supabase.from("cronogramas").insert({
         nome: nome.trim(),
-        categoria: categoria.trim() || null,
+        categoria: categoriaFinal,
         imagem_url,
-        premium,
+        premium: isStaff ? premium : false,
         created_by: user?.id ?? null,
         criado_por: !isStaff ? user?.id ?? null : null,
         is_proprio: !isStaff,
