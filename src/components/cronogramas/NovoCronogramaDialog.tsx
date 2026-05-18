@@ -139,15 +139,22 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
               className="mt-1 bg-background"
             />
           </div>
-          <div>
-            <Label className="text-[12px] text-text-muted">Carreira / Categoria</Label>
-            <Input
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
-              placeholder="Ex: Delegado"
-              className="mt-1 bg-background"
-            />
-          </div>
+          {isAdminOrMod ? (
+            <div>
+              <Label className="text-[12px] text-text-muted">Carreira / Categoria</Label>
+              <Input
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                placeholder="Ex: Delegado"
+                className="mt-1 bg-background"
+              />
+            </div>
+          ) : (
+            <div className="rounded-[10px] bg-background border border-border px-3 py-2">
+              <div className="text-[11px] text-text-muted">Categoria</div>
+              <div className="text-[13px] text-text-main">Cronograma Pessoal</div>
+            </div>
+          )}
           <div>
             <Label className="text-[12px] text-text-muted">Imagem de capa</Label>
             <button
