@@ -54,16 +54,17 @@ function periodoLabel(p: Periodo): string {
   return "Total de atividades";
 }
 
-export function SubjectPerformance() {
+export function SubjectPerformance({ userId }: { userId?: string } = {}) {
   const { user } = useAuth();
+  const targetUserId = userId ?? user?.id;
   const [visao, setVisao] = useState<Visao>("disciplinas");
   const [modo, setModo] = useState<Modo>("horas");
   const [periodo, setPeriodo] = useState<Periodo>("total");
   const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<string>("");
 
   const { data: sessoes = [] } = useQuery<SessaoRow[]>({
-    queryKey: ["dashboard-grafico", user?.id, periodo],
-    enabled: !!user,
+    queryKey: ["dashboard-grafico", targetUserId, periodo],
+    enabled: !!targetUserId,
     queryFn: async () => {
       let query = supabase
         .from("user_sessions")
@@ -72,7 +73,7 @@ export function SubjectPerformance() {
            cronograma_topicos!inner(titulo, assunto,
              cronograma_materias!inner(nome, cor))`,
         )
-        .eq("user_id", user!.id)
+        .eq("user_id", targetUserId!)
         .not("percentual_acerto", "is", null);
 
       const hoje = new Date();

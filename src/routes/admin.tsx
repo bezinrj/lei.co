@@ -242,8 +242,7 @@ function AdminPage() {
                     key={u.id}
                     user={u}
                     onView={() => {
-                      setSelectedUserId(u.id);
-                      setSheetOpen(true);
+                      navigate({ to: "/admin/aluno/$id", params: { id: u.id } });
                     }}
                   />
                 ))

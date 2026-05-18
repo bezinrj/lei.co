@@ -25,8 +25,9 @@ function parseTempo(t: string | null): number {
   return hh + mm / 60;
 }
 
-export function WeeklyPerformance() {
+export function WeeklyPerformance({ userId }: { userId?: string } = {}) {
   const { user } = useAuth();
+  const targetUserId = userId ?? user?.id;
   const [modo, setModo] = useState<Modo>("horas");
 
   const { inicio, fim } = useMemo(() => {
@@ -36,13 +37,13 @@ export function WeeklyPerformance() {
   }, []);
 
   const { data: dados } = useQuery({
-    queryKey: ["dashboard-semana", user?.id, format(inicio, "yyyy-MM-dd")],
-    enabled: !!user,
+    queryKey: ["dashboard-semana", targetUserId, format(inicio, "yyyy-MM-dd")],
+    enabled: !!targetUserId,
     queryFn: async () => {
       const { data } = await supabase
         .from("user_sessions")
         .select("data, tempo_estudado, questoes")
-        .eq("user_id", user!.id)
+        .eq("user_id", targetUserId!)
         .gte("data", format(inicio, "yyyy-MM-dd"))
         .lte("data", format(fim, "yyyy-MM-dd"));
 

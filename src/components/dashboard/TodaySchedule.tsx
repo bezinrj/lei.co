@@ -14,13 +14,14 @@ type EventoHoje = {
   materia_nome: string | null;
 };
 
-export function TodaySchedule() {
+export function TodaySchedule({ userId }: { userId?: string } = {}) {
   const { user } = useAuth();
+  const targetUserId = userId ?? user?.id;
   const hoje = format(new Date(), "yyyy-MM-dd");
 
   const { data: eventos } = useQuery<EventoHoje[]>({
-    queryKey: ["dashboard-hoje", user?.id, hoje],
-    enabled: !!user,
+    queryKey: ["dashboard-hoje", targetUserId, hoje],
+    enabled: !!targetUserId,
     queryFn: async () => {
       const { data } = await supabase
         .from("user_calendar_events")
@@ -28,7 +29,7 @@ export function TodaySchedule() {
           `id, titulo, hora_inicio, hora_fim, concluido, is_revisao,
            cronograma_materias(nome)`,
         )
-        .eq("user_id", user!.id)
+        .eq("user_id", targetUserId!)
         .eq("data", hoje)
         .order("hora_inicio", { ascending: true, nullsFirst: false });
 
