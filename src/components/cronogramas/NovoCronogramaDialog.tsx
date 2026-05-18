@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Upload, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
+  const { isAdminOrMod } = useAuth();
   const [nome, setNome] = useState("");
   const [categoria, setCategoria] = useState("");
   const [premium, setPremium] = useState(false);
