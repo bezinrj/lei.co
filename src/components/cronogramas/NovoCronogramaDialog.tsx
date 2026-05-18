@@ -186,13 +186,15 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
               onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
             />
           </div>
-          <div className="flex items-center justify-between rounded-[10px] bg-background border border-border px-3 py-2">
-            <div>
-              <div className="text-[13px] text-text-main">Premium</div>
-              <div className="text-[11px] text-text-muted">Restrito a assinantes</div>
+          {isAdminOrMod && (
+            <div className="flex items-center justify-between rounded-[10px] bg-background border border-border px-3 py-2">
+              <div>
+                <div className="text-[13px] text-text-main">Premium</div>
+                <div className="text-[11px] text-text-muted">Restrito a assinantes</div>
+              </div>
+              <Switch checked={premium} onCheckedChange={setPremium} />
             </div>
-            <Switch checked={premium} onCheckedChange={setPremium} />
-          </div>
+          )}
           <Button
             type="submit"
             disabled={saving || !nome.trim()}
