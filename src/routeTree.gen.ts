@@ -23,6 +23,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as GruposIdRouteImport } from './routes/grupos.$id'
 import { Route as CronogramaIdRouteImport } from './routes/cronograma.$id'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe.webhook'
+import { Route as AdminAlunoIdRouteImport } from './routes/admin.aluno.$id'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -97,6 +98,11 @@ const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   path: '/api/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAlunoIdRoute = AdminAlunoIdRouteImport.update({
+  id: '/aluno/$id',
+  path: '/aluno/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -116,7 +122,7 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
   '/grupos/$id': typeof GruposIdRoute
+  '/admin/aluno/$id': typeof AdminAlunoIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -135,7 +142,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
   '/grupos/$id': typeof GruposIdRoute
+  '/admin/aluno/$id': typeof AdminAlunoIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -155,7 +163,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/cronogramas': typeof CronogramasRoute
   '/dashboard': typeof DashboardRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/ranking': typeof RankingRoute
   '/cronograma/$id': typeof CronogramaIdRoute
   '/grupos/$id': typeof GruposIdRoute
+  '/admin/aluno/$id': typeof AdminAlunoIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/ranking'
     | '/cronograma/$id'
     | '/grupos/$id'
+    | '/admin/aluno/$id'
     | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/ranking'
     | '/cronograma/$id'
     | '/grupos/$id'
+    | '/admin/aluno/$id'
     | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/ranking'
     | '/cronograma/$id'
     | '/grupos/$id'
+    | '/admin/aluno/$id'
     | '/api/stripe/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -234,7 +246,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   CronogramasRoute: typeof CronogramasRoute
   DashboardRoute: typeof DashboardRoute
@@ -351,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/aluno/$id': {
+      id: '/admin/aluno/$id'
+      path: '/aluno/$id'
+      fullPath: '/admin/aluno/$id'
+      preLoaderRoute: typeof AdminAlunoIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
       path: '/lovable/email/queue/process'
@@ -375,6 +394,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAlunoIdRoute: typeof AdminAlunoIdRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAlunoIdRoute: AdminAlunoIdRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface GruposRouteChildren {
   GruposIdRoute: typeof GruposIdRoute
 }
@@ -388,7 +417,7 @@ const GruposRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   CronogramasRoute: CronogramasRoute,
   DashboardRoute: DashboardRoute,
@@ -407,3 +436,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
