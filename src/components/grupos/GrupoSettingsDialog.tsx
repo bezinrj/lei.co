@@ -299,7 +299,7 @@ function TabMembros({ grupo, onChange }: { grupo: GrupoFull; onChange: () => voi
     const ids = (ms ?? []).map((m) => m.user_id);
     const safe = ids.length ? ids : ["00000000-0000-0000-0000-000000000000"];
     const [{ data: profs }, { data: xps }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, avatar_url").in("id", safe),
+      supabase.from("profiles_public").select("id, display_name, avatar_url").in("id", safe),
       supabase.from("user_xp").select("user_id, xp_total").in("user_id", safe),
     ]);
     const final: MembroSimples[] = (ms ?? []).map((m) => {
@@ -731,7 +731,7 @@ function TabDesafios({ grupo, onChange }: { grupo: GrupoFull; onChange: () => vo
 
     const userIds = Array.from(new Set((concl ?? []).map((c) => c.user_id)));
     const { data: profs } = userIds.length
-      ? await supabase.from("profiles").select("id, display_name").in("id", userIds)
+      ? await supabase.from("profiles_public").select("id, display_name").in("id", userIds)
       : { data: [] as { id: string; display_name: string | null }[] };
 
     const ativosArr: DesafioRow[] = [];
