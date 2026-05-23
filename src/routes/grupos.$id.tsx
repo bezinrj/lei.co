@@ -234,7 +234,7 @@ function GrupoDetailPage() {
     // 3. Profiles + XP
     const [{ data: profs }, { data: xps }] = await Promise.all([
       supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, display_name")
         .in("id", memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"]),
       supabase
