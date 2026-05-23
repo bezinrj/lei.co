@@ -731,7 +731,7 @@ function TabDesafios({ grupo, onChange }: { grupo: GrupoFull; onChange: () => vo
 
     const userIds = Array.from(new Set((concl ?? []).map((c) => c.user_id)));
     const { data: profs } = userIds.length
-      ? await supabase.from("profiles").select("id, display_name").in("id", userIds)
+      ? await supabase.from("profiles_public").select("id, display_name").in("id", userIds)
       : { data: [] as { id: string; display_name: string | null }[] };
 
     const ativosArr: DesafioRow[] = [];
