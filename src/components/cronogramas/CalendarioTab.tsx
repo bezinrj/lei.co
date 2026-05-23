@@ -121,9 +121,10 @@ export function CalendarioTab({
     () =>
       eventos.map((e) => ({
         ...e,
+        data: dataOverrides[e.id] ?? e.data,
         materia_nome: e.materia_id ? materiaNome.get(e.materia_id) ?? "—" : "—",
       })),
-    [eventos, materiaNome],
+    [eventos, materiaNome, dataOverrides],
   );
 
   const today = new Date();
