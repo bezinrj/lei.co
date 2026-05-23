@@ -202,11 +202,22 @@ export function CalendarioTab({
   async function moveEvento(id: string, novaData: string) {
     const ev = evs.find((e) => e.id === id);
     if (!ev || ev.data === novaData || ev.concluido) return;
+    // Atualiza UI imediatamente (otimista)
+    setDataOverrides((prev) => ({ ...prev, [id]: novaData }));
     const { error } = await supabase
       .from("user_calendar_events")
       .update({ data: novaData })
       .eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // Reverte se falhou
+      setDataOverrides((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      toast.error(error.message);
+      return;
+    }
     onChange();
   }
 
