@@ -83,6 +83,26 @@ export function CalendarioTab({
   const [sessaoSegundos, setSessaoSegundos] = useState(0);
   const [limparOpen, setLimparOpen] = useState(false);
   const [detailDay, setDetailDay] = useState<string | null>(null);
+  // Optimistic overrides: id -> nova data. Aplicado em cima de `eventos` para
+  // refletir o drag-and-drop instantaneamente, sem esperar o round-trip.
+  const [dataOverrides, setDataOverrides] = useState<Record<string, string>>({});
+
+  // Quando os eventos vindos do servidor já refletirem o override, limpamos.
+  useEffect(() => {
+    setDataOverrides((prev) => {
+      let changed = false;
+      const next: Record<string, string> = {};
+      for (const [id, data] of Object.entries(prev)) {
+        const ev = eventos.find((e) => e.id === id);
+        if (ev && ev.data === data) {
+          changed = true;
+          continue;
+        }
+        next[id] = data;
+      }
+      return changed ? next : prev;
+    });
+  }, [eventos]);
 
   const materiaNome = useMemo(() => {
     const m = new Map<string, string>();
@@ -101,9 +121,10 @@ export function CalendarioTab({
     () =>
       eventos.map((e) => ({
         ...e,
+        data: dataOverrides[e.id] ?? e.data,
         materia_nome: e.materia_id ? materiaNome.get(e.materia_id) ?? "—" : "—",
       })),
-    [eventos, materiaNome],
+    [eventos, materiaNome, dataOverrides],
   );
 
   const today = new Date();
@@ -181,11 +202,22 @@ export function CalendarioTab({
   async function moveEvento(id: string, novaData: string) {
     const ev = evs.find((e) => e.id === id);
     if (!ev || ev.data === novaData || ev.concluido) return;
+    // Atualiza UI imediatamente (otimista)
+    setDataOverrides((prev) => ({ ...prev, [id]: novaData }));
     const { error } = await supabase
       .from("user_calendar_events")
       .update({ data: novaData })
       .eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // Reverte se falhou
+      setDataOverrides((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      toast.error(error.message);
+      return;
+    }
     onChange();
   }
 
