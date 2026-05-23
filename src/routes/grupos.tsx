@@ -731,16 +731,7 @@ function EntrarGrupoDialog({
 
     setSaving(true);
     try {
-      // Tenta como código de convite
-      let { data: grupo } = await supabase
-        .from("grupos")
-        .select("id, nome, max_membros")
-        .eq("codigo_convite", entrada)
-        .maybeSingle();
-
-      // Se não encontrou e parece com friend_id, busca grupos do amigo? Spec: "código #RATS-XXXX ou ID de amigo"
-      // Friend ID busca o usuário e mostra erro pedindo código real (não há grupos via friend_id direto)
-      if (!grupo && entrada.startsWith("#LEI-")) {
+      if (entrada.startsWith("#LEI-")) {
         toast.error(
           "ID de amigo encontrado, mas você precisa do código #RATS-XXXX do grupo.",
         );
@@ -748,47 +739,34 @@ function EntrarGrupoDialog({
         return;
       }
 
-      if (!grupo) {
-        toast.error("Grupo não encontrado. Verifique o código.");
-        setSaving(false);
-        return;
-      }
-
-      // Verificar se já é membro
-      const { data: jaMembro } = await supabase
-        .from("grupo_membros")
-        .select("id")
-        .eq("grupo_id", grupo.id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (jaMembro) {
-        toast.info("Você já é membro deste grupo.");
-        onOpenChange(false);
-        setSaving(false);
-        return;
-      }
-
-      // Verificar vagas
-      const { count } = await supabase
-        .from("grupo_membros")
-        .select("*", { count: "exact", head: true })
-        .eq("grupo_id", grupo.id);
-
-      if ((count ?? 0) >= grupo.max_membros) {
-        toast.error("Este grupo está cheio.");
-        setSaving(false);
-        return;
-      }
-
-      const { error } = await supabase.from("grupo_membros").insert({
-        grupo_id: grupo.id,
-        user_id: user.id,
-        role: "membro",
+      const { data, error } = await supabase.rpc("entrar_grupo_por_codigo", {
+        _codigo: entrada,
       });
       if (error) throw error;
 
-      toast.success(`Você entrou em "${grupo.nome}"!`);
+      const res = (data ?? {}) as {
+        ok?: boolean;
+        reason?: string;
+        nome?: string;
+      };
+
+      if (!res.ok) {
+        if (res.reason === "not_found") {
+          toast.error("Grupo não encontrado. Verifique o código.");
+        } else if (res.reason === "full") {
+          toast.error("Este grupo está cheio.");
+        } else if (res.reason === "already_member") {
+          toast.info("Você já é membro deste grupo.");
+          onOpenChange(false);
+          onJoined();
+        } else {
+          toast.error("Não foi possível entrar no grupo.");
+        }
+        setSaving(false);
+        return;
+      }
+
+      toast.success(`Você entrou em "${res.nome ?? "grupo"}"!`);
       setCodigo("");
       onOpenChange(false);
       onJoined();
