@@ -63,6 +63,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assinaturas_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       badges: {
@@ -133,6 +140,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_compras_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -282,6 +296,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cronogramas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       email_send_log: {
@@ -404,6 +425,13 @@ export type Database = {
             referencedRelation: "grupos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "grupo_atividades_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       grupo_desafios: {
@@ -446,6 +474,13 @@ export type Database = {
             columns: ["grupo_id"]
             isOneToOne: false
             referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grupo_desafios_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos_public"
             referencedColumns: ["id"]
           },
         ]
@@ -518,6 +553,13 @@ export type Database = {
             referencedRelation: "grupos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "grupo_membros_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       grupo_metas: {
@@ -566,6 +608,13 @@ export type Database = {
             columns: ["grupo_id"]
             isOneToOne: false
             referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grupo_metas_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1191,9 +1240,75 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      grupos_public: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          descricao: string | null
+          foto_url: string | null
+          id: string | null
+          max_membros: number | null
+          nome: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string | null
+          max_membros?: number | null
+          nome?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string | null
+          max_membros?: number | null
+          nome?: string | null
+        }
+        Relationships: []
+      }
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          friend_id: string | null
+          id: string | null
+          last_seen: string | null
+          plano_atual: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          friend_id?: string | null
+          id?: string | null
+          last_seen?: string | null
+          plano_atual?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          friend_id?: string | null
+          id?: string | null
+          last_seen?: string | null
+          plano_atual?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      award_xp: {
+        Args: { _horas_add?: number; _questoes_add?: number; _xp_ganho: number }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1202,6 +1317,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      entrar_grupo_por_codigo: { Args: { _codigo: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
