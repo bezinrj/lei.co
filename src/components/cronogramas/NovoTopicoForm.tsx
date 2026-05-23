@@ -244,9 +244,9 @@ export function NovoTopicoForm({
       const atencaoClean = atencao.trim() || null;
 
       if (isEdit && editing) {
-        const materiaChanged = materiaId !== editing.materia_id;
         const oldOrdem = editing.ordem ?? 0;
         const newOrdem = Math.max(0, (posicao || 1) - 1);
+        const posicaoChanged = newOrdem !== oldOrdem;
 
         const { error } = await supabase
           .from("cronograma_topicos")
@@ -261,14 +261,21 @@ export function NovoTopicoForm({
           .eq("id", editing.id);
         if (error) throw error;
 
-        if (materiaChanged || newOrdem !== oldOrdem) {
-          const { data: irmaos } = await supabase
+        // Só renumera quando o usuário muda explicitamente a posição na fila.
+        // Mudança de matéria sozinha NÃO altera a posição global do tópico.
+        if (posicaoChanged) {
+          const { data: matIds } = await supabase
+            .from("cronograma_materias")
+            .select("id")
+            .eq("cronograma_id", cronogramaId);
+          const ids = (matIds ?? []).map((m) => m.id);
+          const { data: todos } = await supabase
             .from("cronograma_topicos")
             .select("id, ordem")
-            .eq("materia_id", materiaId)
+            .in("materia_id", ids)
             .order("ordem", { ascending: true });
 
-          const lista = (irmaos ?? []).filter((t) => t.id !== editing.id);
+          const lista = (todos ?? []).filter((t) => t.id !== editing.id);
           const insertAt = Math.min(newOrdem, lista.length);
           lista.splice(insertAt, 0, { id: editing.id, ordem: 0 });
           await Promise.all(
