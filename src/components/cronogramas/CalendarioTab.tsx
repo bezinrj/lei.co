@@ -224,16 +224,36 @@ export function CalendarioTab({
   async function shiftEventos(deltaDias: number) {
     const pendentes = evs.filter((e) => !e.concluido);
     if (pendentes.length === 0) return;
-    for (const ev of pendentes) {
-      const nova = addDays(parseISO(ev.data), deltaDias);
-      // pular domingos
-      const adj = nextWeekday(nova);
-      await supabase
-        .from("user_calendar_events")
-        .update({ data: isoDate(adj) })
-        .eq("id", ev.id);
-    }
+
+    // Calcula novas datas (pulando domingos)
+    const updates = pendentes.map((ev) => ({
+      id: ev.id,
+      novaData: isoDate(nextWeekday(addDays(parseISO(ev.data), deltaDias))),
+    }));
+
+    // Atualiza UI imediatamente (otimista)
+    setDataOverrides((prev) => {
+      const next = { ...prev };
+      for (const u of updates) next[u.id] = u.novaData;
+      return next;
+    });
     toast.success(`Eventos movidos ${deltaDias > 0 ? "+" : ""}${deltaDias} dias`);
+
+    // Dispara updates em paralelo
+    const results = await Promise.all(
+      updates.map((u) =>
+        supabase.from("user_calendar_events").update({ data: u.novaData }).eq("id", u.id)
+      )
+    );
+    const falhou = results.some((r) => r.error);
+    if (falhou) {
+      setDataOverrides((prev) => {
+        const next = { ...prev };
+        for (const u of updates) delete next[u.id];
+        return next;
+      });
+      toast.error("Erro ao mover alguns eventos");
+    }
     onChange();
   }
 
