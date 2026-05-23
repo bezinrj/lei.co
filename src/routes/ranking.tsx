@@ -85,7 +85,7 @@ function RankingPage() {
 
     const [{ data: profs }, { data: sessoes }] = await Promise.all([
       supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, display_name, avatar_url")
         .in("id", safeIds),
       supabase
