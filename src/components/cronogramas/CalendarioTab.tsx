@@ -83,6 +83,26 @@ export function CalendarioTab({
   const [sessaoSegundos, setSessaoSegundos] = useState(0);
   const [limparOpen, setLimparOpen] = useState(false);
   const [detailDay, setDetailDay] = useState<string | null>(null);
+  // Optimistic overrides: id -> nova data. Aplicado em cima de `eventos` para
+  // refletir o drag-and-drop instantaneamente, sem esperar o round-trip.
+  const [dataOverrides, setDataOverrides] = useState<Record<string, string>>({});
+
+  // Quando os eventos vindos do servidor já refletirem o override, limpamos.
+  useEffect(() => {
+    setDataOverrides((prev) => {
+      let changed = false;
+      const next: Record<string, string> = {};
+      for (const [id, data] of Object.entries(prev)) {
+        const ev = eventos.find((e) => e.id === id);
+        if (ev && ev.data === data) {
+          changed = true;
+          continue;
+        }
+        next[id] = data;
+      }
+      return changed ? next : prev;
+    });
+  }, [eventos]);
 
   const materiaNome = useMemo(() => {
     const m = new Map<string, string>();
