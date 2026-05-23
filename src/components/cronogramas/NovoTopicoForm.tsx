@@ -244,9 +244,9 @@ export function NovoTopicoForm({
       const atencaoClean = atencao.trim() || null;
 
       if (isEdit && editing) {
-        const materiaChanged = materiaId !== editing.materia_id;
         const oldOrdem = editing.ordem ?? 0;
         const newOrdem = Math.max(0, (posicao || 1) - 1);
+        const posicaoChanged = newOrdem !== oldOrdem;
 
         const { error } = await supabase
           .from("cronograma_topicos")
@@ -261,14 +261,21 @@ export function NovoTopicoForm({
           .eq("id", editing.id);
         if (error) throw error;
 
-        if (materiaChanged || newOrdem !== oldOrdem) {
-          const { data: irmaos } = await supabase
+        // Só renumera quando o usuário muda explicitamente a posição na fila.
+        // Mudança de matéria sozinha NÃO altera a posição global do tópico.
+        if (posicaoChanged) {
+          const { data: matIds } = await supabase
+            .from("cronograma_materias")
+            .select("id")
+            .eq("cronograma_id", cronogramaId);
+          const ids = (matIds ?? []).map((m) => m.id);
+          const { data: todos } = await supabase
             .from("cronograma_topicos")
             .select("id, ordem")
-            .eq("materia_id", materiaId)
+            .in("materia_id", ids)
             .order("ordem", { ascending: true });
 
-          const lista = (irmaos ?? []).filter((t) => t.id !== editing.id);
+          const lista = (todos ?? []).filter((t) => t.id !== editing.id);
           const insertAt = Math.min(newOrdem, lista.length);
           lista.splice(insertAt, 0, { id: editing.id, ordem: 0 });
           await Promise.all(
@@ -369,7 +376,7 @@ export function NovoTopicoForm({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <div>
             <label className="text-[11px] text-text-muted mb-1 block">
-              Posição na matéria
+              Posição na fila
             </label>
             <Input
               type="number"
@@ -379,7 +386,7 @@ export function NovoTopicoForm({
               className="bg-background h-9"
             />
             <span className="text-[10px] text-text-muted mt-1 block">
-              Define a ordem do tópico dentro da matéria selecionada.
+              Mantém a posição atual se não for alterada.
             </span>
           </div>
         </div>
