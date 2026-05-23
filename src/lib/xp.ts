@@ -209,39 +209,40 @@ export async function concederXP(
 
   if (xp_final <= 0) return { ...ZERO_RES };
 
-  // Upsert do diário
-  await supabase.from("user_xp_diario").upsert(
-    {
-      user_id,
-      data: hoje,
-      horas_computadas: horas_hoje,
-      questoes_computadas: questoes_hoje,
-      xp_ganho: Number(diarioRow?.xp_ganho ?? 0) + xp_final,
-    },
-    { onConflict: "user_id,data" },
+  const horas_add = Math.max(
+    0,
+    horas_hoje - Number(diarioRow?.horas_computadas ?? 0),
+  );
+  const questoes_add = Math.max(
+    0,
+    questoes_hoje - Number(diarioRow?.questoes_computadas ?? 0),
   );
 
-  // Buscar XP total e atualizar
-  const { data: xpRow } = await supabase
-    .from("user_xp")
-    .select("xp_total, nivel")
-    .eq("user_id", user_id)
-    .maybeSingle();
+  const nivel_anterior = Number(
+    (
+      await supabase
+        .from("user_xp")
+        .select("nivel")
+        .eq("user_id", user_id)
+        .maybeSingle()
+    ).data?.nivel ?? 0,
+  );
 
-  const nivel_anterior = xpRow?.nivel ?? 0;
-  const xp_novo = (xpRow?.xp_total ?? 0) + xp_final;
+  // Gravação segura via SECURITY DEFINER (valida limites e impede manipulação)
+  const { data: res, error } = await supabase.rpc("award_xp", {
+    _xp_ganho: xp_final,
+    _horas_add: horas_add,
+    _questoes_add: questoes_add,
+  });
+  if (error) {
+    console.error("award_xp falhou", error);
+    return { ...ZERO_RES };
+  }
+
+  const payload = (res ?? {}) as { xp_total?: number; nivel?: number };
+  const xp_novo = Number(payload.xp_total ?? 0);
   const nivel_novo = calcularNivel(xp_novo);
   const levelUp = nivel_novo > nivel_anterior;
-
-  await supabase.from("user_xp").upsert(
-    {
-      user_id,
-      xp_total: xp_novo,
-      nivel: nivel_novo,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
 
   return {
     xp_ganho: xp_final,
