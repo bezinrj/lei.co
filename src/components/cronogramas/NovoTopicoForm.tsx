@@ -376,7 +376,7 @@ export function NovoTopicoForm({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <div>
             <label className="text-[11px] text-text-muted mb-1 block">
-              Posição na matéria
+              Posição na fila
             </label>
             <Input
               type="number"
@@ -386,7 +386,7 @@ export function NovoTopicoForm({
               className="bg-background h-9"
             />
             <span className="text-[10px] text-text-muted mt-1 block">
-              Define a ordem do tópico dentro da matéria selecionada.
+              Mantém a posição atual se não for alterada.
             </span>
           </div>
         </div>
