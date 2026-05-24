@@ -585,8 +585,13 @@ function AdicionarProdutoCard({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center gap-1.5 min-h-[220px] rounded-[14px] border-2 border-dashed transition-colors"
-      style={{ borderColor: "#e5e7eb", color: "#8A8478", background: "transparent" }}
+      className="flex flex-col items-center justify-center gap-1 rounded-[14px] border-2 border-dashed transition-colors"
+      style={{
+        aspectRatio: "4 / 3",
+        borderColor: "#e5e7eb",
+        color: "#8A8478",
+        background: "transparent",
+      }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = "#B8C9B0";
         e.currentTarget.style.color = "#7A9A70";
@@ -596,11 +601,12 @@ function AdicionarProdutoCard({ onClick }: { onClick: () => void }) {
         e.currentTarget.style.color = "#8A8478";
       }}
     >
-      <Plus size={24} />
-      <div className="text-[12px] font-medium">Adicionar produto</div>
+      <Plus size={20} />
+      <div className="text-[11px] font-medium">Adicionar</div>
     </button>
   );
 }
+
 
 /* ---------- Form (admin) ---------- */
 
