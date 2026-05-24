@@ -246,7 +246,7 @@ function LojaPage() {
 
       {/* Grid */}
       {!loading && (lista.length > 0 || isAdmin) && (
-        <div className="grid gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {lista.map((p) => (
             <ProdutoCard
               key={p.id}
@@ -259,6 +259,7 @@ function LojaPage() {
           {isAdmin && <AdicionarProdutoCard onClick={abrirNovo} />}
         </div>
       )}
+
 
       {!loading && lista.length === 0 && produtos.length > 0 && !destaque && !isAdmin && (
         <div className="lei-card text-center py-12 text-text-muted text-[13px]">
