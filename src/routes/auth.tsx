@@ -113,7 +113,7 @@ function AuthPage() {
             </div>
             {mode === "signup" && (
               <div>
-                <Label className="text-[12px] text-text-muted">Telefone (opcional)</Label>
+                <Label className="text-[12px] text-text-muted">Telefone (WhatsApp)</Label>
                 <Input
                   type="tel"
                   inputMode="numeric"
@@ -121,10 +121,13 @@ function AuthPage() {
                   onChange={(e) => setTelefone(maskPhoneBR(e.target.value))}
                   placeholder="(11) 99999-9999"
                   maxLength={15}
+                  minLength={14}
+                  required
                   className="mt-1"
                 />
               </div>
             )}
+
             <div>
               <Label className="text-[12px] text-text-muted">Senha</Label>
               <Input
