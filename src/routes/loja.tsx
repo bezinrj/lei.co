@@ -526,34 +526,34 @@ function ProdutoCard({
       </div>
 
       {/* Corpo */}
-      <div className="p-3 flex flex-col flex-1">
+      <div className="p-2.5 flex flex-col flex-1">
         {produto.categoria && (
           <div
-            className="text-[10px] uppercase tracking-wider mb-1"
+            className="text-[9px] uppercase tracking-wider mb-0.5"
             style={{ color: "#8A8478" }}
           >
             {CAT_LABEL[produto.categoria]}
           </div>
         )}
-        <div className="text-[13px] font-medium text-text-main mb-1 leading-snug line-clamp-2">
+        <div className="text-[12px] font-medium text-text-main mb-1 leading-snug line-clamp-2">
           {produto.nome}
         </div>
         {produto.descricao && (
-          <div className="text-[11px] text-text-muted leading-relaxed mb-2.5 line-clamp-2">
+          <div className="hidden sm:block text-[10px] text-text-muted leading-relaxed mb-2 line-clamp-2">
             {produto.descricao}
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-2">
-          <div className="flex items-baseline gap-1">
+        <div className="mt-auto flex items-center justify-between gap-1.5">
+          <div className="flex items-baseline gap-1 min-w-0">
             {produto.preco_original_centavos ? (
-              <span className="text-[10px] text-gray-400 line-through">
+              <span className="text-[9px] text-gray-400 line-through">
                 {formatBRL(produto.preco_original_centavos)}
               </span>
             ) : null}
             {produto.preco_centavos != null && (
               <span
-                className="font-serif text-[16px] font-medium"
+                className="font-serif text-[14px] font-medium truncate"
                 style={{ color: produto.desconto_pct ? "#1D9E75" : "#111827" }}
               >
                 {formatBRL(produto.preco_centavos)}
@@ -565,7 +565,7 @@ function ProdutoCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="rounded-full px-3 py-[5px] text-[11px] hover:opacity-90 transition"
+            className="rounded-full px-2.5 py-1 text-[10px] hover:opacity-90 transition shrink-0"
             style={{
               background: "#F7F4EE",
               color: "#374151",
@@ -576,6 +576,7 @@ function ProdutoCard({
           </a>
         </div>
       </div>
+
     </div>
   );
 }
