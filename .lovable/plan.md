@@ -1,55 +1,58 @@
+# Loja — cards menores e destaque reforçado
+
 ## Objetivo
 
-Permitir que Admin/Moderador acessem uma página dedicada por aluno, com Dashboard, área de Cronogramas e Desempenho do aluno selecionado, podendo navegar e analisar seus dados (com possibilidade de edição usando os mesmos componentes já existentes).
+- Reduzir o tamanho dos cards de produto da grade para um visual mais compacto.
+- Reforçar o destaque do card que aparece no banner do topo (o `destaque`), para criar contraste visual claro entre ele e a grade.
 
-## Fluxo
+## Mudanças em `src/routes/loja.tsx`
 
-1. No Painel Admin, ao clicar em **"Ver perfil"** no card do aluno, navega para `/admin/aluno/$id` (em vez de abrir apenas o Sheet lateral).
-   - O Sheet de ações (bloquear, cortesia, role, etc.) fica acessível por um botão **"Ações & Plano"** dentro da nova página, mantendo todas as funcionalidades atuais.
+### 1. Grid mais denso (cards menores)
 
-2. A nova rota `/admin/aluno/$id` exibe, para o aluno selecionado:
-   - **Cabeçalho**: avatar, nome, friend_id, plano, status online, botões "Voltar" e "Ações & Plano".
-   - **Aba "Dashboard"**: métricas (horas, questões, sequência, badges) + Desempenho semanal + Hoje no cronograma + Desempenho por disciplinas/assuntos — reutilizando os componentes do dashboard atuais.
-   - **Aba "Cronogramas"**: lista de cronogramas em que o aluno tem ativação/acesso. Ao selecionar um, mostra abas **Matriz / Calendário / Desempenho** daquele aluno naquele cronograma — reutilizando `MatrizTab`, `CalendarioTab`, `DesempenhoTab` que já aceitam `userId` como prop.
+Hoje:
+```
+grid-cols-1 sm:grid-cols-2 lg:grid-cols-3   gap-3.5
+```
 
-3. Admin/Moderador veem os dados como se fossem o próprio aluno e podem editar o que esses componentes já permitem editar (matriz, eventos do calendário, registros de sessão, ativação, etc.).
+Novo:
+```
+grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5   gap-3
+```
 
-## Permissões
+Isso já reduz a largura de cada card sem mexer no conteúdo interno.
 
-- A rota só pode ser acessada por usuários com role `admin` ou `moderador` (gate em `beforeLoad`; redireciona para `/perfil` caso contrário).
-- Algumas tabelas (`user_calendar_events`, `user_topico_progresso`, `user_cronograma_ativacao`) hoje têm policies de SELECT só para `admin`. Para que **moderador** também consiga ler/editar os dados do aluno, criar policies espelho para moderador (SELECT/UPDATE/INSERT/DELETE) — escopo somente leitura de outros usuários + edição como suporte.
+### 2. `ProdutoCard` mais compacto
 
-## Mudanças técnicas
+- Imagem: trocar `aspect-ratio 1 / 1` por `4 / 3` (menos altura).
+- Emoji placeholder: `text-[36px]` → `text-[28px]`.
+- Padding interno do bloco de texto: reduzir (`p-3` → `p-2.5`), gap menor.
+- Nome: `text-[13px]` / `line-clamp-2`.
+- Descrição: ocultar em telas menores; manter `line-clamp-2` quando exibida (ou remover de vez do card para deixar só nome + preço + CTA).
+- Preço: `text-[15px]` (em vez do tamanho atual).
+- Botão "Comprar": pílula menor (`px-3 py-1.5 text-[11px]`), ícone 10px.
+- Badges no canto da imagem: já são pequenos; manter, apenas garantir `gap-0.5`.
 
-### Componentes a tornar parametrizáveis por `userId`
-Adicionar prop opcional `userId?: string` (quando ausente, mantém comportamento atual usando `useAuth`):
-- `src/components/dashboard/WeeklyPerformance.tsx`
-- `src/components/dashboard/TodaySchedule.tsx`
-- `src/components/dashboard/SubjectPerformance.tsx`
-- (`MatrizTab`, `CalendarioTab`, `DesempenhoTab` já aceitam `userId`.)
+Resultado: card visivelmente menor, ainda legível, com hierarquia nome → preço → CTA.
 
-`GroupRanking` permanece sem alteração (não faz sentido como "ranking do aluno X").
+### 3. `ProdutoDestaque` mais imponente (banner do topo)
 
-### Nova rota
-- `src/routes/admin.aluno.$id.tsx` — página com tabs Dashboard / Cronogramas.
-  - Carrega `profiles` + `user_cronograma_ativacao` do aluno.
-  - Lista cronogramas ativados; ao selecionar um, carrega matérias/tópicos/eventos/progresso do aluno alvo e renderiza `MatrizTab/CalendarioTab/DesempenhoTab` com `userId` do aluno.
-  - Botão "Ações & Plano" reabre o `UserProfileSheet` existente (sem duplicar lógica de bloqueio/cortesia/role/reset/relatório).
+Para criar contraste com a grade compacta:
 
-### Painel Admin
-- `src/routes/admin.tsx` (em `UserRow.onView`): trocar abertura do Sheet por `navigate({ to: '/admin/aluno/$id', params: { id: user.id } })`.
+- Altura mínima: `minHeight: 200` → `minHeight: 260` (desktop).
+- Imagem lateral: `md:w-[280px]` → `md:w-[360px]`, `h-[180px]` → `h-[220px]` no mobile.
+- Borda/sombras: adicionar `boxShadow: 0 8px 28px -12px rgba(29,158,117,0.25)` e `border` levemente mais marcada.
+- Badge fixa "⭐ Destaque da semana" no canto superior esquerdo da imagem (sobreposta), mesmo que o produto não tenha o badge `destaque` ativo.
+- Nome: `text-[20px]` → `text-[26px]`, mais peso visual.
+- Preço: `text-[22px]` → `text-[28px]`.
+- Botão "Comprar agora": maior (`px-7 py-3 text-[13px]`), com leve gradiente verde (`linear-gradient(135deg,#1D9E75,#0F7A5C)`).
+- Margem inferior do bloco aumenta (`mb-4` → `mb-6`) para separar bem do grid.
 
-### Migração RLS (para moderador)
-Adicionar policies para `moderador` em:
-- `user_calendar_events` (SELECT/INSERT/UPDATE/DELETE de qualquer aluno)
-- `user_topico_progresso` (idem)
-- `user_cronograma_ativacao` (idem)
-- `user_fonte_progress` já tem SELECT para mod; adicionar INSERT/UPDATE/DELETE.
+### 4. `AdicionarProdutoCard` (admin)
 
-Mantém-se as policies existentes do usuário sobre seus próprios dados.
+Ajustar para a mesma proporção `4 / 3` do novo `ProdutoCard`, mantendo o estilo tracejado.
 
 ## Fora do escopo
 
-- Não cria modo "impersonar" global no header/sidebar — o uso é via /admin/aluno/$id.
-- Não altera comportamento do `/dashboard` do próprio usuário.
-- Não cria UI nova de edição além do que os componentes já oferecem.
+- Sem mudanças no schema, queries, lógica de filtros, mutations ou form admin.
+- Sem alteração na ordem dos produtos nem nas regras de qual produto vira `destaque`.
+- Sem mudança no comportamento mobile do menu/AppShell.
