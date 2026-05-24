@@ -125,7 +125,9 @@ function periodoLabel(tipo: string) {
 function MeuPlanoPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { welcome } = Route.useSearch();
   const [planos, setPlanos] = useState<Plano[]>([]);
+
   const [planoAtual, setPlanoAtual] = useState<string>("gratuito");
   const [cronogramas, setCronogramas] = useState<CronogramaPremium[]>([]);
   const [comprados, setComprados] = useState<Set<string>>(new Set());
