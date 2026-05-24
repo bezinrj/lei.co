@@ -30,6 +30,14 @@ function AuthPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup") {
+      const tel = telefone.trim();
+      // Formato esperado: (11) 99999-9999 (14 ou 15 chars com máscara)
+      if (tel.length < 14) {
+        toast.error("Informe um telefone (WhatsApp) válido");
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       if (mode === "signup") {
@@ -42,14 +50,16 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        // Salva telefone (opcional) no profile criado pelo trigger
-        if (telefone.trim() && signUpData.user?.id) {
+        // Salva telefone (obrigatório) no profile criado pelo trigger
+        if (signUpData.user?.id) {
           await supabase
             .from("profiles")
             .update({ telefone: telefone.trim() })
             .eq("id", signUpData.user.id);
         }
-        toast.success("Cadastro realizado! Verifique seu email para confirmar.");
+        toast.success("Conta criada! Agora escolha seu plano.");
+        navigate({ to: "/meu-plano", search: { welcome: 1 } as never });
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -62,6 +72,7 @@ function AuthPage() {
       setSubmitting(false);
     }
   }
+
 
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center px-4">
@@ -102,7 +113,7 @@ function AuthPage() {
             </div>
             {mode === "signup" && (
               <div>
-                <Label className="text-[12px] text-text-muted">Telefone (opcional)</Label>
+                <Label className="text-[12px] text-text-muted">Telefone (WhatsApp)</Label>
                 <Input
                   type="tel"
                   inputMode="numeric"
@@ -110,10 +121,13 @@ function AuthPage() {
                   onChange={(e) => setTelefone(maskPhoneBR(e.target.value))}
                   placeholder="(11) 99999-9999"
                   maxLength={15}
+                  minLength={14}
+                  required
                   className="mt-1"
                 />
               </div>
             )}
+
             <div>
               <Label className="text-[12px] text-text-muted">Senha</Label>
               <Input

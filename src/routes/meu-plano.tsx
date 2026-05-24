@@ -21,6 +21,9 @@ import {
 
 export const Route = createFileRoute("/meu-plano")({
   component: MeuPlanoPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    welcome: search.welcome === 1 || search.welcome === "1" ? 1 : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Meu Plano | Lei.co" },
@@ -28,6 +31,7 @@ export const Route = createFileRoute("/meu-plano")({
     ],
   }),
 });
+
 
 type Plano = {
   id: string;
@@ -121,7 +125,9 @@ function periodoLabel(tipo: string) {
 function MeuPlanoPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { welcome } = Route.useSearch();
   const [planos, setPlanos] = useState<Plano[]>([]);
+
   const [planoAtual, setPlanoAtual] = useState<string>("gratuito");
   const [cronogramas, setCronogramas] = useState<CronogramaPremium[]>([]);
   const [comprados, setComprados] = useState<Set<string>>(new Set());
@@ -233,12 +239,27 @@ function MeuPlanoPage() {
   return (
     <AppShell title="Meu Plano">
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {welcome === 1 && (
+          <div
+            className="mb-6 rounded-[14px] p-4 text-center"
+            style={{ background: "#E8F0E5", border: "1px solid #B8C9B0", color: "#2F5D3A" }}
+          >
+            <div className="font-serif text-[18px] mb-1">Bem-vindo(a) à Lei.co! 🎉</div>
+            <p className="text-[13px]">
+              Sua conta foi criada. Escolha abaixo o plano ideal para começar — o
+              <strong> Gratuito</strong> já libera o essencial.
+            </p>
+          </div>
+        )}
         <header className="mb-10 text-center">
-          <h1 className="font-serif text-3xl md:text-4xl text-text-main mb-2">Meu Plano</h1>
+          <h1 className="font-serif text-3xl md:text-4xl text-text-main mb-2">
+            {welcome === 1 ? "Escolha seu plano" : "Meu Plano"}
+          </h1>
           <p className="text-text-muted">
             Escolha o plano ideal para o seu ritmo de estudo. Cancele quando quiser.
           </p>
         </header>
+
 
         <section className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 mb-14">
           {cards.map(({ tipo, plano }) => {
