@@ -21,6 +21,9 @@ import {
 
 export const Route = createFileRoute("/meu-plano")({
   component: MeuPlanoPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    welcome: search.welcome === 1 || search.welcome === "1" ? 1 : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Meu Plano | Lei.co" },
@@ -28,6 +31,7 @@ export const Route = createFileRoute("/meu-plano")({
     ],
   }),
 });
+
 
 type Plano = {
   id: string;
