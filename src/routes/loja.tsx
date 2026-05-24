@@ -246,7 +246,7 @@ function LojaPage() {
 
       {/* Grid */}
       {!loading && (lista.length > 0 || isAdmin) && (
-        <div className="grid gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {lista.map((p) => (
             <ProdutoCard
               key={p.id}
@@ -259,6 +259,7 @@ function LojaPage() {
           {isAdmin && <AdicionarProdutoCard onClick={abrirNovo} />}
         </div>
       )}
+
 
       {!loading && lista.length === 0 && produtos.length > 0 && !destaque && !isAdmin && (
         <div className="lei-card text-center py-12 text-text-muted text-[13px]">
@@ -368,15 +369,16 @@ function ProdutoDestaque({
 }) {
   return (
     <div
-      className="relative bg-card overflow-hidden mb-4 flex flex-col md:flex-row"
+      className="relative bg-card overflow-hidden mb-6 flex flex-col md:flex-row"
       style={{
-        borderRadius: 16,
-        border: "1px solid rgba(61,56,48,0.1)",
-        minHeight: 200,
+        borderRadius: 18,
+        border: "1px solid rgba(29,158,117,0.25)",
+        minHeight: 260,
+        boxShadow: "0 8px 28px -12px rgba(29,158,117,0.25)",
       }}
     >
       <div
-        className="w-full md:w-[280px] md:min-w-[280px] h-[180px] md:h-auto flex items-center justify-center text-5xl"
+        className="relative w-full md:w-[360px] md:min-w-[360px] h-[220px] md:h-auto flex items-center justify-center text-5xl"
         style={{
           background: produto.imagem_url
             ? `url(${produto.imagem_url}) center/cover`
@@ -385,30 +387,36 @@ function ProdutoDestaque({
         }}
       >
         {!produto.imagem_url && emojiCategoria(produto.categoria)}
+        <span
+          className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full px-2.5 py-[4px] text-[10px] font-semibold shadow-sm"
+          style={{ background: "#FAEEDA", color: "#412402" }}
+        >
+          <Star size={10} fill="#412402" /> Destaque da semana
+        </span>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col justify-between">
+      <div className="flex-1 p-6 md:p-7 flex flex-col justify-between">
         <div>
           <div className="mb-2.5">
             <BadgesRow produto={produto} />
           </div>
-          <div className="font-serif text-[20px] font-medium text-text-main mb-1.5">
+          <div className="font-serif text-[26px] font-medium text-text-main mb-2 leading-tight">
             {produto.nome}
           </div>
           {produto.descricao && (
-            <div className="text-[12px] text-text-muted leading-relaxed mb-3 line-clamp-3">
+            <div className="text-[13px] text-text-muted leading-relaxed mb-4 line-clamp-3">
               {produto.descricao}
             </div>
           )}
           <div className="flex items-center gap-2.5">
             {produto.preco_original_centavos ? (
-              <span className="text-[12px] text-gray-400 line-through">
+              <span className="text-[13px] text-gray-400 line-through">
                 {formatBRL(produto.preco_original_centavos)}
               </span>
             ) : null}
             {produto.preco_centavos != null && (
               <span
-                className="font-serif text-[22px] font-medium"
+                className="font-serif text-[28px] font-medium"
                 style={{ color: "#1D9E75" }}
               >
                 {formatBRL(produto.preco_centavos)}
@@ -417,15 +425,15 @@ function ProdutoDestaque({
           </div>
         </div>
 
-        <div className="flex justify-end mt-3">
+        <div className="flex justify-end mt-4">
           <a
             href={produto.link_externo}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-white text-[12px] font-medium rounded-full px-6 py-2.5 hover:opacity-90 transition"
-            style={{ background: "#1D9E75" }}
+            className="inline-flex items-center gap-1.5 text-white text-[13px] font-medium rounded-full px-7 py-3 hover:opacity-90 transition"
+            style={{ background: "linear-gradient(135deg,#1D9E75,#0F7A5C)" }}
           >
-            Comprar agora <ExternalLink size={12} />
+            Comprar agora <ExternalLink size={13} />
           </a>
         </div>
       </div>
@@ -434,6 +442,7 @@ function ProdutoDestaque({
     </div>
   );
 }
+
 
 function ProdutoCard({
   produto,
@@ -453,15 +462,16 @@ function ProdutoCard({
     >
       {/* Imagem com badges sobrepostos */}
       <div
-        className="relative flex w-full items-center justify-center overflow-hidden text-[36px]"
+        className="relative flex w-full items-center justify-center overflow-hidden text-[28px]"
         style={{
-          aspectRatio: "1 / 1",
+          aspectRatio: "4 / 3",
           background: produto.imagem_url
             ? `url(${produto.imagem_url}) center/cover`
             : corFundoCategoria(produto.categoria),
         }}
       >
         {!produto.imagem_url && <span>{emojiCategoria(produto.categoria)}</span>}
+
 
         {/* Badges overlay */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
@@ -516,34 +526,34 @@ function ProdutoCard({
       </div>
 
       {/* Corpo */}
-      <div className="p-3 flex flex-col flex-1">
+      <div className="p-2.5 flex flex-col flex-1">
         {produto.categoria && (
           <div
-            className="text-[10px] uppercase tracking-wider mb-1"
+            className="text-[9px] uppercase tracking-wider mb-0.5"
             style={{ color: "#8A8478" }}
           >
             {CAT_LABEL[produto.categoria]}
           </div>
         )}
-        <div className="text-[13px] font-medium text-text-main mb-1 leading-snug line-clamp-2">
+        <div className="text-[12px] font-medium text-text-main mb-1 leading-snug line-clamp-2">
           {produto.nome}
         </div>
         {produto.descricao && (
-          <div className="text-[11px] text-text-muted leading-relaxed mb-2.5 line-clamp-2">
+          <div className="hidden sm:block text-[10px] text-text-muted leading-relaxed mb-2 line-clamp-2">
             {produto.descricao}
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-2">
-          <div className="flex items-baseline gap-1">
+        <div className="mt-auto flex items-center justify-between gap-1.5">
+          <div className="flex items-baseline gap-1 min-w-0">
             {produto.preco_original_centavos ? (
-              <span className="text-[10px] text-gray-400 line-through">
+              <span className="text-[9px] text-gray-400 line-through">
                 {formatBRL(produto.preco_original_centavos)}
               </span>
             ) : null}
             {produto.preco_centavos != null && (
               <span
-                className="font-serif text-[16px] font-medium"
+                className="font-serif text-[14px] font-medium truncate"
                 style={{ color: produto.desconto_pct ? "#1D9E75" : "#111827" }}
               >
                 {formatBRL(produto.preco_centavos)}
@@ -555,7 +565,7 @@ function ProdutoCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="rounded-full px-3 py-[5px] text-[11px] hover:opacity-90 transition"
+            className="rounded-full px-2.5 py-1 text-[10px] hover:opacity-90 transition shrink-0"
             style={{
               background: "#F7F4EE",
               color: "#374151",
@@ -566,6 +576,7 @@ function ProdutoCard({
           </a>
         </div>
       </div>
+
     </div>
   );
 }
@@ -574,8 +585,13 @@ function AdicionarProdutoCard({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center gap-1.5 min-h-[220px] rounded-[14px] border-2 border-dashed transition-colors"
-      style={{ borderColor: "#e5e7eb", color: "#8A8478", background: "transparent" }}
+      className="flex flex-col items-center justify-center gap-1 rounded-[14px] border-2 border-dashed transition-colors"
+      style={{
+        aspectRatio: "4 / 3",
+        borderColor: "#e5e7eb",
+        color: "#8A8478",
+        background: "transparent",
+      }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = "#B8C9B0";
         e.currentTarget.style.color = "#7A9A70";
@@ -585,11 +601,12 @@ function AdicionarProdutoCard({ onClick }: { onClick: () => void }) {
         e.currentTarget.style.color = "#8A8478";
       }}
     >
-      <Plus size={24} />
-      <div className="text-[12px] font-medium">Adicionar produto</div>
+      <Plus size={20} />
+      <div className="text-[11px] font-medium">Adicionar</div>
     </button>
   );
 }
+
 
 /* ---------- Form (admin) ---------- */
 
