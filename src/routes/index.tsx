@@ -70,12 +70,12 @@ function LandingPage() {
           com você até a aprovação.
         </p>
         <div className="flex items-center justify-center gap-3 flex-wrap">
-          <Link to="/auth">
+          <Link to="/auth" search={{ mode: "signup" }}>
             <Button className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] h-11 px-6 text-[14px] gap-2">
               Começar agora <ArrowRight size={16} />
             </Button>
           </Link>
-          <Link to="/auth">
+          <Link to="/auth" search={{ mode: "login" }}>
             <Button
               variant="outline"
               className="rounded-[10px] h-11 px-6 text-[14px] border-border"
