@@ -11,13 +11,17 @@ import { maskPhoneBR } from "@/lib/phone-mask";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Lei.co" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode: search.mode === "login" ? ("login" as const) : ("signup" as const),
+  }),
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const { mode: initialMode } = Route.useSearch();
+  const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
