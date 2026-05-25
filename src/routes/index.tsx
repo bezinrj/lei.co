@@ -41,11 +41,12 @@ function LandingPage() {
           <div className="flex items-center gap-2">
             <Link
               to="/auth"
+              search={{ mode: "login" }}
               className="text-[13px] text-text-muted hover:text-text-main px-3 py-2 rounded-[10px] transition-colors"
             >
               Entrar
             </Link>
-            <Link to="/auth">
+            <Link to="/auth" search={{ mode: "signup" }}>
               <Button className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] h-9 px-4 text-[13px]">
                 Criar conta
               </Button>
@@ -69,12 +70,12 @@ function LandingPage() {
           com você até a aprovação.
         </p>
         <div className="flex items-center justify-center gap-3 flex-wrap">
-          <Link to="/auth">
+          <Link to="/auth" search={{ mode: "signup" }}>
             <Button className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] h-11 px-6 text-[14px] gap-2">
               Começar agora <ArrowRight size={16} />
             </Button>
           </Link>
-          <Link to="/auth">
+          <Link to="/auth" search={{ mode: "login" }}>
             <Button
               variant="outline"
               className="rounded-[10px] h-11 px-6 text-[14px] border-border"
@@ -133,7 +134,7 @@ function LandingPage() {
           <p className="text-[14px] text-text-muted mb-6">
             Crie sua conta gratuita e desenhe o caminho até a sua aprovação.
           </p>
-          <Link to="/auth">
+          <Link to="/auth" search={{ mode: "signup" }}>
             <Button className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] h-11 px-6 text-[14px] gap-2">
               Criar conta grátis <ArrowRight size={16} />
             </Button>

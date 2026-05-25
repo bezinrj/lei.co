@@ -85,6 +85,7 @@ export function AppSidebar() {
       ) : (
         <Link
           to="/auth"
+          search={{ mode: "login" }}
           className="flex items-center gap-2 px-3 py-2 rounded-[10px] text-[12px] text-text-muted hover:bg-muted hover:text-text-main transition-colors"
         >
           <LogIn size={14} /> Entrar
