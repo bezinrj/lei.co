@@ -60,8 +60,16 @@ function AuthPage() {
             .update({ telefone: telefone.trim() })
             .eq("id", signUpData.user.id);
         }
-        toast.success("Conta criada! Agora escolha seu plano.");
-        navigate({ to: "/meu-plano", search: { welcome: 1 } as never });
+        if (planoEscolhido === "gratuito") {
+          toast.success("Conta criada! Bem-vindo(a) à Lei.co 🎉");
+          navigate({ to: "/perfil" });
+        } else {
+          toast.success("Conta criada! Finalize a assinatura do seu plano.");
+          navigate({
+            to: "/meu-plano",
+            search: { welcome: 1, plano: planoEscolhido } as never,
+          });
+        }
         return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
