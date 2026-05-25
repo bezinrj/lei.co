@@ -41,11 +41,12 @@ function LandingPage() {
           <div className="flex items-center gap-2">
             <Link
               to="/auth"
+              search={{ mode: "login" }}
               className="text-[13px] text-text-muted hover:text-text-main px-3 py-2 rounded-[10px] transition-colors"
             >
               Entrar
             </Link>
-            <Link to="/auth">
+            <Link to="/auth" search={{ mode: "signup" }}>
               <Button className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] h-9 px-4 text-[13px]">
                 Criar conta
               </Button>
