@@ -134,7 +134,7 @@ function LandingPage() {
           <p className="text-[14px] text-text-muted mb-6">
             Crie sua conta gratuita e desenhe o caminho até a sua aprovação.
           </p>
-          <Link to="/auth">
+          <Link to="/auth" search={{ mode: "signup" }}>
             <Button className="bg-sage-dark hover:bg-sage-dark/90 text-white rounded-[10px] h-11 px-6 text-[14px] gap-2">
               Criar conta grátis <ArrowRight size={16} />
             </Button>
