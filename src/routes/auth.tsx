@@ -22,6 +22,9 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [planoEscolhido, setPlanoEscolhido] = useState<
+    "gratuito" | "mensal" | "trimestral" | "anual" | "diamante"
+  >("gratuito");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
