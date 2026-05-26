@@ -76,7 +76,8 @@ function CronogramaDetail() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
 
-  const isOwner = !!(cron?.is_proprio && cron?.criado_por && user && cron.criado_por === user.id);
+  const isCopiaPremium = !!cron?.origem_id;
+  const isOwner = !!(cron?.is_proprio && cron?.criado_por && user && cron.criado_por === user.id && !isCopiaPremium);
 
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
