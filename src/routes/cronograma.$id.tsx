@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, ImageUp, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcesso } from "@/hooks/useAcesso";
 import { MatrizTab, type MatrizTopico } from "@/components/cronogramas/MatrizTab";
@@ -70,6 +71,52 @@ function CronogramaDetail() {
   const [ativacao, setAtivacao] = useState<{ data_inicio: string; data_prova: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<string>("matriz");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  const isOwner = !!(cron?.is_proprio && cron?.criado_por && user && cron.criado_por === user.id);
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5MB");
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/${id}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("cronogramas-covers")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("cronogramas-covers").getPublicUrl(path);
+      const { error: updErr } = await supabase
+        .from("cronogramas")
+        .update({ imagem_url: pub.publicUrl })
+        .eq("id", id);
+      if (updErr) throw updErr;
+      toast.success("Capa atualizada");
+      await loadAll();
+    } catch (err) {
+      toast.error("Erro ao atualizar capa", { description: (err as Error).message });
+    } finally {
+      setUploadingCover(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Excluir este cronograma? Esta ação não pode ser desfeita.")) return;
+    const { error } = await supabase.from("cronogramas").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao excluir", { description: error.message });
+      return;
+    }
+    toast.success("Cronograma excluído");
+    navigate({ to: "/cronogramas" });
+  };
 
   const loadAll = useCallback(async () => {
     const { data: cronData } = await supabase
@@ -242,6 +289,35 @@ function CronogramaDetail() {
                 <span className="inline-block text-[10px] font-medium rounded-[20px] px-2 py-[2px] bg-sage-light text-sage-dark">
                   Ativo até {new Date(ativacao.data_prova + "T00:00").toLocaleDateString("pt-BR")}
                 </span>
+              )}
+              {isOwner && (
+                <div className="flex gap-2 mt-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverChange}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingCover}
+                    className="gap-2 rounded-[20px]"
+                  >
+                    <ImageUp size={14} />
+                    {uploadingCover ? "Enviando..." : "Editar capa"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDelete}
+                    className="gap-2 rounded-[20px] text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  >
+                    <Trash2 size={14} /> Excluir cronograma
+                  </Button>
+                </div>
               )}
             </div>
           </div>
