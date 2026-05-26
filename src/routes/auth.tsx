@@ -317,7 +317,15 @@ function AuthPage() {
                           {preco === 0 ? "Grátis" : formatBRL(preco)}
                         </div>
                         <div className="text-[10px] text-text-muted">
-                          {tipo === "gratuito" ? "para sempre" : "/ período"}
+                          {tipo === "gratuito"
+                            ? "para sempre"
+                            : tipo === "mensal"
+                              ? "/ mês"
+                              : tipo === "trimestral"
+                                ? "/ trimestre"
+                                : tipo === "anual"
+                                  ? "/ ano"
+                                  : "único"}
                         </div>
                       </div>
                     </div>
