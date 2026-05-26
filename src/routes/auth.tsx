@@ -117,10 +117,10 @@ function AuthPage() {
   }, [mode]);
 
   const planosOrdenados = useMemo(() => {
-    return PLANO_ORDEM.map((tipo): { tipo: PlanoTipo; preco: number | null } => {
+    return PLANO_ORDEM.map((tipo): { tipo: PlanoTipo; preco: number } => {
       if (tipo === "gratuito") return { tipo, preco: 0 };
       const found = planosDb.find((p) => p.tipo === tipo);
-      return { tipo, preco: found?.preco_centavos ?? null };
+      return { tipo, preco: found?.preco_centavos ?? PLANO_PRECOS_FALLBACK[tipo] };
     });
   }, [planosDb]);
 
