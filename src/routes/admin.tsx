@@ -341,7 +341,7 @@ function FilterPill({
   );
 }
 
-function UserRow({ user, onView }: { user: AdminUser; onView: () => void }) {
+function UserRow({ user }: { user: AdminUser }) {
   const isOnline = user.online;
   const role = user.roles.includes("admin")
     ? { label: "Administrador", bg: "var(--lilac-light)", color: "#6d28d9" }
