@@ -238,7 +238,14 @@ function AdminPage() {
                 <div className="text-center py-10 text-text-muted">Nenhum usuário encontrado</div>
               ) : (
                 filteredUsers.slice(0, 100).map((u) => (
-                  <UserRow key={u.id} user={u} />
+                  <UserRow
+                    key={u.id}
+                    user={u}
+                    onViewProfile={(id) => {
+                      setSelectedUserId(id);
+                      setSheetOpen(true);
+                    }}
+                  />
                 ))
               )}
             </div>
@@ -341,78 +348,35 @@ function FilterPill({
   );
 }
 
-function UserRow({ user }: { user: AdminUser }) {
+function UserRow({ user, onViewProfile }: { user: AdminUser; onViewProfile: (id: string) => void }) {
   const isOnline = user.online;
   const role = user.roles.includes("admin")
     ? { label: "Administrador", bg: "var(--lilac-light)", color: "#6d28d9" }
     : user.roles.includes("moderador")
     ? { label: "Moderador", bg: "var(--sky-light)", color: "#0369a1" }
     : { label: "Aluno", bg: "var(--sage-light)", color: "var(--sage-dark)" };
-  const planoMap: Record<string, { bg: string; color: string; label: string; icon?: string }> = {
-    free: { bg: "var(--cream)", color: "var(--text-muted)", label: "Gratuito" },
-    premium: { bg: "var(--sage-light)", color: "var(--sage-dark)", label: "Premium" },
-    diamante: { bg: "#FAEEDA", color: "#412402", label: "Diamante", icon: "👑" },
-    cortesia: { bg: "var(--blush-light)", color: "#8B3A3A", label: "Cortesia" },
-  };
-  const plano = planoMap[user.plano ?? "free"] ?? planoMap.free;
-
-  return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition">
-      <Avatar name={user.display_name ?? user.email ?? "?"} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[13px] font-medium text-text-main truncate">
-            {user.display_name ?? "—"}
-          </span>
-          <span className="text-[11px] text-text-muted">{user.friend_id ?? ""}</span>
-          <Pill bg={role.bg} color={role.color}>
-            {role.label}
-          </Pill>
-          <Pill bg={plano.bg} color={plano.color}>
-            {plano.icon && <span className="mr-0.5">{plano.icon}</span>}
-            {plano.label}
-          </Pill>
-        </div>
-        <div className="flex items-center gap-3 mt-1 flex-wrap">
-          {user.email && (
-            <a href={`mailto:${user.email}`} className="text-[11px] inline-flex items-center gap-1" style={{ color: "#378ADD" }}>
-              <Mail size={10} />
-              {user.email}
-            </a>
-          )}
-          <span className="text-[11px] text-text-muted">
-            {user.telefone ?? "Não informado"}
-          </span>
-          <span className="inline-flex items-center gap-1 text-[11px] text-text-muted">
-            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-500" : "bg-gray-400"}`} />
-            {isOnline ? "Ativo" : user.last_seen_at ? `Visto ${formatRelative(user.last_seen_at)}` : "Inativo"}
-          </span>
-          <span className="inline-flex items-center gap-1 font-mono text-[10px] text-text-muted">
-            {user.id.slice(0, 4)}...{user.id.slice(-4)}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigator.clipboard.writeText(user.id);
-                toast.success("ID copiado");
-              }}
-              className="hover:text-text-main"
-            >
-              <Copy size={10} />
-            </button>
-          </span>
-        </div>
+...
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onViewProfile(user.id)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-light text-sage-dark text-[11px] font-medium hover:bg-sage hover:text-white transition"
+        >
+          <Eye size={12} />
+          Ver perfil
+        </button>
+        <a
+          href={`/admin/aluno/${user.id}`}
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.assign(`/admin/aluno/${user.id}`);
+          }}
+          className="inline-flex items-center px-2.5 py-1.5 rounded-full bg-muted text-text-muted text-[11px] font-medium hover:bg-sage-light hover:text-sage-dark transition"
+          title="Abrir dashboard completo"
+        >
+          Dashboard
+        </a>
       </div>
-      <a
-        href={`/admin/aluno/${user.id}`}
-        onClick={(e) => {
-          e.preventDefault();
-          window.location.assign(`/admin/aluno/${user.id}`);
-        }}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-light text-sage-dark text-[11px] font-medium hover:bg-sage hover:text-white transition"
-      >
-        <Eye size={12} />
-        Ver perfil
-      </a>
     </div>
   );
 }
