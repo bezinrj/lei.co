@@ -222,6 +222,18 @@ function CronogramasPage() {
               onDelete={(c) => setDeleteTarget(c)}
             />
           )}
+          {minhasCopiasPremium.length > 0 && (
+            <CategoryRow
+              title="Meus Cronogramas Premium"
+              items={minhasCopiasPremium}
+              isLocked={() => false}
+              showActions={false}
+              onSelect={(id) => {
+                const c = minhasCopiasPremium.find((x) => x.id === id);
+                if (c) handleSelect(c);
+              }}
+            />
+          )}
           {Object.entries(grouped).map(([cat, list]) => (
             <CategoryRow
               key={cat}
