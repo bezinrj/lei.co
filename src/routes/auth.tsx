@@ -28,11 +28,42 @@ type PlanoDb = {
 };
 
 const PLANO_BENEFICIOS: Record<PlanoTipo, string[]> = {
-  gratuito: ["Cronogramas gratuitos", "Cronômetro e estatísticas básicas"],
-  mensal: ["Cronogramas premium", "Acesso ao calendário", "Flexível mês a mês"],
-  trimestral: ["Tudo do plano Mensal", "Economia de ~11%", "Acompanhamento trimestral"],
-  anual: ["Tudo do plano Trimestral", "Economia de ~30%", "Suporte prioritário"],
-  diamante: ["Acesso completo a TODOS os cronogramas premium", "Conteúdos exclusivos", "Selo Diamante"],
+  gratuito: ["Cronogramas gratuitos", "Medalhas e gamificação", "Ranking Semanal"],
+  mensal: [
+    "1 cronograma editável",
+    "Calendário inteligente",
+    "Dashboard de desempenho",
+    "Gestor de Revisões",
+    "Criação de grupos (Study Rats)",
+  ],
+  trimestral: [
+    "1 cronograma editável",
+    "Calendário inteligente",
+    "Dashboard de desempenho",
+    "Gestor de Revisões",
+    "Criação de grupos (Study Rats)",
+  ],
+  anual: [
+    "1 cronograma editável",
+    "Calendário inteligente",
+    "Dashboard de desempenho",
+    "Gestor de Revisões",
+    "Criação de grupos (Study Rats)",
+  ],
+  diamante: [
+    "Tudo do plano Anual",
+    "Acesso a TODOS os cronogramas premium",
+    "Badge exclusivo Diamante",
+    "Mentoria individual inclusa",
+  ],
+};
+
+const PLANO_PRECOS_FALLBACK: Record<PlanoTipo, number> = {
+  gratuito: 0,
+  mensal: 2990,
+  trimestral: 7990,
+  anual: 24990,
+  diamante: 49900,
 };
 
 const PLANO_LABEL: Record<PlanoTipo, string> = {
