@@ -402,13 +402,14 @@ function UserRow({ user }: { user: AdminUser }) {
           </span>
         </div>
       </div>
-      <button
-        onClick={onView}
+      <Link
+        to="/admin/aluno/$id"
+        params={{ id: user.id }}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-light text-sage-dark text-[11px] font-medium hover:bg-sage hover:text-white transition"
       >
         <Eye size={12} />
         Ver perfil
-      </button>
+      </Link>
     </div>
   );
 }
