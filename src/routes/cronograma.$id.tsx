@@ -71,6 +71,52 @@ function CronogramaDetail() {
   const [ativacao, setAtivacao] = useState<{ data_inicio: string; data_prova: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<string>("matriz");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  const isOwner = !!(cron?.is_proprio && cron?.criado_por && user && cron.criado_por === user.id);
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5MB");
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/${id}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("cronogramas-covers")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("cronogramas-covers").getPublicUrl(path);
+      const { error: updErr } = await supabase
+        .from("cronogramas")
+        .update({ imagem_url: pub.publicUrl })
+        .eq("id", id);
+      if (updErr) throw updErr;
+      toast.success("Capa atualizada");
+      await loadAll();
+    } catch (err) {
+      toast.error("Erro ao atualizar capa", { description: (err as Error).message });
+    } finally {
+      setUploadingCover(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Excluir este cronograma? Esta ação não pode ser desfeita.")) return;
+    const { error } = await supabase.from("cronogramas").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao excluir", { description: error.message });
+      return;
+    }
+    toast.success("Cronograma excluído");
+    navigate({ to: "/cronogramas" });
+  };
 
   const loadAll = useCallback(async () => {
     const { data: cronData } = await supabase
