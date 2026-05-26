@@ -23,6 +23,8 @@ type Cronograma = {
   categoria: string | null;
   imagem_url: string | null;
   premium: boolean;
+  is_proprio: boolean;
+  criado_por: string | null;
 };
 
 type Materia = {
@@ -72,7 +74,7 @@ function CronogramaDetail() {
   const loadAll = useCallback(async () => {
     const { data: cronData } = await supabase
       .from("cronogramas")
-      .select("nome, categoria, imagem_url, premium")
+      .select("nome, categoria, imagem_url, premium, is_proprio, criado_por")
       .eq("id", id)
       .maybeSingle();
     setCron(cronData);
@@ -297,7 +299,7 @@ function CronogramaDetail() {
                   materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
                   progresso={progresso}
                   fonteProgresso={fonteProgresso}
-                  canEdit={isAdminOrMod}
+                  canEdit={isAdminOrMod || (cron.is_proprio && cron.criado_por === user?.id)}
                   userId={user?.id ?? null}
                   onChange={loadAll}
                 />
