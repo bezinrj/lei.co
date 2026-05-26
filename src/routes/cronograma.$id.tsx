@@ -74,7 +74,7 @@ function CronogramaDetail() {
   const loadAll = useCallback(async () => {
     const { data: cronData } = await supabase
       .from("cronogramas")
-      .select("nome, categoria, imagem_url, premium")
+      .select("nome, categoria, imagem_url, premium, is_proprio, criado_por")
       .eq("id", id)
       .maybeSingle();
     setCron(cronData);
