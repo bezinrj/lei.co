@@ -69,7 +69,7 @@ function CronogramasPage() {
     if (!cachedItems) setLoading(true);
     const { data, error } = await supabase
       .from("cronogramas")
-      .select("id, nome, categoria, imagem_url, premium, is_proprio, criado_por, preco_centavos, stripe_price_id")
+      .select("id, nome, categoria, imagem_url, premium, is_proprio, criado_por, origem_id, preco_centavos, stripe_price_id")
       .order("created_at", { ascending: false });
     if (!error && data) {
       cachedItems = data as Cronograma[];
