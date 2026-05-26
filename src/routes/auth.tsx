@@ -314,7 +314,7 @@ function AuthPage() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-[18px] font-bold text-text-main leading-tight">
-                          {preco === null ? "—" : formatBRL(preco)}
+                          {preco === 0 ? "Grátis" : formatBRL(preco)}
                         </div>
                         <div className="text-[10px] text-text-muted">
                           {tipo === "gratuito" ? "para sempre" : "/ período"}
