@@ -28,11 +28,42 @@ type PlanoDb = {
 };
 
 const PLANO_BENEFICIOS: Record<PlanoTipo, string[]> = {
-  gratuito: ["Cronogramas gratuitos", "Cronômetro e estatísticas básicas"],
-  mensal: ["Cronogramas premium", "Acesso ao calendário", "Flexível mês a mês"],
-  trimestral: ["Tudo do plano Mensal", "Economia de ~11%", "Acompanhamento trimestral"],
-  anual: ["Tudo do plano Trimestral", "Economia de ~30%", "Suporte prioritário"],
-  diamante: ["Acesso completo a TODOS os cronogramas premium", "Conteúdos exclusivos", "Selo Diamante"],
+  gratuito: ["Cronogramas gratuitos", "Medalhas e gamificação", "Ranking Semanal"],
+  mensal: [
+    "1 cronograma editável",
+    "Calendário inteligente",
+    "Dashboard de desempenho",
+    "Gestor de Revisões",
+    "Criação de grupos (Study Rats)",
+  ],
+  trimestral: [
+    "1 cronograma editável",
+    "Calendário inteligente",
+    "Dashboard de desempenho",
+    "Gestor de Revisões",
+    "Criação de grupos (Study Rats)",
+  ],
+  anual: [
+    "1 cronograma editável",
+    "Calendário inteligente",
+    "Dashboard de desempenho",
+    "Gestor de Revisões",
+    "Criação de grupos (Study Rats)",
+  ],
+  diamante: [
+    "Tudo do plano Anual",
+    "Acesso a TODOS os cronogramas premium",
+    "Badge exclusivo Diamante",
+    "Mentoria individual inclusa",
+  ],
+};
+
+const PLANO_PRECOS_FALLBACK: Record<PlanoTipo, number> = {
+  gratuito: 0,
+  mensal: 2990,
+  trimestral: 7990,
+  anual: 24990,
+  diamante: 49900,
 };
 
 const PLANO_LABEL: Record<PlanoTipo, string> = {
@@ -86,10 +117,10 @@ function AuthPage() {
   }, [mode]);
 
   const planosOrdenados = useMemo(() => {
-    return PLANO_ORDEM.map((tipo): { tipo: PlanoTipo; preco: number | null } => {
+    return PLANO_ORDEM.map((tipo): { tipo: PlanoTipo; preco: number } => {
       if (tipo === "gratuito") return { tipo, preco: 0 };
       const found = planosDb.find((p) => p.tipo === tipo);
-      return { tipo, preco: found?.preco_centavos ?? null };
+      return { tipo, preco: found?.preco_centavos ?? PLANO_PRECOS_FALLBACK[tipo] };
     });
   }, [planosDb]);
 
@@ -250,7 +281,7 @@ function AuthPage() {
                       </span>
                     )}
                     {isDiamante && (
-                      <span className="absolute -top-2 right-3 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-text-main text-white">
+                      <span className="absolute -top-2 right-3 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-950 shadow-sm">
                         <Crown size={10} /> Premium
                       </span>
                     )}
@@ -283,10 +314,18 @@ function AuthPage() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-[18px] font-bold text-text-main leading-tight">
-                          {preco === null ? "—" : formatBRL(preco)}
+                          {preco === 0 ? "Grátis" : formatBRL(preco)}
                         </div>
                         <div className="text-[10px] text-text-muted">
-                          {tipo === "gratuito" ? "para sempre" : "/ período"}
+                          {tipo === "gratuito"
+                            ? "para sempre"
+                            : tipo === "mensal"
+                              ? "/ mês"
+                              : tipo === "trimestral"
+                                ? "/ trimestre"
+                                : tipo === "anual"
+                                  ? "/ ano"
+                                  : "único"}
                         </div>
                       </div>
                     </div>
