@@ -290,6 +290,35 @@ function CronogramaDetail() {
                   Ativo até {new Date(ativacao.data_prova + "T00:00").toLocaleDateString("pt-BR")}
                 </span>
               )}
+              {isOwner && (
+                <div className="flex gap-2 mt-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverChange}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingCover}
+                    className="gap-2 rounded-[20px]"
+                  >
+                    <ImageUp size={14} />
+                    {uploadingCover ? "Enviando..." : "Editar capa"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDelete}
+                    className="gap-2 rounded-[20px] text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  >
+                    <Trash2 size={14} /> Excluir cronograma
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
