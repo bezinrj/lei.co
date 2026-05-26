@@ -23,6 +23,8 @@ type Cronograma = {
   categoria: string | null;
   imagem_url: string | null;
   premium: boolean;
+  is_proprio: boolean;
+  criado_por: string | null;
 };
 
 type Materia = {
