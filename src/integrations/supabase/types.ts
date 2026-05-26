@@ -255,6 +255,7 @@ export type Database = {
           imagem_url: string | null
           is_proprio: boolean
           nome: string
+          origem_id: string | null
           preco_centavos: number | null
           premium: boolean
           stripe_price_id: string | null
@@ -269,6 +270,7 @@ export type Database = {
           imagem_url?: string | null
           is_proprio?: boolean
           nome: string
+          origem_id?: string | null
           preco_centavos?: number | null
           premium?: boolean
           stripe_price_id?: string | null
@@ -283,6 +285,7 @@ export type Database = {
           imagem_url?: string | null
           is_proprio?: boolean
           nome?: string
+          origem_id?: string | null
           preco_centavos?: number | null
           premium?: boolean
           stripe_price_id?: string | null
@@ -301,6 +304,13 @@ export type Database = {
             columns: ["criado_por"]
             isOneToOne: false
             referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronogramas_origem_id_fkey"
+            columns: ["origem_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
             referencedColumns: ["id"]
           },
         ]
@@ -1308,6 +1318,10 @@ export type Database = {
       award_xp: {
         Args: { _horas_add?: number; _questoes_add?: number; _xp_ganho: number }
         Returns: Json
+      }
+      clonar_cronograma_para_usuario: {
+        Args: { _cronograma_id: string; _user_id: string }
+        Returns: string
       }
       delete_email: {
         Args: { message_id: number; queue_name: string }

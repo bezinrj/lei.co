@@ -64,13 +64,14 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
         );
       }
 
-      // Alunos só podem criar 1 cronograma pessoal
+      // Alunos só podem criar 1 cronograma pessoal (cópias premium não contam)
       if (!isStaff && user) {
         const { data: existente } = await supabase
           .from("cronogramas")
           .select("id")
           .eq("criado_por", user.id)
           .eq("is_proprio", true)
+          .is("origem_id", null)
           .maybeSingle();
         if (existente) {
           toast.error("Você já possui um cronograma pessoal.");
@@ -78,6 +79,7 @@ export function NovoCronogramaDialog({ open, onOpenChange, onCreated }: Props) {
           return;
         }
       }
+
 
       let imagem_url: string | null = null;
       if (file) {

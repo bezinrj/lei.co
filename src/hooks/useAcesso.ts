@@ -44,7 +44,9 @@ export function useAcesso() {
           .select("id")
           .eq("criado_por", user.id)
           .eq("is_proprio", true)
+          .is("origem_id", null)
           .maybeSingle(),
+
       ]);
       if (!mounted) return;
       setPlano(((profileRes.data?.plano_atual as Plano) ?? "gratuito") as Plano);

@@ -26,7 +26,9 @@ type Cronograma = {
   premium: boolean;
   is_proprio: boolean;
   criado_por: string | null;
+  origem_id: string | null;
 };
+
 
 type Materia = {
   id: string;
@@ -74,7 +76,8 @@ function CronogramaDetail() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
 
-  const isOwner = !!(cron?.is_proprio && cron?.criado_por && user && cron.criado_por === user.id);
+  const isCopiaPremium = !!cron?.origem_id;
+  const isOwner = !!(cron?.is_proprio && cron?.criado_por && user && cron.criado_por === user.id && !isCopiaPremium);
 
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,7 +124,7 @@ function CronogramaDetail() {
   const loadAll = useCallback(async () => {
     const { data: cronData } = await supabase
       .from("cronogramas")
-      .select("nome, categoria, imagem_url, premium, is_proprio, criado_por")
+      .select("nome, categoria, imagem_url, premium, is_proprio, criado_por, origem_id")
       .eq("id", id)
       .maybeSingle();
     setCron(cronData);
@@ -375,7 +378,7 @@ function CronogramaDetail() {
                   materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
                   progresso={progresso}
                   fonteProgresso={fonteProgresso}
-                  canEdit={isAdminOrMod || (cron.is_proprio && cron.criado_por === user?.id)}
+                  canEdit={isAdminOrMod || isOwner}
                   userId={user?.id ?? null}
                   onChange={loadAll}
                 />
