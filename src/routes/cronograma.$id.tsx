@@ -26,7 +26,9 @@ type Cronograma = {
   premium: boolean;
   is_proprio: boolean;
   criado_por: string | null;
+  origem_id: string | null;
 };
+
 
 type Materia = {
   id: string;
