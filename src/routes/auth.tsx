@@ -281,7 +281,7 @@ function AuthPage() {
                       </span>
                     )}
                     {isDiamante && (
-                      <span className="absolute -top-2 right-3 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-text-main text-white">
+                      <span className="absolute -top-2 right-3 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-950 shadow-sm">
                         <Crown size={10} /> Premium
                       </span>
                     )}
