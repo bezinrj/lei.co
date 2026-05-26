@@ -238,13 +238,7 @@ function AdminPage() {
                 <div className="text-center py-10 text-text-muted">Nenhum usuário encontrado</div>
               ) : (
                 filteredUsers.slice(0, 100).map((u) => (
-                  <UserRow
-                    key={u.id}
-                    user={u}
-                    onView={() => {
-                      navigate({ to: "/admin/aluno/$id", params: { id: u.id } });
-                    }}
-                  />
+                  <UserRow key={u.id} user={u} />
                 ))
               )}
             </div>
