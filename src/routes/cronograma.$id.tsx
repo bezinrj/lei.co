@@ -299,7 +299,7 @@ function CronogramaDetail() {
                   materias={materias.map((m) => ({ id: m.id, nome: m.nome }))}
                   progresso={progresso}
                   fonteProgresso={fonteProgresso}
-                  canEdit={isAdminOrMod}
+                  canEdit={isAdminOrMod || (cron.is_proprio && cron.criado_por === user?.id)}
                   userId={user?.id ?? null}
                   onChange={loadAll}
                 />
