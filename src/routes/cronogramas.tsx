@@ -83,9 +83,16 @@ function CronogramasPage() {
     load();
   }, [load]);
 
-  // Separa "Meu Cronograma" do resto
-  const meusProprios = items.filter((c) => c.is_proprio && c.criado_por === user?.id);
-  const institucionais = items.filter((c) => !c.is_proprio || c.criado_por !== user?.id);
+  // Separa cronogramas em seções
+  const meusProprios = items.filter(
+    (c) => c.is_proprio && c.criado_por === user?.id && !c.origem_id,
+  );
+  const minhasCopiasPremium = items.filter(
+    (c) => c.is_proprio && c.criado_por === user?.id && !!c.origem_id,
+  );
+  const institucionais = items.filter(
+    (c) => !c.is_proprio && !(isAdminOrMod === false && c.premium && minhasCopiasPremium.some((cp) => cp.origem_id === c.id)),
+  );
 
   const grouped = institucionais.reduce<Record<string, Cronograma[]>>((acc, c) => {
     const key = c.categoria?.trim() || "Sem categoria";
@@ -93,6 +100,7 @@ function CronogramasPage() {
     acc[key].push(c);
     return acc;
   }, {});
+
 
   const isStaff = isAdminOrMod;
   const mostrarBotaoNovo = isStaff || acesso.temAssinatura;
