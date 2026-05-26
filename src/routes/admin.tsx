@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/hooks/useAuth";
@@ -238,13 +238,7 @@ function AdminPage() {
                 <div className="text-center py-10 text-text-muted">Nenhum usuário encontrado</div>
               ) : (
                 filteredUsers.slice(0, 100).map((u) => (
-                  <UserRow
-                    key={u.id}
-                    user={u}
-                    onView={() => {
-                      navigate({ to: "/admin/aluno/$id", params: { id: u.id } });
-                    }}
-                  />
+                  <UserRow key={u.id} user={u} />
                 ))
               )}
             </div>
@@ -347,7 +341,7 @@ function FilterPill({
   );
 }
 
-function UserRow({ user, onView }: { user: AdminUser; onView: () => void }) {
+function UserRow({ user }: { user: AdminUser }) {
   const isOnline = user.online;
   const role = user.roles.includes("admin")
     ? { label: "Administrador", bg: "var(--lilac-light)", color: "#6d28d9" }
@@ -408,13 +402,14 @@ function UserRow({ user, onView }: { user: AdminUser; onView: () => void }) {
           </span>
         </div>
       </div>
-      <button
-        onClick={onView}
+      <Link
+        to="/admin/aluno/$id"
+        params={{ id: user.id }}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-light text-sage-dark text-[11px] font-medium hover:bg-sage hover:text-white transition"
       >
         <Eye size={12} />
         Ver perfil
-      </button>
+      </Link>
     </div>
   );
 }
