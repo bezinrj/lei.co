@@ -38,9 +38,11 @@ type Cronograma = {
   premium: boolean;
   is_proprio: boolean;
   criado_por: string | null;
+  origem_id: string | null;
   preco_centavos: number | null;
   stripe_price_id: string | null;
 };
+
 
 let cachedItems: Cronograma[] | null = null;
 let cachedAt = 0;
