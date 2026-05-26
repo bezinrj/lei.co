@@ -238,7 +238,14 @@ function AdminPage() {
                 <div className="text-center py-10 text-text-muted">Nenhum usuário encontrado</div>
               ) : (
                 filteredUsers.slice(0, 100).map((u) => (
-                  <UserRow key={u.id} user={u} />
+                  <UserRow
+                    key={u.id}
+                    user={u}
+                    onViewProfile={(id) => {
+                      setSelectedUserId(id);
+                      setSheetOpen(true);
+                    }}
+                  />
                 ))
               )}
             </div>
@@ -341,7 +348,7 @@ function FilterPill({
   );
 }
 
-function UserRow({ user }: { user: AdminUser }) {
+function UserRow({ user, onViewProfile }: { user: AdminUser; onViewProfile: (id: string) => void }) {
   const isOnline = user.online;
   const role = user.roles.includes("admin")
     ? { label: "Administrador", bg: "var(--lilac-light)", color: "#6d28d9" }
@@ -402,17 +409,27 @@ function UserRow({ user }: { user: AdminUser }) {
           </span>
         </div>
       </div>
-      <a
-        href={`/admin/aluno/${user.id}`}
-        onClick={(e) => {
-          e.preventDefault();
-          window.location.assign(`/admin/aluno/${user.id}`);
-        }}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-light text-sage-dark text-[11px] font-medium hover:bg-sage hover:text-white transition"
-      >
-        <Eye size={12} />
-        Ver perfil
-      </a>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onViewProfile(user.id)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-light text-sage-dark text-[11px] font-medium hover:bg-sage hover:text-white transition"
+        >
+          <Eye size={12} />
+          Ver perfil
+        </button>
+        <a
+          href={`/admin/aluno/${user.id}`}
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.assign(`/admin/aluno/${user.id}`);
+          }}
+          className="inline-flex items-center px-2.5 py-1.5 rounded-full bg-muted text-text-muted text-[11px] font-medium hover:bg-sage-light hover:text-sage-dark transition"
+          title="Abrir dashboard completo"
+        >
+          Dashboard
+        </a>
+      </div>
     </div>
   );
 }
