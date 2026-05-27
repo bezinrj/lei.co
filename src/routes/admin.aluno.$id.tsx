@@ -10,6 +10,7 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { WeeklyPerformance } from "@/components/dashboard/WeeklyPerformance";
 import { TodaySchedule } from "@/components/dashboard/TodaySchedule";
 import { SubjectPerformance } from "@/components/dashboard/SubjectPerformance";
+import { DashboardView } from "@/components/dashboard/DashboardView";
 import { MatrizTab, type MatrizTopico } from "@/components/cronogramas/MatrizTab";
 import { CalendarioTab } from "@/components/cronogramas/CalendarioTab";
 import { DesempenhoTab } from "@/components/cronogramas/DesempenhoTab";
