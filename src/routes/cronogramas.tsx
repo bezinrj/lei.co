@@ -250,7 +250,7 @@ function CronogramasPage() {
             <CategoryRow
               title="Cronogramas Premium"
               items={premiumVitrine}
-              isLocked={() => true}
+              isLocked={(c) => !acesso.temAcessoCronograma(c.id, c.premium)}
               showActions={false}
               onSelect={(id) => {
                 const c = premiumVitrine.find((x) => x.id === id);

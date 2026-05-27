@@ -52,7 +52,11 @@ import {
   enviarResetSenha,
   deletarUsuario,
   getAdminUserReport,
+  listarAcessosPremium,
+  concederCronogramaPremium,
+  revogarCronogramaPremium,
   type AdminUserProfile,
+  type PremiumAccessItem,
 } from "@/server/admin-extra.functions";
 import { setUserRole } from "@/server/admin.functions";
 import { downloadCSV, downloadPDF } from "@/lib/admin-report";
@@ -80,13 +84,19 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [reportLoading, setReportLoading] = useState<null | "pdf" | "csv">(null);
   const [planoCortesia, setPlanoCortesia] = useState<PlanoTipo>("diamante");
+  const [premiumList, setPremiumList] = useState<PremiumAccessItem[]>([]);
+  const [premiumBusyId, setPremiumBusyId] = useState<string | null>(null);
 
   async function load() {
     if (!userId) return;
     setLoading(true);
     try {
-      const p = await getAdminUserProfile({ data: { userId } });
+      const [p, pl] = await Promise.all([
+        getAdminUserProfile({ data: { userId } }),
+        listarAcessosPremium({ data: { userId } }),
+      ]);
       setProfile(p);
+      setPremiumList(pl);
     } catch (e: any) {
       toast.error(e?.message ?? "Erro ao carregar perfil");
     } finally {
@@ -142,6 +152,36 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
         toast.error(e?.message ?? "Erro ao remover");
       }
     });
+  }
+
+  async function handleConcederPremium(cronogramaId: string) {
+    if (!profile) return;
+    setPremiumBusyId(cronogramaId);
+    try {
+      await concederCronogramaPremium({ data: { userId: profile.id, cronogramaId } });
+      toast.success("Cronograma premium concedido!");
+      await load();
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao conceder");
+    } finally {
+      setPremiumBusyId(null);
+    }
+  }
+
+  async function handleRevogarPremium(cronogramaId: string) {
+    if (!profile) return;
+    setPremiumBusyId(cronogramaId);
+    try {
+      await revogarCronogramaPremium({ data: { userId: profile.id, cronogramaId } });
+      toast.success("Cortesia revogada");
+      await load();
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao revogar");
+    } finally {
+      setPremiumBusyId(null);
+    }
   }
 
   async function handleRole(role: "admin" | "moderador" | "user") {
@@ -400,6 +440,67 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
                   )}
               </div>
             </div>
+
+            {/* Cronogramas premium */}
+            <div className="lei-card p-3 space-y-2">
+              <div className="text-[11px] uppercase tracking-wider text-text-muted">
+                Cronogramas premium
+              </div>
+              {premiumList.length === 0 ? (
+                <div className="text-[12px] text-text-muted">Nenhum cronograma premium cadastrado.</div>
+              ) : (
+                <div className="space-y-1.5">
+                  {premiumList.map((p) => {
+                    const busyHere = premiumBusyId === p.cronograma_id;
+                    return (
+                      <div
+                        key={p.cronograma_id}
+                        className="flex items-center justify-between gap-2 py-1.5 border-b border-border last:border-0"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[13px] text-text-main truncate">{p.nome}</div>
+                          <div className="text-[10px] text-text-muted">
+                            {p.status === "comprado"
+                              ? "Comprado (vitalício)"
+                              : p.status === "concedido"
+                                ? "Concedido (cortesia)"
+                                : "Sem acesso"}
+                          </div>
+                        </div>
+                        {p.status === "sem_acesso" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-[11px] gap-1"
+                            onClick={() => handleConcederPremium(p.cronograma_id)}
+                            disabled={busy || busyHere}
+                          >
+                            {busyHere ? <Loader2 size={12} className="animate-spin" /> : <Gift size={12} />}
+                            Conceder
+                          </Button>
+                        )}
+                        {p.status === "concedido" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-[11px] gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => handleRevogarPremium(p.cronograma_id)}
+                            disabled={busy || busyHere}
+                          >
+                            {busyHere ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                            Revogar
+                          </Button>
+                        )}
+                        {p.status === "comprado" && (
+                          <span className="text-[10px] text-text-muted italic">vitalício</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
 
             {/* Relatório */}
             <div className="lei-card p-3 space-y-2">
