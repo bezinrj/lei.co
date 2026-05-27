@@ -52,7 +52,11 @@ import {
   enviarResetSenha,
   deletarUsuario,
   getAdminUserReport,
+  listarAcessosPremium,
+  concederCronogramaPremium,
+  revogarCronogramaPremium,
   type AdminUserProfile,
+  type PremiumAccessItem,
 } from "@/server/admin-extra.functions";
 import { setUserRole } from "@/server/admin.functions";
 import { downloadCSV, downloadPDF } from "@/lib/admin-report";
