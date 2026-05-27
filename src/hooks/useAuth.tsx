@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAdminOrMod,
         signOut: async () => {
-          loadedRolesForUserId.current = null;
+          rolesPromiseRef.current.clear();
           await supabase.auth.signOut();
         },
       }}
