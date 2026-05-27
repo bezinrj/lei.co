@@ -93,7 +93,7 @@ const PLANO_VISUAL: Record<string, { bg: string; border?: string; benefits: stri
     subtitle: "A experiência completa Lei.co",
     benefits: [
       "Tudo do plano Anual",
-      "Mentoria individual inclusa",
+      "30 dias de Mentoria individual",
       "Acesso a TODOS os cronogramas premium sem custo extra",
       "Badge exclusivo de assinante Diamante",
       "Acesso antecipado a novas funcionalidades",
