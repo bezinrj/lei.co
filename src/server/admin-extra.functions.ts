@@ -429,3 +429,126 @@ export const getAdminUserReport = createServerFn({ method: "POST" })
 
     return { profile: profileRes, cronogramas, sessoes, badges } satisfies AdminUserReport;
   });
+
+// =================== Cronogramas premium do usuário ===================
+
+export type PremiumAccessItem = {
+  cronograma_id: string;
+  nome: string;
+  categoria: string | null;
+  imagem_url: string | null;
+  status: "sem_acesso" | "concedido" | "comprado";
+  origem: "compra" | "cortesia" | null;
+};
+
+export const listarAcessosPremium = createServerFn({ method: "POST" })
+  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .inputValidator((input: { userId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requireAdmin(supabase, userId);
+
+    const [{ data: crons }, { data: compras }] = await Promise.all([
+      supabaseAdmin
+        .from("cronogramas")
+        .select("id, nome, categoria, imagem_url")
+        .eq("is_proprio", false)
+        .eq("premium", true)
+        .is("origem_id", null)
+        .order("nome", { ascending: true }),
+      supabaseAdmin
+        .from("cronograma_compras")
+        .select("cronograma_id, origem, status")
+        .eq("user_id", data.userId)
+        .eq("status", "ativo"),
+    ]);
+
+    const comprasMap = new Map<string, "compra" | "cortesia">();
+    for (const c of compras ?? []) {
+      if (c.cronograma_id)
+        comprasMap.set(c.cronograma_id as string, (c.origem as "compra" | "cortesia") ?? "compra");
+    }
+
+    return (crons ?? []).map((c) => {
+      const origem = comprasMap.get(c.id) ?? null;
+      const status: PremiumAccessItem["status"] = origem === "compra"
+        ? "comprado"
+        : origem === "cortesia"
+          ? "concedido"
+          : "sem_acesso";
+      return {
+        cronograma_id: c.id,
+        nome: c.nome,
+        categoria: c.categoria,
+        imagem_url: c.imagem_url,
+        status,
+        origem,
+      } satisfies PremiumAccessItem;
+    });
+  });
+
+export const concederCronogramaPremium = createServerFn({ method: "POST" })
+  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .inputValidator((input: { userId: string; cronogramaId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requireAdmin(supabase, userId);
+
+    // Evita duplicar acesso ativo
+    const { data: existente } = await supabaseAdmin
+      .from("cronograma_compras")
+      .select("id, origem")
+      .eq("user_id", data.userId)
+      .eq("cronograma_id", data.cronogramaId)
+      .eq("status", "ativo")
+      .maybeSingle();
+
+    if (existente) return { ok: true, alreadyGranted: true };
+
+    const { error } = await supabaseAdmin.from("cronograma_compras").insert({
+      user_id: data.userId,
+      cronograma_id: data.cronogramaId,
+      status: "ativo",
+      origem: "cortesia",
+    });
+    if (error) throw new Error(error.message);
+    // Trigger clona o cronograma para o usuário automaticamente
+    return { ok: true };
+  });
+
+export const revogarCronogramaPremium = createServerFn({ method: "POST" })
+  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .inputValidator((input: { userId: string; cronogramaId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requireAdmin(supabase, userId);
+
+    // Só permite revogar cortesia (compra é vitalícia)
+    const { data: compra } = await supabaseAdmin
+      .from("cronograma_compras")
+      .select("id, origem")
+      .eq("user_id", data.userId)
+      .eq("cronograma_id", data.cronogramaId)
+      .eq("status", "ativo")
+      .maybeSingle();
+
+    if (!compra) throw new Error("Nenhum acesso ativo encontrado");
+    if (compra.origem !== "cortesia")
+      throw new Error("Compras individuais são vitalícias e não podem ser revogadas");
+
+    // Marca compra como cancelada
+    const { error: e1 } = await supabaseAdmin
+      .from("cronograma_compras")
+      .update({ status: "cancelado" })
+      .eq("id", compra.id);
+    if (e1) throw new Error(e1.message);
+
+    // Remove cópia clonada do usuário (CASCADE em matérias/tópicos via FK)
+    await supabaseAdmin
+      .from("cronogramas")
+      .delete()
+      .eq("criado_por", data.userId)
+      .eq("origem_id", data.cronogramaId);
+
+    return { ok: true };
+  });
