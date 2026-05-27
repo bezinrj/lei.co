@@ -84,13 +84,19 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [reportLoading, setReportLoading] = useState<null | "pdf" | "csv">(null);
   const [planoCortesia, setPlanoCortesia] = useState<PlanoTipo>("diamante");
+  const [premiumList, setPremiumList] = useState<PremiumAccessItem[]>([]);
+  const [premiumBusyId, setPremiumBusyId] = useState<string | null>(null);
 
   async function load() {
     if (!userId) return;
     setLoading(true);
     try {
-      const p = await getAdminUserProfile({ data: { userId } });
+      const [p, pl] = await Promise.all([
+        getAdminUserProfile({ data: { userId } }),
+        listarAcessosPremium({ data: { userId } }),
+      ]);
       setProfile(p);
+      setPremiumList(pl);
     } catch (e: any) {
       toast.error(e?.message ?? "Erro ao carregar perfil");
     } finally {
