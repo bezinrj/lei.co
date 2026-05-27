@@ -246,6 +246,18 @@ function CronogramasPage() {
               }}
             />
           )}
+          {premiumVitrine.length > 0 && (
+            <CategoryRow
+              title="Cronogramas Premium"
+              items={premiumVitrine}
+              isLocked={() => true}
+              showActions={false}
+              onSelect={(id) => {
+                const c = premiumVitrine.find((x) => x.id === id);
+                if (c) handleSelect(c);
+              }}
+            />
+          )}
           {Object.entries(grouped).map(([cat, list]) => (
             <CategoryRow
               key={cat}
