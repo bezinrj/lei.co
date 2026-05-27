@@ -154,6 +154,36 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
     });
   }
 
+  async function handleConcederPremium(cronogramaId: string) {
+    if (!profile) return;
+    setPremiumBusyId(cronogramaId);
+    try {
+      await concederCronogramaPremium({ data: { userId: profile.id, cronogramaId } });
+      toast.success("Cronograma premium concedido!");
+      await load();
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao conceder");
+    } finally {
+      setPremiumBusyId(null);
+    }
+  }
+
+  async function handleRevogarPremium(cronogramaId: string) {
+    if (!profile) return;
+    setPremiumBusyId(cronogramaId);
+    try {
+      await revogarCronogramaPremium({ data: { userId: profile.id, cronogramaId } });
+      toast.success("Cortesia revogada");
+      await load();
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao revogar");
+    } finally {
+      setPremiumBusyId(null);
+    }
+  }
+
   async function handleRole(role: "admin" | "moderador" | "user") {
     if (!profile) return;
     await withBusy(async () => {
