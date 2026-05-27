@@ -1,54 +1,68 @@
-# Sugestão de compra de cronogramas premium para todos
 
-## Diagnóstico
+## 1. Painel Admin — conceder cronogramas premium manualmente
 
-A página `/meu-plano` já tem uma seção "Cronogramas Premium — compra individual", e a `/cronogramas` poderia exibir os premium como cards bloqueados. Mas atualmente **nenhum dos dois aparece para alunos comuns**, porque a política de RLS de SELECT em `cronogramas` esconde os originais premium de quem não é admin/mod (foi assim que bloqueamos para evitar que alunos abrissem a matriz original).
+Em `UserProfileSheet`, adicionar uma nova seção **"Cronogramas premium"** (após "Assinatura"):
 
-Resultado prático hoje:
-- Aluno entra em `/meu-plano` → seção "Cronogramas Premium" aparece vazia.
-- Aluno entra em `/cronogramas` → só vê gratuitos, sua cópia pessoal e suas cópias premium já adquiridas.
+- Lista todos os cronogramas premium (`is_proprio=false, premium=true, origem_id IS NULL`).
+- Para cada um, mostra um chip de status do usuário:
+  - **"Concedido (cortesia)"** — quando há `cronograma_compras` ativo com `origem='cortesia'` (novo valor).
+  - **"Comprado"** — quando há `cronograma_compras` ativo com `origem='compra'`.
+  - **"Sem acesso"** — caso contrário.
+- Botões por cronograma:
+  - **"Conceder"** (quando sem acesso) → cria `cronograma_compras (status='ativo', origem='cortesia')` e dispara o trigger existente que clona o cronograma para o aluno.
+  - **"Revogar cortesia"** (quando origem='cortesia') → marca a compra como `cancelada` e remove a cópia clonada do aluno (`cronogramas` com `origem_id=esse_cron` e `criado_por=user`, junto com matérias/tópicos/eventos derivados).
+  - **"Comprado"** fica readonly (vitalício, não é admin-revogável).
 
-## Solução
+Novas serverFns em `src/server/admin-extra.functions.ts`:
+- `listarAcessosPremium({ userId })` → retorna `[{ cronograma_id, nome, status, origem }]`.
+- `concederCronogramaPremium({ userId, cronogramaId })`.
+- `revogarCronogramaPremium({ userId, cronogramaId })`.
 
-A regra correta é: **todo mundo pode VER que um cronograma premium existe** (catálogo/vitrine), mas só quem tem acesso pode abrir a matriz (matérias/tópicos). Isso já está garantido pelas policies de `cronograma_materias` e `cronograma_topicos`, que checam `tem_acesso_cronograma`. Então é seguro liberar SELECT do "card" do cronograma para todos os autenticados.
+**Migration**:
+- Adicionar coluna `origem text not null default 'compra'` em `cronograma_compras` com check (`'compra' | 'cortesia'`).
+- Backfill existente como `'compra'`.
 
-### 1. Migração de banco
+## 2. Diamante — acesso enquanto vigente (não vitalício)
 
-Substituir a policy `Cronogramas viewable by allowed users` para também permitir SELECT de cronogramas premium originais (`is_proprio = false AND premium = true AND origem_id IS NULL`) a todos os autenticados — sem mexer no acesso à matriz.
+Comportamento atual: trigger `tg_clonar_on_assinatura_diamante` clona TODOS os cronogramas premium para o usuário Diamante, e essas cópias ficam para sempre.
 
-A nova política terá estes ramos:
-- admin/mod veem tudo
-- dono vê seus próprios (`is_proprio = true AND criado_por = auth.uid()`)
-- todos veem institucionais gratuitos (`is_proprio = false AND premium = false`)
-- **novo:** todos veem premium originais (`is_proprio = false AND premium = true AND origem_id IS NULL`) — para vitrine
+Novo comportamento:
+- **Remover o trigger `tg_clonar_on_assinatura_diamante`** e revisar `clonar_cronograma_para_usuario` para que continue funcionando apenas via compra individual (cortesia/compra).
+- Diamante passa a usar os **originais** diretamente: `tem_acesso_cronograma` já retorna `true` para Diamante ativo, então o estudo acontece nos `cronograma_id` originais. Progresso (`user_calendar_events`, `user_topico_progresso`, `user_sessions`) já é por `user_id`, então cada Diamante tem progresso isolado mesmo compartilhando o mesmo `cronograma_id` original.
+- Estudante Diamante NÃO pode alterar a matriz (RLS de `cronograma_materias`/`cronograma_topicos` já bloqueia escrita em premium não-próprio).
+- Quando Diamante expira (`assinaturas.fim <= now()` ou `status != ativa/cortesia/teste`), `tem_acesso_cronograma` automaticamente retorna `false` → o aluno perde acesso ao calendário/matriz dos cronogramas premium originais. Progresso fica preservado no banco mas inacessível pela UI até reativação.
+- **Limpeza única**: migration que deleta as cópias já clonadas para usuários Diamante via trigger antigo (cópias onde o usuário é Diamante ativo E não existe `cronograma_compras` ativo para aquele `origem_id`). Isso evita o "frozen forever" residual.
 
-### 2. `/meu-plano`
+Ajustes no frontend:
+- `useAcesso.ts`: nenhuma mudança (já lê `compras` e `isDiamante` corretamente).
+- `cronogramas.tsx`: o filtro `minhasCopiasPremium` continua mostrando as cópias de compra/cortesia; cronogramas premium originais passam a aparecer na seção "Cronogramas Premium" (vitrine) com cadeado quando sem acesso, ou clicáveis (acesso direto ao original) para Diamante. Atualizar `isLocked` para usar `acesso.temAcessoCronograma`.
 
-Nenhuma mudança de código: a seção já existe e passa a ser populada automaticamente assim que o RLS liberar.
+## 3. Diamante — copy fix
 
-### 3. `/cronogramas`
+Em `src/routes/meu-plano.tsx`, no array de benefícios do plano `diamante`, trocar:
 
-Adicionar uma nova seção **"Cronogramas Premium"** (logo abaixo de "Meu Cronograma" e "Meus Cronogramas Premium", antes das categorias institucionais), exibindo os premium originais para os quais o usuário **ainda não tem cópia/acesso**. Comportamento por card:
-
-- Mostrado como "bloqueado" (cadeado), reutilizando o `CategoryRow` com `isLocked` retornando `true`.
-- Ao clicar, em vez de navegar para o cronograma, abrir o `UpgradeModal` existente (já é o caminho atual quando `tem_acesso_cronograma` é falso) — então basta usar `handleSelect` que já trata isso.
-- Admin/mod continuam vendo os premium originais na seção institucional usual (com ações de edição); para eles a seção "Cronogramas Premium" de vitrine não aparece (evita duplicidade).
-
-Filtro JS:
-```ts
-const premiumVitrine = items.filter(c =>
-  !c.is_proprio && c.premium && !c.origem_id &&
-  !isAdminOrMod &&
-  !minhasCopiasPremium.some(cp => cp.origem_id === c.id)
-);
+```diff
+- "Mentoria individual inclusa",
++ "30 dias de Mentoria individual",
 ```
 
-E ajustar `institucionais` para que admin/mod continue vendo os originais premium ali, mas alunos comuns não (já está parcialmente assim).
+## 4. Botão "Dashboard" do aluno — espelhar dashboard real
 
-## Detalhes técnicos
+A rota `/admin/aluno/$id` já existe, mas o `DashboardDoAluno` lá tem código próprio que diverge do `/dashboard` real (faltam `GroupRanking` e o card "Desempenho").
 
-- Arquivos alterados:
-  - Nova migração SQL: `DROP POLICY` + `CREATE POLICY` em `public.cronogramas` para SELECT.
-  - `src/routes/cronogramas.tsx`: novo filtro `premiumVitrine` + novo `<CategoryRow title="Cronogramas Premium" ... isLocked={() => true} />`.
-- Sem mudanças em server functions, hooks ou tipos.
-- A matriz (matérias/tópicos) continua protegida — alunos só veem nome, categoria, imagem e preço do premium.
+- Refatorar `src/routes/dashboard.tsx` extraindo o corpo em um componente `<DashboardView userId={string} readonly?={boolean} />` em `src/components/dashboard/DashboardView.tsx`.
+- `/dashboard` passa `userId={user.id}`.
+- `/admin/aluno/$id` Dashboard tab passa `userId={studentId} readonly`. Substituir `DashboardDoAluno` por `<DashboardView userId={studentId} readonly />`.
+- Garantir que todos os subcomponentes (`WeeklyPerformance`, `TodaySchedule`, `SubjectPerformance`, `GroupRanking`, `MetricCard`) já aceitam `userId` por prop (já aceitam).
+- No header de `/admin/aluno/$id`, manter o badge "Visualizando como Administrador" para deixar claro que é a visão real do aluno.
+
+## Resumo de arquivos
+
+- **Migration**: coluna `origem` em `cronograma_compras` + drop do trigger Diamante + limpeza de cópias Diamante órfãs.
+- **`src/server/admin-extra.functions.ts`**: 3 novas serverFns (listar/conceder/revogar premium).
+- **`src/components/admin/UserProfileSheet.tsx`**: nova seção "Cronogramas premium".
+- **`src/routes/meu-plano.tsx`**: copy do Diamante.
+- **`src/components/dashboard/DashboardView.tsx`** (novo): conteúdo extraído do `/dashboard`.
+- **`src/routes/dashboard.tsx`**: usa `DashboardView`.
+- **`src/routes/admin.aluno.$id.tsx`**: troca `DashboardDoAluno` por `DashboardView` em modo readonly.
+- **`src/routes/cronogramas.tsx`**: ajustar `isLocked` da vitrine premium para Diamante poder abrir o original.

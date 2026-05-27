@@ -107,6 +107,7 @@ export type Database = {
           created_at: string
           cronograma_id: string | null
           id: string
+          origem: string
           status: string
           stripe_payment_intent_id: string | null
           user_id: string
@@ -115,6 +116,7 @@ export type Database = {
           created_at?: string
           cronograma_id?: string | null
           id?: string
+          origem?: string
           status: string
           stripe_payment_intent_id?: string | null
           user_id: string
@@ -123,6 +125,7 @@ export type Database = {
           created_at?: string
           cronograma_id?: string | null
           id?: string
+          origem?: string
           status?: string
           stripe_payment_intent_id?: string | null
           user_id?: string
