@@ -90,9 +90,21 @@ function CronogramasPage() {
   const minhasCopiasPremium = items.filter(
     (c) => c.is_proprio && c.criado_por === user?.id && !!c.origem_id,
   );
-  const institucionais = items.filter(
-    (c) => !c.is_proprio && !(isAdminOrMod === false && c.premium && minhasCopiasPremium.some((cp) => cp.origem_id === c.id)),
+  // Premium originais que o usuário comum ainda não possui (vitrine de compra)
+  const premiumVitrine = items.filter(
+    (c) =>
+      !isAdminOrMod &&
+      !c.is_proprio &&
+      c.premium &&
+      !c.origem_id &&
+      !minhasCopiasPremium.some((cp) => cp.origem_id === c.id),
   );
+  const institucionais = items.filter((c) => {
+    if (c.is_proprio) return false;
+    // Para alunos: esconder premium daqui (vão pra vitrine ou pras cópias)
+    if (!isAdminOrMod && c.premium) return false;
+    return true;
+  });
 
   const grouped = institucionais.reduce<Record<string, Cronograma[]>>((acc, c) => {
     const key = c.categoria?.trim() || "Sem categoria";
