@@ -543,12 +543,31 @@ export const revogarCronogramaPremium = createServerFn({ method: "POST" })
       .eq("id", compra.id);
     if (e1) throw new Error(e1.message);
 
-    // Remove cópia clonada do usuário (CASCADE em matérias/tópicos via FK)
-    await supabaseAdmin
+    // Remove cópia clonada do usuário (matérias, tópicos e eventos)
+    const { data: copias } = await supabaseAdmin
       .from("cronogramas")
-      .delete()
+      .select("id")
       .eq("criado_por", data.userId)
       .eq("origem_id", data.cronogramaId);
+
+    const copiaIds = (copias ?? []).map((c) => c.id);
+    if (copiaIds.length > 0) {
+      const { data: mats } = await supabaseAdmin
+        .from("cronograma_materias")
+        .select("id")
+        .in("cronograma_id", copiaIds);
+      const matIds = (mats ?? []).map((m) => m.id);
+      if (matIds.length > 0) {
+        await supabaseAdmin.from("cronograma_topicos").delete().in("materia_id", matIds);
+        await supabaseAdmin.from("cronograma_materias").delete().in("id", matIds);
+      }
+      await supabaseAdmin
+        .from("user_calendar_events")
+        .delete()
+        .eq("user_id", data.userId)
+        .in("cronograma_id", copiaIds);
+      await supabaseAdmin.from("cronogramas").delete().in("id", copiaIds);
+    }
 
     return { ok: true };
   });
