@@ -1,0 +1,13 @@
+DROP POLICY IF EXISTS "Cronogramas viewable by allowed users" ON public.cronogramas;
+
+CREATE POLICY "Cronogramas viewable by allowed users"
+ON public.cronogramas
+FOR SELECT
+TO authenticated
+USING (
+  has_role(auth.uid(), 'admin'::app_role)
+  OR has_role(auth.uid(), 'moderador'::app_role)
+  OR (is_proprio = true AND criado_por = auth.uid())
+  OR (is_proprio = false AND premium = false)
+  OR (is_proprio = false AND premium = true AND origem_id IS NULL)
+);
