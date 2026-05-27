@@ -1,68 +1,54 @@
+# Sugestão de compra de cronogramas premium para todos
 
-## Objetivo
+## Diagnóstico
 
-Garantir 3 regras claras na biblioteca de cronogramas:
+A página `/meu-plano` já tem uma seção "Cronogramas Premium — compra individual", e a `/cronogramas` poderia exibir os premium como cards bloqueados. Mas atualmente **nenhum dos dois aparece para alunos comuns**, porque a política de RLS de SELECT em `cronogramas` esconde os originais premium de quem não é admin/mod (foi assim que bloqueamos para evitar que alunos abrissem a matriz original).
 
-1. **Cronograma Pessoal** (criado pelo aluno) é privado, único por aluno, e o aluno é dono total (editar/excluir).
-2. **Cronograma Premium** (criado pela equipe) nunca pode ter sua matriz alterada por alunos.
-3. Quando um aluno **ganha acesso** a um premium (compra individual OU plano Diamante), o sistema cria **automaticamente uma cópia individual** desse cronograma para ele. Cada aluno usa sua própria cópia — não há uso compartilhado.
+Resultado prático hoje:
+- Aluno entra em `/meu-plano` → seção "Cronogramas Premium" aparece vazia.
+- Aluno entra em `/cronogramas` → só vê gratuitos, sua cópia pessoal e suas cópias premium já adquiridas.
 
-A cópia é congelada: se o admin alterar o original depois, as cópias existentes permanecem como estão.
+## Solução
 
----
+A regra correta é: **todo mundo pode VER que um cronograma premium existe** (catálogo/vitrine), mas só quem tem acesso pode abrir a matriz (matérias/tópicos). Isso já está garantido pelas policies de `cronograma_materias` e `cronograma_topicos`, que checam `tem_acesso_cronograma`. Então é seguro liberar SELECT do "card" do cronograma para todos os autenticados.
 
-## Mudanças no banco
+### 1. Migração de banco
 
-### 1. Coluna `origem_id` em `cronogramas`
-- `origem_id uuid null` — referencia o cronograma premium original (apenas para cópias).
-- Cópias premium do aluno são marcadas como: `is_proprio = true`, `criado_por = user_id`, `premium = false`, `origem_id = <id do original>`, `categoria = 'Premium (Minha cópia)'`.
+Substituir a policy `Cronogramas viewable by allowed users` para também permitir SELECT de cronogramas premium originais (`is_proprio = false AND premium = true AND origem_id IS NULL`) a todos os autenticados — sem mexer no acesso à matriz.
 
-### 2. Função `public.clonar_cronograma_para_usuario(_cronograma_id uuid, _user_id uuid)`
-SECURITY DEFINER. Idempotente: se já existir cópia (`origem_id = _cronograma_id AND criado_por = _user_id`), retorna o id existente sem duplicar. Caso contrário, copia o cronograma + todas `cronograma_materias` + todos `cronograma_topicos` preservando ordem, cor, fontes, duração etc.
+A nova política terá estes ramos:
+- admin/mod veem tudo
+- dono vê seus próprios (`is_proprio = true AND criado_por = auth.uid()`)
+- todos veem institucionais gratuitos (`is_proprio = false AND premium = false`)
+- **novo:** todos veem premium originais (`is_proprio = false AND premium = true AND origem_id IS NULL`) — para vitrine
 
-### 3. Triggers de clonagem automática
-- **Em `cronograma_compras`** (AFTER INSERT/UPDATE): quando `status = 'ativo'`, chama `clonar_cronograma_para_usuario(cronograma_id, user_id)`.
-- **Em `assinaturas`** (AFTER INSERT/UPDATE): quando assinatura entra em status ativo de plano **Diamante**, itera por todos `cronogramas` premium (`is_proprio = false AND premium = true`) e clona cada um para o usuário.
+### 2. `/meu-plano`
 
-### 4. Ajustes de RLS
-- **`cronogramas` SELECT premium originais**: alunos comuns NÃO veem mais os cronogramas premium "originais" na listagem (só veem suas cópias). Admin/mod continuam vendo originais. Free não premium continuam visíveis a todos.
-- **`cronograma_materias` / `cronograma_topicos` UPDATE/INSERT/DELETE pelo dono pessoal**: restringir o "Owner manage…" para `c.is_proprio = true AND c.origem_id IS NULL` — assim a cópia premium fica com matriz 100% bloqueada para o aluno (só admin/mod podem editar, e na prática não vão editar cópias individuais).
+Nenhuma mudança de código: a seção já existe e passa a ser populada automaticamente assim que o RLS liberar.
 
-### 5. Backfill
-Para cada compra ativa existente e cada assinatura Diamante ativa, executar o clone uma vez (idempotente) para popular as cópias já devidas.
+### 3. `/cronogramas`
 
----
+Adicionar uma nova seção **"Cronogramas Premium"** (logo abaixo de "Meu Cronograma" e "Meus Cronogramas Premium", antes das categorias institucionais), exibindo os premium originais para os quais o usuário **ainda não tem cópia/acesso**. Comportamento por card:
 
-## Mudanças no frontend
+- Mostrado como "bloqueado" (cadeado), reutilizando o `CategoryRow` com `isLocked` retornando `true`.
+- Ao clicar, em vez de navegar para o cronograma, abrir o `UpgradeModal` existente (já é o caminho atual quando `tem_acesso_cronograma` é falso) — então basta usar `handleSelect` que já trata isso.
+- Admin/mod continuam vendo os premium originais na seção institucional usual (com ações de edição); para eles a seção "Cronogramas Premium" de vitrine não aparece (evita duplicidade).
 
-### `src/routes/cronogramas.tsx`
-- Agrupar cópias premium do aluno em uma seção própria: **"Meus Cronogramas Premium"** (separada de "Meu Cronograma" pessoal e das categorias institucionais).
-- Critério: `is_proprio = true AND origem_id IS NOT NULL AND criado_por = user.id`.
-- "Meu Cronograma" pessoal continua a seção só para `origem_id IS NULL`.
-- Alunos comuns deixam de ver os cards premium "originais" (a query do RLS já filtra).
+Filtro JS:
+```ts
+const premiumVitrine = items.filter(c =>
+  !c.is_proprio && c.premium && !c.origem_id &&
+  !isAdminOrMod &&
+  !minhasCopiasPremium.some(cp => cp.origem_id === c.id)
+);
+```
 
-### `src/components/cronogramas/CategoryRow.tsx` / `CronogramaCard.tsx`
-- Para cópias premium: ocultar ações de editar capa/nome/excluir (ícone de menu desabilitado). Mesma regra do "só estudar".
-
-### `src/routes/cronograma.$id.tsx`
-- Bloquear botões de editar matriz (adicionar matéria, adicionar tópico, editar capa) quando `cronograma.origem_id IS NOT NULL` e usuário não é admin/mod. A RLS já reforça no backend.
-
-### Sem mudanças em compra/checkout
-A clonagem é acionada pelos triggers no banco assim que a `cronograma_compras` vira `ativo` (já feito pelo webhook do Stripe) ou a `assinatura` Diamante fica ativa. Nenhuma alteração necessária no fluxo de pagamento.
-
----
+E ajustar `institucionais` para que admin/mod continue vendo os originais premium ali, mas alunos comuns não (já está parcialmente assim).
 
 ## Detalhes técnicos
 
-- A clonagem copia apenas estrutura (matérias + tópicos). **Não** copia progresso, sessões, eventos de calendário, notas — esses já são por usuário em tabelas `user_*` apontando para o `topico_id` da cópia (cada cópia tem seus próprios `topico_id` novos).
-- Cópia é **congelada**: nenhum mecanismo de sincronização com o original. Decisão registrada acima.
-- O limite de "1 cronograma pessoal por aluno" continua valendo só para o pessoal "verdadeiro" (`origem_id IS NULL AND is_proprio = true`). O `NovoCronogramaDialog` já faz essa checagem — ajustar para considerar `origem_id IS NULL`.
-- Idempotência da clonagem evita duplicatas em re-execução de trigger ou backfill.
-
----
-
-## Ordem de execução
-
-1. Migração: coluna `origem_id`, função `clonar_cronograma_para_usuario`, triggers nas duas tabelas, ajuste das RLS de `cronogramas`/`materias`/`topicos`, backfill.
-2. Frontend: separar seção "Meus Cronogramas Premium", bloquear ações nas cópias, ajustar checagem do dialog de novo cronograma.
-3. Smoke test: simular `INSERT` em `cronograma_compras` com `status='ativo'` e verificar criação da cópia + tópicos.
+- Arquivos alterados:
+  - Nova migração SQL: `DROP POLICY` + `CREATE POLICY` em `public.cronogramas` para SELECT.
+  - `src/routes/cronogramas.tsx`: novo filtro `premiumVitrine` + novo `<CategoryRow title="Cronogramas Premium" ... isLocked={() => true} />`.
+- Sem mudanças em server functions, hooks ou tipos.
+- A matriz (matérias/tópicos) continua protegida — alunos só veem nome, categoria, imagem e preço do premium.
