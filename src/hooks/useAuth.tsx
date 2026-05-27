@@ -29,21 +29,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
-  const loadedRolesForUserId = useRef<string | null>(null);
+  const rolesPromiseRef = useRef<Map<string, Promise<void>>>(new Map());
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadRoles(userId: string) {
-      if (loadedRolesForUserId.current === userId) return;
-      loadedRolesForUserId.current = userId;
-      const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-      if (!mounted) return;
-      setRoles((data ?? []).map((r) => r.role as Role));
+    function loadRoles(userId: string): Promise<void> {
+      const existing = rolesPromiseRef.current.get(userId);
+      if (existing) return existing;
+      const p = (async () => {
+        const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+        if (!mounted) return;
+        setRoles((data ?? []).map((r) => r.role as Role));
+      })();
+      rolesPromiseRef.current.set(userId, p);
+      return p;
     }
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
-      // Ignora TOKEN_REFRESHED (não muda o usuário) — evita refetch desnecessário
       if (event === "TOKEN_REFRESHED") {
         setSession(newSession);
         return;
@@ -51,26 +54,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(newSession);
       const newUser = newSession?.user ?? null;
-      // Só troca a referência do user se o id realmente mudou — evita loops
-      // de refetch em componentes que dependem de `user` em useEffect.
       setUser((prev) => (prev?.id === newUser?.id ? prev : newUser));
 
       if (newUser) {
-        // Defer DB call to avoid deadlock no callback
         setTimeout(() => loadRoles(newUser.id), 0);
       } else {
-        loadedRolesForUserId.current = null;
+        rolesPromiseRef.current.clear();
         setRoles([]);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       if (!mounted) return;
       setSession(s);
       const newUser = s?.user ?? null;
       setUser((prev) => (prev?.id === newUser?.id ? prev : newUser));
       if (newUser) {
-        loadRoles(newUser.id).finally(() => mounted && setLoading(false));
+        try {
+          await loadRoles(newUser.id);
+        } finally {
+          if (mounted) setLoading(false);
+        }
       } else {
         setLoading(false);
       }
@@ -93,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAdminOrMod,
         signOut: async () => {
-          loadedRolesForUserId.current = null;
+          rolesPromiseRef.current.clear();
           await supabase.auth.signOut();
         },
       }}
