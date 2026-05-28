@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,10 @@ type PlanoDb = {
   tipo: Exclude<PlanoTipo, "gratuito"> | "cortesia";
   preco_centavos: number;
 };
+
+type PostAuthRedirect =
+  | { target: "perfil" }
+  | { target: "meu-plano"; plano: PlanoTipo };
 
 const PLANO_BENEFICIOS: Record<PlanoTipo, string[]> = {
   gratuito: ["Cronogramas gratuitos", "Medalhas e gamificação", "Ranking Semanal"],
@@ -94,10 +98,22 @@ function AuthPage() {
   const [planoEscolhido, setPlanoEscolhido] = useState<PlanoTipo>("gratuito");
   const [planosDb, setPlanosDb] = useState<PlanoDb[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [postAuthRedirect, setPostAuthRedirect] = useState<PostAuthRedirect | null>(null);
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
-    if (!loading && user) navigate(redirectToProfile);
-  }, [user, loading, navigate]);
+    if (loading || !user || redirectedRef.current) return;
+    redirectedRef.current = true;
+    if (postAuthRedirect?.target === "meu-plano") {
+      navigate({
+        to: "/meu-plano",
+        search: { welcome: 1, plano: postAuthRedirect.plano } as never,
+        replace: true,
+      });
+      return;
+    }
+    navigate(redirectToProfile);
+  }, [user, loading, navigate, postAuthRedirect]);
 
   useEffect(() => {
     if (mode !== "signup") return;
@@ -134,6 +150,11 @@ function AuthPage() {
     setSubmitting(true);
     try {
       if (mode === "signup") {
+        setPostAuthRedirect(
+          planoEscolhido === "gratuito"
+            ? { target: "perfil" }
+            : { target: "meu-plano", plano: planoEscolhido },
+        );
         const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
@@ -151,22 +172,18 @@ function AuthPage() {
         }
         if (planoEscolhido === "gratuito") {
           toast.success("Conta criada! Bem-vindo(a) à Lei.co 🎉");
-          navigate(redirectToProfile);
         } else {
           toast.success("Conta criada! Finalize a assinatura do seu plano.");
-          navigate({
-            to: "/meu-plano",
-            search: { welcome: 1, plano: planoEscolhido } as never,
-            replace: true,
-          });
         }
         return;
       } else {
+        setPostAuthRedirect({ target: "perfil" });
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Bem-vindo de volta!");
       }
     } catch (err) {
+      setPostAuthRedirect(null);
       const msg = err instanceof Error ? err.message : "Erro ao autenticar";
       toast.error(msg);
     } finally {
