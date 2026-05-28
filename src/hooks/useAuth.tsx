@@ -57,10 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser((prev) => (prev?.id === newUser?.id ? prev : newUser));
 
       if (newUser) {
-        setTimeout(() => loadRoles(newUser.id), 0);
+        setLoading(true);
+        void loadRoles(newUser.id).finally(() => {
+          if (mounted) setLoading(false);
+        });
       } else {
         rolesPromiseRef.current.clear();
         setRoles([]);
+        setLoading(false);
       }
     });
 

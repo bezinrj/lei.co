@@ -68,11 +68,11 @@ function AdminPage() {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      navigate({ to: "/auth" });
+      navigate({ to: "/auth", replace: true });
       return;
     }
     if (!isAdmin) {
-      navigate({ to: "/perfil" });
+      navigate({ to: "/perfil", replace: true });
       return;
     }
     load();

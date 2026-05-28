@@ -141,7 +141,7 @@ function MeuPlanoPage() {
   const [cancelando, setCancelando] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth" });
+    if (!loading && !user) navigate({ to: "/auth", replace: true });
   }, [loading, user, navigate]);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,10 +59,6 @@ export const Route = createFileRoute("/perfil")({
       { name: "description", content: "Personalize seu perfil, badges e meta de estudos no Lei.co." },
     ],
   }),
-  beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) throw redirect({ to: "/auth" });
-  },
   component: PerfilPage,
 });
 
@@ -74,7 +70,7 @@ const corMap: Record<string, { bg: string; ring: string }> = {
 };
 
 function PerfilPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
@@ -353,6 +349,18 @@ function PerfilPage() {
     );
     if (novoValor) toast.success("Badge em destaque atualizada.");
   }
+
+  if (authLoading) {
+    return (
+      <AppShell title="Meu Perfil">
+        <div className="flex items-center justify-center py-20 text-text-muted">
+          <Loader2 className="animate-spin mr-2" size={18} /> Carregando…
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!user) return <Navigate to="/auth" replace />;
 
   if (loading || !profile) {
     return (
