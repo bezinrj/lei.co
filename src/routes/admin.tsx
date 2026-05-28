@@ -68,15 +68,16 @@ function AdminPage() {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      navigate({ to: "/auth" });
+      navigate({ to: "/auth", replace: true });
       return;
     }
+    if (roles.length === 0) return;
     if (!isAdmin) {
-      navigate({ to: "/perfil" });
+      navigate({ to: "/perfil", replace: true });
       return;
     }
     load();
-  }, [loading, isAdmin, user, load, navigate]);
+  }, [loading, isAdmin, user, roles.length, load, navigate]);
 
   // Realtime: profiles changes (last_seen, novo cadastro, bloqueado)
   useEffect(() => {
