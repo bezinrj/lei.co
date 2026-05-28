@@ -71,13 +71,12 @@ function AdminPage() {
       navigate({ to: "/auth", replace: true });
       return;
     }
-    if (roles.length === 0) return;
     if (!isAdmin) {
       navigate({ to: "/perfil", replace: true });
       return;
     }
     load();
-  }, [loading, isAdmin, user, roles.length, load, navigate]);
+  }, [loading, isAdmin, user, load, navigate]);
 
   // Realtime: profiles changes (last_seen, novo cadastro, bloqueado)
   useEffect(() => {

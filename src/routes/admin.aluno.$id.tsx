@@ -55,12 +55,10 @@ function AdminAlunoPage() {
       navigate({ to: "/auth", replace: true });
       return;
     }
-    // Espera roles carregarem antes de decidir; evita redirect indevido
-    if (roles.length === 0) return;
     if (!isStaff) {
       navigate({ to: "/perfil", replace: true });
     }
-  }, [authLoading, isStaff, user, navigate, roles.length]);
+  }, [authLoading, isStaff, user, navigate]);
 
   useEffect(() => {
     let mounted = true;
