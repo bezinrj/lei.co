@@ -5,6 +5,8 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, Award, Users, Trophy, Sparkles, ArrowRight } from "lucide-react";
 
+const redirectToProfile = { to: "/perfil", replace: true } as const;
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -29,7 +31,7 @@ function LandingPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/perfil" });
+    if (!loading && user) navigate(redirectToProfile);
   }, [user, loading, navigate]);
 
   return (
