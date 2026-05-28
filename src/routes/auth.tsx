@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { maskPhoneBR } from "@/lib/phone-mask";
 import { Check, Crown, Sparkles } from "lucide-react";
 
+const redirectToProfile = { to: "/perfil", replace: true } as const;
+
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Lei.co" }] }),
   validateSearch: (search: Record<string, unknown>) => ({
@@ -94,7 +96,7 @@ function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/perfil" });
+    if (!loading && user) navigate(redirectToProfile);
   }, [user, loading, navigate]);
 
   useEffect(() => {
@@ -149,12 +151,13 @@ function AuthPage() {
         }
         if (planoEscolhido === "gratuito") {
           toast.success("Conta criada! Bem-vindo(a) à Lei.co 🎉");
-          navigate({ to: "/perfil" });
+          navigate(redirectToProfile);
         } else {
           toast.success("Conta criada! Finalize a assinatura do seu plano.");
           navigate({
             to: "/meu-plano",
             search: { welcome: 1, plano: planoEscolhido } as never,
+            replace: true,
           });
         }
         return;
