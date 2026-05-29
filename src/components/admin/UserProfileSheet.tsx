@@ -78,7 +78,6 @@ const PLANO_LABEL: Record<PlanoTipo, string> = {
 };
 
 export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Props) {
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
