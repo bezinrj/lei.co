@@ -323,37 +323,20 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
               </div>
             </div>
 
-            {/* Ações rápidas: visualização completa */}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => {
-                  const id = userId;
-                  onOpenChange(false);
-                  setTimeout(() => {
-                    navigate({ to: "/admin/aluno/$id", params: { id: id! }, search: { tab: "dashboard" } });
-                  }, 100);
-                }}
-              >
-                <LayoutDashboard size={14} /> Ver Dashboard
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => {
-                  const id = userId;
-                  onOpenChange(false);
-                  setTimeout(() => {
-                    navigate({ to: "/admin/aluno/$id", params: { id: id! }, search: { tab: "cronograma" } });
-                  }, 100);
-                }}
-              >
-                <CalendarDays size={14} /> Ver Cronograma
-              </Button>
-            </div>
+            {/* Exportar relatório completo do aluno */}
+            <Button
+              size="sm"
+              className="w-full gap-2 bg-[#1D9E75] hover:bg-[#188a66] text-white"
+              onClick={() => handleReport("pdf")}
+              disabled={reportLoading === "pdf"}
+            >
+              {reportLoading === "pdf" ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <FileText size={14} />
+              )}
+              {reportLoading === "pdf" ? "Gerando PDF..." : "📄 Exportar Relatório PDF"}
+            </Button>
 
             {/* Contatos */}
             <div className="lei-card p-3 space-y-2">
