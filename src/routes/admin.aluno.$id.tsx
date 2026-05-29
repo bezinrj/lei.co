@@ -19,6 +19,9 @@ import type { Fonte } from "@/components/cronogramas/NovoTopicoForm";
 
 export const Route = createFileRoute("/admin/aluno/$id")({
   head: () => ({ meta: [{ title: "Aluno — Painel Admin — Lei.co" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    tab: (s.tab === "cronograma" ? "cronograma" : "dashboard") as "dashboard" | "cronograma",
+  }),
   component: AdminAlunoPage,
 });
 
@@ -41,9 +44,11 @@ function formatarHoras(h: number): string {
 
 function AdminAlunoPage() {
   const { id: studentId } = Route.useParams();
+  const { tab: searchTab } = Route.useSearch();
   const { roles, loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
   const isStaff = roles.includes("admin") || roles.includes("moderador");
+  const tabValue = searchTab === "cronograma" ? "cronogramas" : "dashboard";
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,7 +159,37 @@ function AdminAlunoPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="dashboard">
+      {/* Banner de contexto admin */}
+      <div
+        className="flex items-center gap-3 mb-4 rounded-lg px-4 py-2.5"
+        style={{ background: "#FAEEDA", border: "1px solid #f59e0b" }}
+      >
+        <span>👁️</span>
+        <span className="text-[12px]" style={{ color: "#412402" }}>
+          Você está visualizando o perfil de <b>{profile.display_name ?? "—"}</b> como
+          {" "}{roles.includes("admin") ? "administrador" : "moderador"}. O aluno não é
+          notificado desta visualização.
+        </span>
+        <button
+          onClick={() => navigate({ to: "/admin" })}
+          className="ml-auto text-[11px] px-2.5 py-1 rounded-md border"
+          style={{ borderColor: "#d97706", color: "#412402", background: "transparent" }}
+        >
+          ← Voltar ao Admin
+        </button>
+      </div>
+
+      <Tabs
+        value={tabValue}
+        onValueChange={(v) =>
+          navigate({
+            to: "/admin/aluno/$id",
+            params: { id: studentId },
+            search: { tab: v === "cronogramas" ? "cronograma" : "dashboard" },
+            replace: true,
+          })
+        }
+      >
         <TabsList className="bg-muted">
           <TabsTrigger value="dashboard" className="gap-2">
             <LayoutDashboard size={14} /> Dashboard

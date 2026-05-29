@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Sheet,
   SheetContent,
@@ -6,6 +7,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { LayoutDashboard, CalendarDays } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -78,6 +80,7 @@ const PLANO_LABEL: Record<PlanoTipo, string> = {
 };
 
 export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Props) {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -318,6 +321,32 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Ações rápidas: visualização completa */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate({ to: "/admin/aluno/$id", params: { id: profile.id }, search: { tab: "dashboard" } });
+                }}
+              >
+                <LayoutDashboard size={14} /> Ver Dashboard
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate({ to: "/admin/aluno/$id", params: { id: profile.id }, search: { tab: "cronograma" } });
+                }}
+              >
+                <CalendarDays size={14} /> Ver Cronograma
+              </Button>
             </div>
 
             {/* Contatos */}
