@@ -323,20 +323,6 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
               </div>
             </div>
 
-            {/* Exportar relatório completo do aluno */}
-            <Button
-              size="sm"
-              className="w-full gap-2 bg-[#1D9E75] hover:bg-[#188a66] text-white"
-              onClick={() => handleReport("pdf")}
-              disabled={reportLoading === "pdf"}
-            >
-              {reportLoading === "pdf" ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <FileText size={14} />
-              )}
-              {reportLoading === "pdf" ? "Gerando PDF..." : "📄 Exportar Relatório PDF"}
-            </Button>
 
             {/* Contatos */}
             <div className="lei-card p-3 space-y-2">
