@@ -44,9 +44,11 @@ function formatarHoras(h: number): string {
 
 function AdminAlunoPage() {
   const { id: studentId } = Route.useParams();
+  const { tab: searchTab } = Route.useSearch();
   const { roles, loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
   const isStaff = roles.includes("admin") || roles.includes("moderador");
+  const tabValue = searchTab === "cronograma" ? "cronogramas" : "dashboard";
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
