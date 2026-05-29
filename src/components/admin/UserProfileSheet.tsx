@@ -323,6 +323,32 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
               </div>
             </div>
 
+            {/* Ações rápidas: visualização completa */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate({ to: "/admin/aluno/$id", params: { id: profile.id }, search: { tab: "dashboard" } });
+                }}
+              >
+                <LayoutDashboard size={14} /> Ver Dashboard
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate({ to: "/admin/aluno/$id", params: { id: profile.id }, search: { tab: "cronograma" } });
+                }}
+              >
+                <CalendarDays size={14} /> Ver Cronograma
+              </Button>
+            </div>
+
             {/* Contatos */}
             <div className="lei-card p-3 space-y-2">
               <ContactRow
