@@ -19,6 +19,9 @@ import type { Fonte } from "@/components/cronogramas/NovoTopicoForm";
 
 export const Route = createFileRoute("/admin/aluno/$id")({
   head: () => ({ meta: [{ title: "Aluno — Painel Admin — Lei.co" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    tab: (s.tab === "cronograma" ? "cronograma" : "dashboard") as "dashboard" | "cronograma",
+  }),
   component: AdminAlunoPage,
 });
 
