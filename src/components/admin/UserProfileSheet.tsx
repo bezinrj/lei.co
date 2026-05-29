@@ -330,8 +330,11 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
                 size="sm"
                 className="gap-2"
                 onClick={() => {
+                  const id = profile.id;
                   onOpenChange(false);
-                  navigate({ to: "/admin/aluno/$id", params: { id: profile.id }, search: { tab: "dashboard" } });
+                  setTimeout(() => {
+                    navigate({ to: "/admin/aluno/$id", params: { id }, search: { tab: "dashboard" } });
+                  }, 50);
                 }}
               >
                 <LayoutDashboard size={14} /> Ver Dashboard
@@ -341,8 +344,11 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
                 size="sm"
                 className="gap-2"
                 onClick={() => {
+                  const id = profile.id;
                   onOpenChange(false);
-                  navigate({ to: "/admin/aluno/$id", params: { id: profile.id }, search: { tab: "cronograma" } });
+                  setTimeout(() => {
+                    navigate({ to: "/admin/aluno/$id", params: { id }, search: { tab: "cronograma" } });
+                  }, 50);
                 }}
               >
                 <CalendarDays size={14} /> Ver Cronograma
