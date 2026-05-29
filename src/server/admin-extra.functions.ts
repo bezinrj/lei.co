@@ -331,6 +331,13 @@ export type AdminUserReport = {
     concluidos: number;
     pct: number;
   }[];
+  materias: {
+    cronograma: string;
+    nome: string;
+    total: number;
+    concluidos: number;
+    pct: number;
+  }[];
   sessoes: {
     data: string;
     materia: string;
@@ -407,6 +414,24 @@ export const getAdminUserReport = createServerFn({ method: "POST" })
       };
     });
 
+    const cronNomeById = new Map((ativ ?? []).map((a: any) => [a.cronograma_id, a.cronogramas?.nome ?? "—"]));
+    const cronAtivos = new Set((ativ ?? []).map((a: any) => a.cronograma_id));
+    const materias = (mats ?? [])
+      .filter((m) => cronAtivos.has(m.cronograma_id))
+      .map((m) => {
+        const matTops = (tops ?? []).filter((t) => t.materia_id === m.id);
+        const concluidos = matTops.filter((t) => concluidosByTop.get(t.id)).length;
+        const total = matTops.length;
+        return {
+          cronograma: cronNomeById.get(m.cronograma_id) ?? "—",
+          nome: m.nome,
+          total,
+          concluidos,
+          pct: total > 0 ? Math.round((concluidos / total) * 100) : 0,
+        };
+      })
+      .sort((a, b) => b.pct - a.pct);
+
     const sessoes = (sess ?? []).map((s) => {
       const t = topById.get(s.topico_id);
       const m = t ? matById.get(t.materia_id) : null;
@@ -427,7 +452,7 @@ export const getAdminUserReport = createServerFn({ method: "POST" })
       data: b.desbloqueada_em,
     }));
 
-    return { profile: profileRes, cronogramas, sessoes, badges } satisfies AdminUserReport;
+    return { profile: profileRes, cronogramas, materias, sessoes, badges } satisfies AdminUserReport;
   });
 
 // =================== Cronogramas premium do usuário ===================

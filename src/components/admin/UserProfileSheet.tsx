@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import {
   Sheet,
   SheetContent,
@@ -7,7 +6,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, CalendarDays } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -80,7 +78,6 @@ const PLANO_LABEL: Record<PlanoTipo, string> = {
 };
 
 export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Props) {
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -323,20 +320,6 @@ export function UserProfileSheet({ userId, open, onOpenChange, onChanged }: Prop
               </div>
             </div>
 
-            {/* Exportar relatório completo do aluno */}
-            <Button
-              size="sm"
-              className="w-full gap-2 bg-[#1D9E75] hover:bg-[#188a66] text-white"
-              onClick={() => handleReport("pdf")}
-              disabled={reportLoading === "pdf"}
-            >
-              {reportLoading === "pdf" ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <FileText size={14} />
-              )}
-              {reportLoading === "pdf" ? "Gerando PDF..." : "📄 Exportar Relatório PDF"}
-            </Button>
 
             {/* Contatos */}
             <div className="lei-card p-3 space-y-2">
