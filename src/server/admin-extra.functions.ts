@@ -331,6 +331,13 @@ export type AdminUserReport = {
     concluidos: number;
     pct: number;
   }[];
+  materias: {
+    cronograma: string;
+    nome: string;
+    total: number;
+    concluidos: number;
+    pct: number;
+  }[];
   sessoes: {
     data: string;
     materia: string;
